@@ -1,0 +1,10 @@
+prefix=@PREFIX@
+libdir=@LIBDIR@
+includedir=@INCLUDEDIR@
+
+Name: PSync
+Description: PSync library
+Version: @VERSION@
+Libs: -L${libdir} -lPSync -lndn-cxx
+Cflags: -I${includedir}
+
