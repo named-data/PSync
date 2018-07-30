@@ -12,9 +12,9 @@ In partial sync, PSync uses a Bloom Filter to represent the subscription of list
 PSync uses [ndn-cxx](https://github.com/named-data/ndn-cxx) library as NDN development
 library.
 
-PSync is an open source project licensed under GPL 3.0 (see `COPYING.md` for more
+PSync is an open source project licensed under LGPL 3.0 (see `COPYING.md` for more
 detail).  We highly welcome all contributions to the PSync code base, provided that
-they can licensed under GPL 3.0+ or other compatible license.
+they can be licensed under LGPL 3.0+ or other compatible license.
 
 Feedback
 --------

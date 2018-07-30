@@ -5,6 +5,6 @@ includedir=@INCLUDEDIR@
 Name: PSync
 Description: PSync library
 Version: @VERSION@
-Libs: -L${libdir} -lPSync -lndn-cxx
+Libs: -L${libdir} -lPSync
 Cflags: -I${includedir}
 
