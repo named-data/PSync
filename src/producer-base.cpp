@@ -45,6 +45,7 @@ ProducerBase::ProducerBase(size_t expectedNumEntries,
   , m_userPrefix(userPrefix)
   , m_syncReplyFreshness(syncReplyFreshness)
   , m_helloReplyFreshness(helloReplyFreshness)
+  , m_segmentPublisher(m_face, m_keyChain)
 {
   addUserNode(userPrefix);
 }
@@ -129,9 +130,11 @@ ProducerBase::sendApplicationNack(const ndn::Name& name)
   ndn::Name dataName(name);
   m_iblt.appendToName(dataName);
 
+  dataName.appendSegment(0);
   ndn::Data data(dataName);
   data.setFreshnessPeriod(m_syncReplyFreshness);
   data.setContentType(ndn::tlv::ContentType_Nack);
+  data.setFinalBlock(dataName[-1]);
   m_keyChain.sign(data);
   m_face.put(data);
 }

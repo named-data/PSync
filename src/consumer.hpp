@@ -26,6 +26,7 @@
 
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/util/scheduler.hpp>
+#include <ndn-cxx/util/segment-fetcher.hpp>
 #include <ndn-cxx/util/time.hpp>
 
 #include <random>
@@ -130,6 +131,12 @@ public:
     return it->second;
   }
 
+  /**
+   * @brief Stop segment fetcher to stop the sync and free resources
+   */
+  void
+  stop();
+
 private:
   /**
    * @brief Get hello data from the producer
@@ -141,11 +148,10 @@ private:
    * m_onReceiveHelloData is called to let the application know
    * so that it can set the subscription list using addSubscription
    *
-   * @param interest hello interest
-   * @param data hello data
+   * @param bufferPtr hello data content
    */
   void
-  onHelloData(const ndn::Interest& interest, const ndn::Data& data);
+  onHelloData(const ndn::ConstBufferPtr& bufferPtr);
 
   /**
    * @brief Get hello data from the producer
@@ -155,23 +161,10 @@ private:
    * have the latest update for. We update our copy of producer's IBF with the latest one.
    * Then we send another sync interest after a random jitter.
    *
-   * @param interest sync interest
-   * @param data sync data
+   * @param bufferPtr sync data content
    */
   void
-  onSyncData(const ndn::Interest& interest, const ndn::Data& data);
-
-  void
-  onHelloTimeout(const ndn::Interest& interest);
-
-  void
-  onSyncTimeout(const ndn::Interest& interest);
-
-  void
-  onNackForHello(const ndn::Interest& interest, const ndn::lp::Nack& nack);
-
-  void
-  onNackForSync(const ndn::Interest& interest, const ndn::lp::Nack& nack);
+  onSyncData(const ndn::ConstBufferPtr& bufferPtr);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   ndn::Face& m_face;
@@ -181,6 +174,9 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   ndn::Name m_helloInterestPrefix;
   ndn::Name m_syncInterestPrefix;
   ndn::Name m_iblt;
+  ndn::Name m_helloDataName;
+  ndn::Name m_syncDataName;
+  uint32_t m_syncDataContentType;
 
   ReceiveHelloCallback m_onReceiveHelloData;
 
@@ -197,10 +193,10 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::map<ndn::Name, uint64_t> m_prefixes;
   std::set<ndn::Name> m_subscriptionList;
 
-  const ndn::PendingInterestId* m_outstandingInterestId;
-
   std::mt19937 m_rng;
   std::uniform_int_distribution<> m_rangeUniformRandom;
+  std::shared_ptr<ndn::util::SegmentFetcher> m_helloFetcher;
+  std::shared_ptr<ndn::util::SegmentFetcher> m_syncFetcher;
 };
 
 } // namespace psync

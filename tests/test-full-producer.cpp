@@ -24,8 +24,6 @@
 #include <ndn-cxx/util/dummy-client-face.hpp>
 #include <ndn-cxx/mgmt/nfd/control-parameters.hpp>
 
-#include <iostream>
-
 namespace psync {
 
 using namespace ndn;

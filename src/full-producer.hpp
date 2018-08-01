@@ -205,13 +205,6 @@ private:
   isFutureHash(const ndn::Name& prefix, const std::set<uint32_t>& negative);
 
   /**
-   * @brief Segment and send state with the given data name
-   *
-   */
-  void
-  sendRecoveryData(const ndn::Name& prefix, const State& state);
-
-  /**
    * @brief Send recovery interest using segment fetcher
    *
    * Recovery data is expected go over max packet size

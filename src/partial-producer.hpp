@@ -112,7 +112,8 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
    * Either respond with sync data if consumer is behind or
    * store sync interest in m_pendingEntries
    *
-   * Sync data's name format is: /\<sync-prefix\>/sync/\<old-IBF\>/\<current-IBF\>
+   * Sync data's name format is: /\<syncPrefix\>/sync/\<BF\>/\<old-IBF\>/\<current-IBF\>
+   * (BF has 3 components).
    */
   void
   onSyncInterest(const ndn::Name& prefix, const ndn::Interest& interest);

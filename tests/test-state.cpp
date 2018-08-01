@@ -29,7 +29,7 @@ using namespace ndn;
 
 BOOST_AUTO_TEST_SUITE(TestState)
 
-BOOST_AUTO_TEST_CASE(EncodeDeode)
+BOOST_AUTO_TEST_CASE(EncodeDecode)
 {
   State state;
   state.addContent(ndn::Name("test1"));
@@ -40,6 +40,30 @@ BOOST_AUTO_TEST_CASE(EncodeDeode)
   State rcvdState(data.getContent());
 
   BOOST_CHECK(state.getContent() == rcvdState.getContent());
+
+  // Simulate getting buffer content from segment fetcher
+  ndn::Buffer buffer(data.getContent().value_size());
+  std::copy(data.getContent().value_begin(),
+            data.getContent().value_end(),
+            buffer.begin());
+
+  ndn::ConstBufferPtr buffer2 = make_shared<ndn::Buffer>(buffer);
+
+  ndn::Block block(std::move(buffer2));
+
+  State state2;
+  state2.wireDecode(block);
+
+  BOOST_CHECK(state.getContent() == state2.getContent());
+}
+
+BOOST_AUTO_TEST_CASE(EmptyContent)
+{
+  ndn::Data data;
+  BOOST_CHECK_NO_THROW(State state(data.getContent()));
+
+  State state(data.getContent());
+  BOOST_CHECK_EQUAL(state.getContent().size(), 0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

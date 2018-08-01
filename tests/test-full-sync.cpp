@@ -26,8 +26,6 @@
 #include <ndn-cxx/name.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
-#include <iostream>
-
 namespace psync {
 
 using namespace ndn;
@@ -332,35 +330,7 @@ BOOST_AUTO_TEST_CASE(DiffIBFDecodeFailureSimpleSegmentedRecovery)
 {
   addNode(0);
   addNode(1);
-
-  // Simple content store
-  faces[0]->onSendInterest.connect([this] (const Interest& interest) {
-                                    for (const auto& data : faces[1]->sentData) {
-                                      if (data.getName() == interest.getName()) {
-                                        faces[0]->receive(data);
-                                        return;
-                                      }
-                                    }
-                                    faces[1]->receive(interest);
-                                  });
-
-  faces[0]->onSendData.connect([this] (const Data& data) {
-                                faces[1]->receive(data);
-                              });
-
-  faces[1]->onSendInterest.connect([this] (const Interest& interest) {
-                                    for (const auto& data : faces[0]->sentData) {
-                                      if (data.getName() == interest.getName()) {
-                                        faces[1]->receive(data);
-                                        return;
-                                      }
-                                    }
-                                    faces[0]->receive(interest);
-                                  });
-
-  faces[1]->onSendData.connect([this] (const Data& data) {
-                                faces[0]->receive(data);
-                              });
+  faces[0]->linkTo(*faces[1]);
 
   advanceClocks(ndn::time::milliseconds(10));
 
@@ -416,7 +386,6 @@ BOOST_AUTO_TEST_CASE(DiffIBFDecodeFailureMultipleNodes)
   nodes[0]->publishName(Name("userNode0-" + to_string(totalUpdates)));
   advanceClocks(ndn::time::milliseconds(10), 100);
 
-  // No mechanism to recover yet
   for (int i = 0; i <= totalUpdates; i++) {
     Name userPrefix("userNode0-" + to_string(i));
     for (int j = 0; j < 4; j++) {

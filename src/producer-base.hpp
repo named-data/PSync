@@ -24,6 +24,7 @@
 #include "detail/bloom-filter.hpp"
 #include "detail/util.hpp"
 #include "detail/test-access-control.hpp"
+#include "segment-publisher.hpp"
 
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/util/scheduler.hpp>
@@ -179,6 +180,8 @@ PUBLIC_WITH_TESTS_ELSE_PROTECTED:
 
   ndn::time::milliseconds m_syncReplyFreshness;
   ndn::time::milliseconds m_helloReplyFreshness;
+
+  SegmentPublisher m_segmentPublisher;
 
   std::mt19937 m_rng;
 };

@@ -22,7 +22,6 @@
 
 #include <ndn-cxx/util/logger.hpp>
 
-#include <iostream>
 #include <cstring>
 #include <limits>
 
@@ -75,7 +74,18 @@ PartialProducer::publishName(const ndn::Name& prefix, ndn::optional<uint64_t> se
 void
 PartialProducer::onHelloInterest(const ndn::Name& prefix, const ndn::Interest& interest)
 {
-  NDN_LOG_DEBUG("Hello Interest Received, nonce: " << interest.getNonce());
+  // Last component or third last component (in case of interest with IBF and segment)
+  // needs to be hello
+  if (interest.getName().get(interest.getName().size()-1).toUri() != "hello" &&
+      interest.getName().get(interest.getName().size()-3).toUri() != "hello") {
+    return;
+  }
+
+  if (m_segmentPublisher.replyFromStore(interest.getName())) {
+    return;
+  }
+
+  NDN_LOG_DEBUG("Hello Interest Received, nonce: " << interest);
 
   State state;
 
@@ -87,13 +97,8 @@ PartialProducer::onHelloInterest(const ndn::Name& prefix, const ndn::Interest& i
   ndn::Name helloDataName = prefix;
   m_iblt.appendToName(helloDataName);
 
-  ndn::Data data;
-  data.setName(helloDataName);
-  data.setFreshnessPeriod(m_helloReplyFreshness);
-  data.setContent(state.wireEncode());
-
-  m_keyChain.sign(data);
-  m_face.put(data);
+  m_segmentPublisher.publish(interest.getName(), helloDataName,
+                             state.wireEncode(), m_helloReplyFreshness);
 }
 
 void
@@ -103,6 +108,15 @@ PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& in
                 " hash: " << std::hash<std::string>{}(interest.getName().toUri()));
 
   ndn::Name interestName = interest.getName();
+
+  if (interestName.get(interestName.size() - 5).toUri() != "sync" &&
+      interestName.get(interestName.size() - 7).toUri() != "sync") {
+    return;
+  }
+
+  if (m_segmentPublisher.replyFromStore(interest.getName())) {
+    return;
+  }
 
   ndn::name::Component bfName, ibltName;
   unsigned int projectedCount;
@@ -171,15 +185,9 @@ PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& in
     // send back data
     ndn::Name syncDataName = interestName;
     m_iblt.appendToName(syncDataName);
-    ndn::Data data;
-    data.setName(syncDataName);
-    data.setFreshnessPeriod(m_syncReplyFreshness);
-    data.setContent(state.wireEncode());
 
-    m_keyChain.sign(data);
-    NDN_LOG_DEBUG("Sending sync data");
-    m_face.put(data);
-
+    m_segmentPublisher.publish(interest.getName(), syncDataName,
+                               state.wireEncode(), m_syncReplyFreshness);
     return;
   }
 
@@ -222,8 +230,8 @@ PartialProducer::satisfyPendingSyncInterests(const ndn::Name& prefix) {
     State state;
     if (entry.bf.contains(prefix.toUri()) || positive.size() + negative.size() >= m_threshold) {
       if (entry.bf.contains(prefix.toUri())) {
-         state.addContent(ndn::Name(prefix).appendNumber(m_prefixes[prefix]));
-         NDN_LOG_DEBUG("sending sync content " << prefix << " " << std::to_string(m_prefixes[prefix]));
+        state.addContent(ndn::Name(prefix).appendNumber(m_prefixes[prefix]));
+        NDN_LOG_DEBUG("sending sync content " << prefix << " " << std::to_string(m_prefixes[prefix]));
       }
       else {
         NDN_LOG_DEBUG("Sending with empty content to send latest IBF to consumer");
@@ -232,14 +240,9 @@ PartialProducer::satisfyPendingSyncInterests(const ndn::Name& prefix) {
       // generate sync data and cancel the event
       ndn::Name syncDataName = it->first;
       m_iblt.appendToName(syncDataName);
-      ndn::Data data;
-      data.setName(syncDataName);
-      data.setFreshnessPeriod(m_syncReplyFreshness);
-      data.setContent(state.wireEncode());
 
-      m_keyChain.sign(data);
-      NDN_LOG_DEBUG("Sending sync data");
-      m_face.put(data);
+      m_segmentPublisher.publish(it->first, syncDataName,
+                                 state.wireEncode(), m_syncReplyFreshness);
 
       m_pendingEntries.erase(it++);
     }

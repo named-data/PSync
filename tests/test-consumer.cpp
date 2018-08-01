@@ -23,8 +23,6 @@
 #include <ndn-cxx/name.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
-#include <iostream>
-
 namespace psync {
 
 using namespace ndn;

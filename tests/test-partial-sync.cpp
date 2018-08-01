@@ -25,8 +25,6 @@
 #include <ndn-cxx/name.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
-#include <iostream>
-
 namespace psync {
 
 using namespace ndn;
@@ -46,12 +44,23 @@ public:
     addUserNodes("testUser", 10);
   }
 
+  ~PartialSyncFixture()
+  {
+    for (auto consumer : consumers) {
+      if (consumer) {
+        consumer->stop();
+      }
+    }
+  }
+
   void
-  addConsumer(int id, const vector<string>& subscribeTo)
+  addConsumer(int id, const vector<string>& subscribeTo, bool linkToProducer = true)
   {
     consumerFaces[id] = make_shared<util::DummyClientFace>(io, util::DummyClientFace::Options{true, true});
 
-    face.linkTo(*consumerFaces[id]);
+    if (linkToProducer) {
+      face.linkTo(*consumerFaces[id]);
+    }
 
     consumers[id] = make_shared<Consumer>(syncPrefix, *consumerFaces[id],
                       [&, id] (const vector<Name>& availableSubs)
@@ -174,7 +183,7 @@ BOOST_AUTO_TEST_CASE(MissedUpdate)
   BOOST_CHECK_EQUAL(numSyncDataRcvd, 0);
 
   // Next sync interest will bring back the sync data
-  advanceClocks(ndn::time::milliseconds(1000));
+  advanceClocks(ndn::time::milliseconds(1500));
   BOOST_CHECK_EQUAL(numSyncDataRcvd, 1);
 }
 
@@ -341,6 +350,48 @@ BOOST_AUTO_TEST_CASE(ApplicationNack)
   publishUpdateFor("testUser-4");
   advanceClocks(ndn::time::milliseconds(10));
   BOOST_CHECK_EQUAL(numSyncDataRcvd, 3);
+}
+
+BOOST_AUTO_TEST_CASE(SegmentedHello)
+{
+  vector<string> subscribeTo{"testUser-2", "testUser-4", "testUser-6"};
+  addConsumer(0, subscribeTo);
+
+  addUserNodes("testUser", 400);
+
+  consumers[0]->sendHelloInterest();
+  advanceClocks(ndn::time::milliseconds(10));
+  BOOST_CHECK_EQUAL(numHelloDataRcvd, 1);
+}
+
+BOOST_AUTO_TEST_CASE(SegmentedSync)
+{
+  ndn::Name longNameToExceedDataSize;
+  for (int i = 0; i < 100; i++) {
+    longNameToExceedDataSize.append("test-" + std::to_string(i));
+  }
+  addUserNodes(longNameToExceedDataSize.toUri(), 10);
+
+  vector<string> subscribeTo;
+  for (int i = 1; i < 10; i++) {
+    subscribeTo.push_back(longNameToExceedDataSize.toUri() + "-" + to_string(i));
+  }
+  addConsumer(0, subscribeTo);
+
+  consumers[0]->sendHelloInterest();
+  advanceClocks(ndn::time::milliseconds(10));
+  BOOST_CHECK_EQUAL(numHelloDataRcvd, 1);
+
+  oldSeqMap = producer->m_prefixes;
+  for (int i = 1; i < 10; i++) {
+    producer->updateSeqNo(longNameToExceedDataSize.toUri() + "-" + to_string(i), 1);
+  }
+
+  advanceClocks(ndn::time::milliseconds(1000));
+  BOOST_CHECK_EQUAL(numSyncDataRcvd, 0);
+
+  advanceClocks(ndn::time::milliseconds(1500));
+  BOOST_CHECK_EQUAL(numSyncDataRcvd, 1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

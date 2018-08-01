@@ -23,7 +23,6 @@
 #include <ndn-cxx/util/segment-fetcher.hpp>
 #include <ndn-cxx/security/validator-null.hpp>
 
-#include <iostream>
 #include <cstring>
 #include <limits>
 #include <functional>
@@ -137,6 +136,11 @@ FullProducer::onInterest(const ndn::Name& prefixName, const ndn::Interest& inter
       nameWithoutSyncPrefix.get(nameWithoutSyncPrefix.size() - 1) == RECOVERY_PREFIX.get(0)) {
       onRecoveryInterest(interest);
   }
+  // interest for recovery segment
+  else if (nameWithoutSyncPrefix.size() == 3 &&
+           nameWithoutSyncPrefix.get(nameWithoutSyncPrefix.size() - 2) == RECOVERY_PREFIX.get(0)) {
+    onRecoveryInterest(interest);
+  }
   else if (nameWithoutSyncPrefix.size() == 1) {
     onSyncInterest(interest);
   }
@@ -223,6 +227,10 @@ FullProducer::onRecoveryInterest(const ndn::Interest& interest)
 {
   NDN_LOG_DEBUG("Recovery interest received");
 
+  if (m_segmentPublisher.replyFromStore(interest.getName())) {
+    return;
+  }
+
   State state;
   for (const auto& content : m_prefixes) {
     if (content.second != 0) {
@@ -230,8 +238,8 @@ FullProducer::onRecoveryInterest(const ndn::Interest& interest)
     }
   }
 
-  // Send even if state is empty to let other side know that we are behind
-  sendRecoveryData(interest.getName(), state);
+  m_segmentPublisher.publish(interest.getName(), interest.getName(),
+                             state.wireEncode(), m_syncReplyFreshness);
 }
 
 void
@@ -388,44 +396,6 @@ FullProducer::deletePendingInterests(const ndn::Name& interestName) {
       ++it;
     }
   }
-}
-
-void
-FullProducer::sendRecoveryData(const ndn::Name& prefix, const State& state)
-{
-  ndn::EncodingBuffer buffer;
-  buffer.prependBlock(state.wireEncode());
-
-  const uint8_t* rawBuffer = buffer.buf();
-  const uint8_t* segmentBegin = rawBuffer;
-  const uint8_t* end = rawBuffer + buffer.size();
-
-  uint64_t segmentNo = 0;
-  do {
-    const uint8_t* segmentEnd = segmentBegin + (ndn::MAX_NDN_PACKET_SIZE >> 1);
-    if (segmentEnd > end) {
-      segmentEnd = end;
-    }
-
-    ndn::Name segmentName(prefix);
-    segmentName.appendSegment(segmentNo);
-
-    std::shared_ptr<ndn::Data> data = std::make_shared<ndn::Data>(segmentName);
-    data->setContent(segmentBegin, segmentEnd - segmentBegin);
-    data->setFreshnessPeriod(m_syncReplyFreshness);
-
-    segmentBegin = segmentEnd;
-    if (segmentBegin >= end) {
-      data->setFinalBlock(segmentName[-1]);
-    }
-
-    m_keyChain.sign(*data);
-    m_face.put(*data);
-
-    NDN_LOG_DEBUG("Sending recovery data, seq: " << segmentNo);
-
-    ++segmentNo;
-  } while (segmentBegin < end);
 }
 
 void

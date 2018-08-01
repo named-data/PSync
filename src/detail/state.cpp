@@ -71,29 +71,46 @@ NDN_CXX_DEFINE_WIRE_ENCODE_INSTANTIATIONS(State);
 void
 State::wireDecode(const ndn::Block& wire)
 {
-  if (!wire.hasWire()) {
-    BOOST_THROW_EXCEPTION(ndn::tlv::Error("The supplied block does not contain wire format"));
+  auto blockType = wire.type();
+
+  if (blockType != tlv::PSyncContent && blockType != ndn::tlv::Content) {
+    BOOST_THROW_EXCEPTION(ndn::tlv::Error("Expected Content/PSyncContent Block, but Block is of a different type: #" +
+                                           ndn::to_string(blockType)));
+    return;
   }
 
   wire.parse();
+
   m_wire = wire;
 
   auto it = m_wire.elements_begin();
 
-  if (it->type() != tlv::PSyncContent) {
-    BOOST_THROW_EXCEPTION(ndn::tlv::Error("Unexpected TLV type when decoding Content: " +
-                                          ndn::to_string(wire.type())));
+  if (it == m_wire.elements_end()) {
+    return;
   }
 
-  it->parse();
-
-  for (auto val = it->elements_begin(); val != it->elements_end(); ++val) {
-    if (val->type() == ndn::tlv::Name) {
-      m_content.emplace_back(*val);
+  if (blockType == tlv::PSyncContent) {
+    while(it != m_wire.elements_end()) {
+      if (it->type() == ndn::tlv::Name) {
+        m_content.emplace_back(*it);
+      }
+      else {
+        BOOST_THROW_EXCEPTION(ndn::tlv::Error("Expected Name Block, but Block is of a different type: #" +
+                                              ndn::to_string(it->type())));
+      }
+      ++it;
     }
-    else {
-      BOOST_THROW_EXCEPTION(ndn::tlv::Error("Expected Name Block, but Block is of a different type: #" +
-                                            ndn::to_string(m_wire.type())));
+  }
+  else if (blockType == ndn::tlv::Content) {
+    it->parse();
+    for (auto val = it->elements_begin(); val != it->elements_end(); ++val) {
+      if (val->type() == ndn::tlv::Name) {
+        m_content.emplace_back(*val);
+      }
+      else {
+        BOOST_THROW_EXCEPTION(ndn::tlv::Error("Expected Name Block, but Block is of a different type: #" +
+                                              ndn::to_string(val->type())));
+      }
     }
   }
 }
