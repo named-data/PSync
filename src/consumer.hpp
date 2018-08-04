@@ -46,11 +46,17 @@ const ndn::time::milliseconds SYNC_INTEREST_LIFETIME = 1_s;
  * @brief Consumer logic to subscribe to producer's data
  *
  * Application needs to call sendHelloInterest to get the subscription list
- * in ReceiveHelloCallback. It can then add the desired names using addSubscription.
+ * in psync::ReceiveHelloCallback. It can then add the desired names using addSubscription.
  * Finally application will call sendSyncInterest. If the application adds something
  * later to the subscription list then it may call sendSyncInterest again for
  * sending the next sync interest with updated IBF immediately to reduce any delay in sync data.
  * Whenever there is new data UpdateCallback will be called to notify the application.
+ *
+ * If consumer wakes up after a long time to sync, producer may not decode the differences
+ * with its old IBF successfully and send an application nack. Upon receiving the nack,
+ * consumer will send a hello again and inform the application via psync::ReceiveHelloCallback
+ * and psync::UpdateCallback.
+ *
  * Currently, fetching of the data needs to be handled by the application.
  */
 class Consumer
@@ -97,6 +103,7 @@ public:
    * @brief Add prefix to subscription list
    *
    * @param prefix prefix to be added to the list
+   * @return true if prefix is added, false if it is already present
    */
   bool
   addSubscription(const ndn::Name& prefix);

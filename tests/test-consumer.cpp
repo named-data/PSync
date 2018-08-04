@@ -37,8 +37,8 @@ BOOST_AUTO_TEST_CASE(Constructor)
   util::DummyClientFace face({true, true});
   BOOST_REQUIRE_NO_THROW(Consumer(Name("/psync"),
                                   face,
-                                  [] (const vector<Name>& availableSubs) {},
-                                  [] (const vector<MissingDataInfo>) {},
+                                  [] (const vector<Name>&) {},
+                                  [] (const vector<MissingDataInfo>&) {},
                                   40,
                                   0.001));
 }
@@ -47,8 +47,8 @@ BOOST_AUTO_TEST_CASE(AddSubscription)
 {
   util::DummyClientFace face({true, true});
   Consumer consumer(Name("/psync"), face,
-                    [] (const vector<Name>& availableSubs) {},
-                    [] (const vector<MissingDataInfo>) {},
+                    [] (const vector<Name>&) {},
+                    [] (const vector<MissingDataInfo>&) {},
                     40, 0.001);
 
   Name subscription("test");

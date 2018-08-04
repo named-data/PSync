@@ -79,8 +79,8 @@ PartialProducer::onHelloInterest(const ndn::Name& prefix, const ndn::Interest& i
 
   State state;
 
-  for (const auto& p : m_prefixes) {
-    state.addContent(p.first);
+  for (const auto& prefix : m_prefixes) {
+    state.addContent(ndn::Name(prefix.first).appendNumber(prefix.second));
   }
   NDN_LOG_DEBUG("sending content p: " << state);
 

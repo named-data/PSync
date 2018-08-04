@@ -92,10 +92,34 @@ Consumer::onHelloData(const ndn::Interest& interest, const ndn::Data& data)
   NDN_LOG_TRACE("m_iblt: " << std::hash<std::string>{}(m_iblt.toUri()));
 
   State state(data.getContent());
+  std::vector<MissingDataInfo> updates;
+  std::vector<ndn::Name> availableSubscriptions;
 
-  NDN_LOG_DEBUG("Content: " << state);
+  for (const auto& content : state.getContent()) {
+    ndn::Name prefix = content.getPrefix(-1);
+    uint64_t seq = content.get(content.size()-1).toNumber();
+    if (m_prefixes.find(prefix) == m_prefixes.end()) {
+      // In case this the first prefix ever received via hello data,
+      // add it to the available subscriptions
+      availableSubscriptions.push_back(prefix);
+    }
+    else if (seq > m_prefixes[prefix]) {
+      // Else this is not the first time we have seen this prefix,
+      // we must let application know that there is missing data
+      // (scenario: application nack triggers another hello interest)
+      updates.push_back(MissingDataInfo{prefix, m_prefixes[prefix] + 1, seq});
+      m_prefixes[prefix] = seq;
+    }
+  }
 
-  m_onReceiveHelloData(state.getContent());
+  NDN_LOG_DEBUG("Hello Data:  " << state);
+
+  m_onReceiveHelloData(availableSubscriptions);
+
+  if (!updates.empty()) {
+    NDN_LOG_DEBUG("Updating application with missed updates");
+    m_onUpdate(updates);
+  }
 }
 
 void
@@ -140,8 +164,8 @@ Consumer::onSyncData(const ndn::Interest& interest, const ndn::Data& data)
   m_iblt = syncDataName.getSubName(syncDataName.size()-1, 1);
 
   if (data.getContentType() == ndn::tlv::ContentType_Nack) {
-    NDN_LOG_DEBUG("Received application Nack from producer, renew sync interest");
-    sendSyncInterest();
+    NDN_LOG_DEBUG("Received application Nack from producer, send hello again");
+    sendHelloInterest();
     return;
   }
 

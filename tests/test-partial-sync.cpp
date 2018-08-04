@@ -327,8 +327,9 @@ BOOST_AUTO_TEST_CASE(ApplicationNack)
   // Next sync interest should trigger the nack
   advanceClocks(ndn::time::milliseconds(15), 100);
 
-  // Nack does not contain any content so still should be 1
-  BOOST_CHECK_EQUAL(numSyncDataRcvd, 1);
+  // Application should have been notified that new data is available
+  // from the hello itself.
+  BOOST_CHECK_EQUAL(numSyncDataRcvd, 2);
 
   bool nackRcvd = false;
   for (const auto& data : face.sentData) {
@@ -339,9 +340,9 @@ BOOST_AUTO_TEST_CASE(ApplicationNack)
   }
   BOOST_CHECK(nackRcvd);
 
-  producer->publishName("testUser-4");
+  publishUpdateFor("testUser-4");
   advanceClocks(ndn::time::milliseconds(10));
-  BOOST_CHECK_EQUAL(numSyncDataRcvd, 2);
+  BOOST_CHECK_EQUAL(numSyncDataRcvd, 3);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
