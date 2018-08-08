@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018,  The University of Memphis
+ * Copyright (c) 2014-2019,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -27,6 +27,7 @@
 #include "PSync/segment-publisher.hpp"
 
 #include <ndn-cxx/face.hpp>
+#include <ndn-cxx/util/random.hpp>
 #include <ndn-cxx/util/scheduler.hpp>
 #include <ndn-cxx/util/time.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
@@ -34,11 +35,10 @@
 
 #include <map>
 #include <unordered_set>
-#include <random>
 
 namespace psync {
 
-using namespace ndn::literals::time_literals;
+using namespace ndn::time_literals;
 
 const ndn::time::milliseconds SYNC_REPLY_FRESHNESS = 1_s;
 const ndn::time::milliseconds HELLO_REPLY_FRESHNESS = 1_s;
@@ -183,7 +183,7 @@ PUBLIC_WITH_TESTS_ELSE_PROTECTED:
 
   SegmentPublisher m_segmentPublisher;
 
-  std::mt19937 m_rng;
+  ndn::random::RandomNumberEngine& m_rng;
 };
 
 } // namespace psync

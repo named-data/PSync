@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018,  The University of Memphis
+ * Copyright (c) 2014-2019,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -46,6 +46,7 @@ ProducerBase::ProducerBase(size_t expectedNumEntries,
   , m_syncReplyFreshness(syncReplyFreshness)
   , m_helloReplyFreshness(helloReplyFreshness)
   , m_segmentPublisher(m_face, m_keyChain)
+  , m_rng(ndn::random::getRandomNumberEngine())
 {
   addUserNode(userPrefix);
 }

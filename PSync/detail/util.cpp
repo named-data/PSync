@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018,  The University of Memphis
+ * Copyright (c) 2014-2019,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -24,8 +24,6 @@
 #include "PSync/detail/util.hpp"
 
 #include <ndn-cxx/util/backports.hpp>
-
-#include <string>
 
 namespace psync {
 

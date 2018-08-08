@@ -31,7 +31,7 @@ if [[ $JOB_NAME == *"code-coverage" ]]; then
 elif [[ -n $BUILD_WITH_ASAN || -z $TRAVIS ]]; then
     ASAN="--with-sanitizer=address"
 fi
-./waf --color=yes configure --debug --with-tests $COVERAGE $ASAN
+./waf --color=yes configure --debug --with-tests --with-examples $COVERAGE $ASAN
 ./waf --color=yes build -j${WAF_JOBS:-1}
 
 # (tests will be run against debug version)

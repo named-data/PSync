@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018,  The University of Memphis
+ * Copyright (c) 2014-2019,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -48,7 +48,7 @@ Consumer::Consumer(const ndn::Name& syncPrefix,
  , m_bloomFilter(count, false_positive)
  , m_helloInterestLifetime(helloInterestLifetime)
  , m_syncInterestLifetime(syncInterestLifetime)
- , m_rng(std::random_device{}())
+ , m_rng(ndn::random::getRandomNumberEngine())
  , m_rangeUniformRandom(100, 500)
 {
 }

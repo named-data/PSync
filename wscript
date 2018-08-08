@@ -13,8 +13,11 @@ def options(opt):
               'sanitizers', 'coverage', 'pch'],
              tooldir=['.waf-tools'])
 
-    opt.add_option('--with-tests', action='store_true', default=False, dest='with_tests',
-                   help='''build unit tests''')
+    opt.add_option('--with-examples', action='store_true', default=False,
+                   help='Build examples')
+
+    opt.add_option('--with-tests', action='store_true', default=False,
+                   help='Build unit tests')
 
 def configure(conf):
     conf.load(['compiler_c', 'compiler_cxx', 'gnu_dirs', 'default-compiler-flags',
@@ -26,9 +29,11 @@ def configure(conf):
     conf.check_cfg(package='libndn-cxx', args=['--cflags', '--libs'],
                    uselib_store='NDN_CXX', mandatory=True)
 
+    conf.env['WITH_TESTS'] = conf.options.with_tests
+    conf.env['WITH_EXAMPLES'] = conf.options.with_examples
+
     boost_libs = 'system thread log log_setup'
-    if conf.options.with_tests:
-        conf.env['WITH_TESTS'] = 1
+    if conf.env['WITH_TESTS']:
         conf.define('WITH_TESTS', 1);
         boost_libs += ' unit_test_framework'
 
@@ -75,6 +80,9 @@ def build(bld):
 
     if bld.env['WITH_TESTS']:
         bld.recurse('tests')
+
+    if bld.env['WITH_EXAMPLES']:
+        bld.recurse('examples')
 
 def docs(bld):
     from waflib import Options

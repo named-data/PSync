@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018,  The University of Memphis
+ * Copyright (c) 2014-2019,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -102,6 +102,9 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
    * @brief Receive hello interest from consumer and respond with hello data
    *
    * Hello data's name format is: /\<sync-prefix\>/hello/\<current-IBF\>
+   *
+   * @param prefix the hello interest prefix
+   * @param interest the hello interest received
    */
   void
   onHelloInterest(const ndn::Name& prefix, const ndn::Interest& interest);
