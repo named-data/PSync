@@ -95,24 +95,20 @@ Consumer::onHelloData(const ndn::Interest& interest, const ndn::Data& data)
   std::vector<MissingDataInfo> updates;
   std::vector<ndn::Name> availableSubscriptions;
 
+  NDN_LOG_DEBUG("Hello Data:  " << state);
+
   for (const auto& content : state.getContent()) {
     ndn::Name prefix = content.getPrefix(-1);
     uint64_t seq = content.get(content.size()-1).toNumber();
-    if (m_prefixes.find(prefix) == m_prefixes.end()) {
-      // In case this the first prefix ever received via hello data,
-      // add it to the available subscriptions
-      availableSubscriptions.push_back(prefix);
-    }
-    else if (seq > m_prefixes[prefix]) {
-      // Else this is not the first time we have seen this prefix,
-      // we must let application know that there is missing data
-      // (scenario: application nack triggers another hello interest)
+    // If consumer is subscribed then prefix must already be present in
+    // m_prefixes (see addSubscription). So [] operator is safe to use.
+    if (isSubscribed(prefix) && seq > m_prefixes[prefix]) {
+      // In case we are behind on this prefix and consumer is subscribed to it
       updates.push_back(MissingDataInfo{prefix, m_prefixes[prefix] + 1, seq});
       m_prefixes[prefix] = seq;
     }
+    availableSubscriptions.push_back(prefix);
   }
-
-  NDN_LOG_DEBUG("Hello Data:  " << state);
 
   m_onReceiveHelloData(availableSubscriptions);
 

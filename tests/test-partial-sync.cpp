@@ -57,7 +57,7 @@ public:
                       [&, id] (const vector<Name>& availableSubs)
                       {
                         numHelloDataRcvd++;
-                        checkSubList(availableSubs);
+                        BOOST_CHECK(checkSubList(availableSubs));
 
                         checkIBFUpdated(id);
 
@@ -94,10 +94,8 @@ public:
   checkSubList(const vector<Name>& availableSubs)
   {
     for (const auto& prefix : producer->m_prefixes ) {
-      for (const auto& sub : availableSubs) {
-        if (prefix.first != sub) {
-          return false;
-        }
+      if (std::find(availableSubs.begin(), availableSubs.end(), prefix.first) == availableSubs.end()) {
+        return false;
       }
     }
     return true;
