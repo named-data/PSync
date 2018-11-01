@@ -46,9 +46,14 @@
 #include "PSync/detail/iblt.hpp"
 #include "PSync/detail/util.hpp"
 
-#include <sstream>
+#include <boost/iostreams/device/array.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/filter/zlib.hpp>
+#include <boost/iostreams/copy.hpp>
 
 namespace psync {
+
+namespace bio = boost::iostreams;
 
 const size_t N_HASH(3);
 const size_t N_HASHCHECK(11);
@@ -227,7 +232,7 @@ IBLT::appendToName(ndn::Name& name) const
   size_t unitSize = (32 * 3) / 8; // hard coding
   size_t tableSize = unitSize * n;
 
-  std::vector <uint8_t> table(tableSize);
+  std::vector<char> table(tableSize);
 
   for (size_t i = 0; i < n; i++) {
     // table[i*12],   table[i*12+1], table[i*12+2], table[i*12+3] --> hashTable[i].count
@@ -252,13 +257,31 @@ IBLT::appendToName(ndn::Name& name) const
     table[(i * unitSize) + 11] = 0xFF & (m_hashTable[i].keyCheck >> 24);
   }
 
-  name.append(table.begin(), table.end());
+  bio::filtering_streambuf<bio::input> in;
+  in.push(bio::zlib_compressor());
+  in.push(bio::array_source(table.data(), table.size()));
+
+  std::stringstream sstream;
+  bio::copy(in, sstream);
+
+  std::string compressedIBF = sstream.str();
+  name.append(compressedIBF.begin(), compressedIBF.end());
 }
 
 std::vector<uint32_t>
 IBLT::extractValueFromName(const ndn::name::Component& ibltName) const
 {
-  std::vector<uint8_t> ibltValues(ibltName.value_begin(), ibltName.value_end());
+  std::string compressed(ibltName.value_begin(), ibltName.value_end());
+
+  bio::filtering_streambuf<bio::input> in;
+  in.push(bio::zlib_decompressor());
+  in.push(bio::array_source(compressed.data(), compressed.size()));
+
+  std::stringstream sstream;
+  bio::copy(in, sstream);
+  std::string ibltStr = sstream.str();
+
+  std::vector<uint8_t> ibltValues(ibltStr.begin(), ibltStr.end());
   size_t n = ibltValues.size() / 4;
 
   std::vector<uint32_t> values(n, 0);
