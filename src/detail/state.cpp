@@ -72,9 +72,8 @@ void
 State::wireDecode(const ndn::Block& wire)
 {
   auto blockType = wire.type();
-
-  if (blockType != tlv::PSyncContent && blockType != ndn::tlv::Content) {
-    BOOST_THROW_EXCEPTION(ndn::tlv::Error("Expected Content/PSyncContent Block, but Block is of a different type: #" +
+  if (blockType != tlv::PSyncContent) {
+    BOOST_THROW_EXCEPTION(ndn::tlv::Error("Expected PSyncContent Block, but Block is of type: #" +
                                            ndn::to_string(blockType)));
     return;
   }
@@ -83,34 +82,13 @@ State::wireDecode(const ndn::Block& wire)
 
   m_wire = wire;
 
-  auto it = m_wire.elements_begin();
-
-  if (it == m_wire.elements_end()) {
-    return;
-  }
-
-  if (blockType == tlv::PSyncContent) {
-    while(it != m_wire.elements_end()) {
-      if (it->type() == ndn::tlv::Name) {
-        m_content.emplace_back(*it);
-      }
-      else {
-        BOOST_THROW_EXCEPTION(ndn::tlv::Error("Expected Name Block, but Block is of a different type: #" +
-                                              ndn::to_string(it->type())));
-      }
-      ++it;
+  for (auto it = m_wire.elements_begin(); it != m_wire.elements_end(); ++it) {
+    if (it->type() == ndn::tlv::Name) {
+      m_content.emplace_back(*it);
     }
-  }
-  else if (blockType == ndn::tlv::Content) {
-    it->parse();
-    for (auto val = it->elements_begin(); val != it->elements_end(); ++val) {
-      if (val->type() == ndn::tlv::Name) {
-        m_content.emplace_back(*val);
-      }
-      else {
-        BOOST_THROW_EXCEPTION(ndn::tlv::Error("Expected Name Block, but Block is of a different type: #" +
-                                              ndn::to_string(val->type())));
-      }
+    else {
+      BOOST_THROW_EXCEPTION(ndn::tlv::Error("Expected Name Block, but Block is of type: #" +
+                                            ndn::to_string(it->type())));
     }
   }
 }

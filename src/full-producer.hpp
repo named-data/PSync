@@ -32,6 +32,7 @@
 #include <ndn-cxx/util/scheduler-scoped-event-id.hpp>
 #include <ndn-cxx/util/time.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
+#include <ndn-cxx/util/segment-fetcher.hpp>
 
 namespace psync {
 
@@ -47,7 +48,6 @@ struct PendingEntryInfoFull
 typedef std::function<void(const std::vector<MissingDataInfo>&)> UpdateCallback;
 
 const ndn::time::milliseconds SYNC_INTEREST_LIFTIME = 1_s;
-const ndn::Name RECOVERY_PREFIX("recovery");
 
 /**
  * @brief Full sync logic to synchronize with other nodes
@@ -111,19 +111,6 @@ private:
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   /**
-   * @brief Process interest from other parties
-   *
-   * Determine whether this is a sync interest or recovery interest
-   * and dispatch to onSyncInterest or onRecoveryInterest respectively.
-   *
-   * @param prefixName prefix for sync group which we registered
-   * @param interest the interest we got
-   */
-  void
-  onInterest(const ndn::Name& prefixName, const ndn::Interest& interest);
-
-private:
-  /**
    * @brief Process sync interest from other parties
    *
    * Get differences b/w our IBF and IBF in the sync interest.
@@ -134,19 +121,13 @@ private:
    * Otherwise add the sync interest into a map with interest name as key and PendingEntryInfoFull
    * as value.
    *
-   * @param interest the sync interest we got
+   * @param prefixName prefix for sync group which we registered
+   * @param interest the interest we got
    */
   void
-  onSyncInterest(const ndn::Interest& interest);
+  onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& interest);
 
-   /**
-   * @brief Publish our entire state so that requester can catch up.
-   *
-   * @param interest the recovery interest we got
-   */
-  void
-  onRecoveryInterest(const ndn::Interest& interest);
-
+private:
   /**
    * @brief Send sync data
    *
@@ -173,10 +154,10 @@ private:
    * sendSyncInterest because the last one was satisfied by the incoming data
    *
    * @param interest interest for which we got the data
-   * @param data the data packet we got
+   * @param bufferPtr sync data content
    */
   void
-  onSyncData(const ndn::Interest& interest, const ndn::Data& data);
+  onSyncData(const ndn::Interest& interest, const ndn::ConstBufferPtr& bufferPtr);
 
   /**
    * @brief Satisfy pending sync interests
@@ -204,23 +185,12 @@ private:
   bool
   isFutureHash(const ndn::Name& prefix, const std::set<uint32_t>& negative);
 
-  /**
-   * @brief Send recovery interest using segment fetcher
-   *
-   * Recovery data is expected go over max packet size
-   * Appends the RECOVERY_PREFIX to the given interest
-   */
-  void
-  sendRecoveryInterest(const ndn::Interest& interest);
-
 private:
   std::map <ndn::Name, PendingEntryInfoFull> m_pendingEntries;
 
   ndn::time::milliseconds m_syncInterestLifetime;
 
   UpdateCallback m_onUpdate;
-
-  const ndn::PendingInterestId* m_outstandingInterestId;
 
   ndn::util::scheduler::ScopedEventId m_scheduledSyncInterestId;
 
@@ -229,6 +199,8 @@ private:
   ndn::Name m_outstandingInterestName;
 
   const ndn::RegisteredPrefixId* m_registerPrefixId;
+
+  std::shared_ptr<ndn::util::SegmentFetcher> m_fetcher;
 };
 
 } // namespace psync

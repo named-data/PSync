@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(OnInterest)
   Name syncInterestName(syncPrefix);
   syncInterestName.append("malicious-IBF");
 
-  BOOST_REQUIRE_NO_THROW(node.onInterest(syncPrefix, Interest(syncInterestName)));
+  BOOST_REQUIRE_NO_THROW(node.onSyncInterest(syncPrefix, Interest(syncInterestName)));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

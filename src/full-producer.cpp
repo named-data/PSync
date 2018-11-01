@@ -41,7 +41,6 @@ FullProducer::FullProducer(const size_t expectedNumEntries,
   : ProducerBase(expectedNumEntries, face, syncPrefix, userPrefix, syncReplyFreshness)
   , m_syncInterestLifetime(syncInterestLifetime)
   , m_onUpdate(onUpdateCallBack)
-  , m_outstandingInterestId(nullptr)
   , m_scheduledSyncInterestId(m_scheduler)
 {
   int jitter = m_syncInterestLifetime.count() * .20;
@@ -49,7 +48,7 @@ FullProducer::FullProducer(const size_t expectedNumEntries,
 
   m_registerPrefixId =
     m_face.setInterestFilter(ndn::InterestFilter(m_syncPrefix).allowLoopback(false),
-                             std::bind(&FullProducer::onInterest, this, _1, _2),
+                             std::bind(&FullProducer::onSyncInterest, this, _1, _2),
                              std::bind(&FullProducer::onRegisterFailed, this, _1, _2));
 
   // Should we do this after setInterestFilter success call back
@@ -59,8 +58,8 @@ FullProducer::FullProducer(const size_t expectedNumEntries,
 
 FullProducer::~FullProducer()
 {
-  if (m_outstandingInterestId != nullptr) {
-    m_face.removePendingInterest(m_outstandingInterestId);
+  if (m_fetcher) {
+    m_fetcher->stop();
   }
 
   m_face.unsetInterestFilter(m_registerPrefixId);
@@ -89,8 +88,8 @@ FullProducer::sendSyncInterest()
   // If we send two sync interest one after the other
   // since there is no new data in the network yet,
   // when data is available it may satisfy both of them
-  if (m_outstandingInterestId != nullptr) {
-    m_face.removePendingInterest(m_outstandingInterestId);
+  if (m_fetcher) {
+    m_fetcher->stop();
   }
 
   // Sync Interest format for full sync: /<sync-prefix>/<ourLatestIBF>
@@ -106,50 +105,53 @@ FullProducer::sendSyncInterest()
                               [this] { sendSyncInterest(); });
 
   ndn::Interest syncInterest(syncInterestName);
-  syncInterest.setInterestLifetime(m_syncInterestLifetime);
-  // Other side appends hash of IBF to sync data name
-  syncInterest.setCanBePrefix(true);
-  syncInterest.setMustBeFresh(true);
 
-  syncInterest.setNonce(1);
-  syncInterest.refreshNonce();
+  ndn::util::SegmentFetcher::Options options;
+  options.interestLifetime = m_syncInterestLifetime;
+  options.maxTimeout = m_syncInterestLifetime;
 
-  m_outstandingInterestId = m_face.expressInterest(syncInterest,
-                              std::bind(&FullProducer::onSyncData, this, _1, _2),
-                              [] (const ndn::Interest& interest, const ndn::lp::Nack& nack) {
-                                NDN_LOG_TRACE("received Nack with reason " << nack.getReason() <<
-                                              " for Interest with Nonce: " << interest.getNonce());
-                              },
-                              [] (const ndn::Interest& interest) {
-                                NDN_LOG_DEBUG("On full sync timeout " << interest.getNonce());
-                              });
+  m_fetcher = ndn::util::SegmentFetcher::start(m_face,
+                                               syncInterest,
+                                               ndn::security::v2::getAcceptAllValidator(),
+                                               options);
+
+  m_fetcher->onComplete.connect([this, syncInterest] (ndn::ConstBufferPtr bufferPtr) {
+                                  onSyncData(syncInterest, bufferPtr);
+                                });
+
+  m_fetcher->onError.connect([this] (uint32_t errorCode, const std::string& msg) {
+                               NDN_LOG_ERROR("Cannot fetch sync data, error: " <<
+                                              errorCode << " message: " << msg);
+                             });
 
   NDN_LOG_DEBUG("sendFullSyncInterest, nonce: " << syncInterest.getNonce() <<
                 ", hash: " << std::hash<ndn::Name>{}(syncInterestName));
 }
 
 void
-FullProducer::onInterest(const ndn::Name& prefixName, const ndn::Interest& interest)
+FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& interest)
 {
-  ndn::Name nameWithoutSyncPrefix = interest.getName().getSubName(prefixName.size());
-  if (nameWithoutSyncPrefix.size() == 2 &&
-      nameWithoutSyncPrefix.get(nameWithoutSyncPrefix.size() - 1) == RECOVERY_PREFIX.get(0)) {
-      onRecoveryInterest(interest);
+  if (m_segmentPublisher.replyFromStore(interest.getName())) {
+    return;
   }
-  // interest for recovery segment
-  else if (nameWithoutSyncPrefix.size() == 3 &&
-           nameWithoutSyncPrefix.get(nameWithoutSyncPrefix.size() - 2) == RECOVERY_PREFIX.get(0)) {
-    onRecoveryInterest(interest);
-  }
-  else if (nameWithoutSyncPrefix.size() == 1) {
-    onSyncInterest(interest);
-  }
-}
 
-void
-FullProducer::onSyncInterest(const ndn::Interest& interest)
-{
-  ndn::Name interestName = interest.getName();
+  ndn::Name nameWithoutSyncPrefix = interest.getName().getSubName(prefixName.size());
+  ndn::Name interestName;
+  uint64_t interestSeq = 0;
+
+  if (nameWithoutSyncPrefix.size() == 1) {
+    // Get /IBF from /IBF
+    interestName = interest.getName();
+  }
+  else if (nameWithoutSyncPrefix.size() == 2) {
+    // Get /IBF from /IBF/<seq-no>
+    interestName = interest.getName().getPrefix(-1);
+    interestSeq = interest.getName().get(-1).toSegment();
+  }
+  else {
+    return;
+  }
+
   ndn::name::Component ibltName = interestName.get(interestName.size()-1);
 
   NDN_LOG_DEBUG("Full Sync Interest Received, nonce: " << interest.getNonce() <<
@@ -174,23 +176,22 @@ FullProducer::onSyncInterest(const ndn::Interest& interest)
                    << " negative: " << negative.size() << " m_threshold: "
                    << m_threshold);
 
-    // Send nack if greater then threshold, else send positive below as usual
+    // Send all data if greater then threshold, else send positive below as usual
     // Or send if we can't get neither positive nor negative differences
     if (positive.size() + negative.size() >= m_threshold ||
         (positive.size() == 0 && negative.size() == 0)) {
-
-      // If we don't have anything to offer means that
-      // we are behind and should not mislead other nodes.
-      bool haveSomethingToOffer = false;
+      State state;
       for (const auto& content : m_prefixes) {
         if (content.second != 0) {
-          haveSomethingToOffer = true;
+          state.addContent(ndn::Name(content.first).appendNumber(content.second));
         }
       }
 
-      if (haveSomethingToOffer) {
-        sendApplicationNack(interestName);
+      if (!state.getContent().empty()) {
+        m_segmentPublisher.publish(interest.getName(), interest.getName(),
+                                   state.wireEncode(), m_syncReplyFreshness);
       }
+
       return;
     }
   }
@@ -206,6 +207,9 @@ FullProducer::onSyncInterest(const ndn::Interest& interest)
 
   if (!state.getContent().empty()) {
     NDN_LOG_DEBUG("Sending sync content: " << state);
+    if (interestSeq != 0) {
+      interestName.appendSegment(interestSeq);
+    }
     sendSyncData(interestName, state.wireEncode());
     return;
   }
@@ -223,26 +227,6 @@ FullProducer::onSyncInterest(const ndn::Interest& interest)
 }
 
 void
-FullProducer::onRecoveryInterest(const ndn::Interest& interest)
-{
-  NDN_LOG_DEBUG("Recovery interest received");
-
-  if (m_segmentPublisher.replyFromStore(interest.getName())) {
-    return;
-  }
-
-  State state;
-  for (const auto& content : m_prefixes) {
-    if (content.second != 0) {
-      state.addContent(ndn::Name(content.first).appendNumber(content.second));
-    }
-  }
-
-  m_segmentPublisher.publish(interest.getName(), interest.getName(),
-                             state.wireEncode(), m_syncReplyFreshness);
-}
-
-void
 FullProducer::sendSyncData(const ndn::Name& name, const ndn::Block& block)
 {
   NDN_LOG_DEBUG("Checking if data will satisfy our own pending interest");
@@ -251,56 +235,39 @@ FullProducer::sendSyncData(const ndn::Name& name, const ndn::Block& block)
   m_iblt.appendToName(nameWithIblt);
 
   // Append hash of our IBF so that data name maybe different for each node answering
-  ndn::Data data(ndn::Name(name).appendNumber(std::hash<ndn::Name>{}(nameWithIblt)));
-  data.setFreshnessPeriod(m_syncReplyFreshness);
-  data.setContent(block);
-  m_keyChain.sign(data);
+  ndn::Name dataName(ndn::Name(name).appendNumber(std::hash<ndn::Name>{}(nameWithIblt)));
 
   // checking if our own interest got satisfied
   if (m_outstandingInterestName == name) {
     NDN_LOG_DEBUG("Satisfied our own pending interest");
     // remove outstanding interest
-    if (m_outstandingInterestId != nullptr) {
-      NDN_LOG_DEBUG("Removing our pending interest from face");
-      m_face.removePendingInterest(m_outstandingInterestId);
-      m_outstandingInterestId = nullptr;
+    if (m_fetcher) {
+      NDN_LOG_DEBUG("Removing our pending interest from face (stop fetcher)");
+      m_fetcher->stop();
       m_outstandingInterestName = ndn::Name("");
     }
 
     NDN_LOG_DEBUG("Sending Sync Data");
 
     // Send data after removing pending sync interest on face
-    m_face.put(data);
+    m_segmentPublisher.publish(name, dataName, block, m_syncReplyFreshness);
 
     NDN_LOG_TRACE("Renewing sync interest");
     sendSyncInterest();
   }
   else {
     NDN_LOG_DEBUG("Sending Sync Data");
-    m_face.put(data);
+    m_segmentPublisher.publish(name, dataName, block, m_syncReplyFreshness);
   }
 }
 
 void
-FullProducer::onSyncData(const ndn::Interest& interest, const ndn::Data& data)
+FullProducer::onSyncData(const ndn::Interest& interest, const ndn::ConstBufferPtr& bufferPtr)
 {
-  ndn::Name interestName = interest.getName();
   deletePendingInterests(interest.getName());
 
-  if (data.getContentType() == ndn::tlv::ContentType_Nack) {
-    NDN_LOG_DEBUG("Got application nack, sending recovery interest");
-    sendRecoveryInterest(interest);
-    return;
-  }
-
-  State state(data.getContent());
+  State state(ndn::Block(std::move(bufferPtr)));
   std::vector<MissingDataInfo> updates;
-
-  if (interestName.get(interestName.size()-1) == RECOVERY_PREFIX.get(0) &&
-      state.getContent().empty()) {
-    NDN_LOG_TRACE("Recovery data is empty, other side is behind");
-    return;
-  }
 
   NDN_LOG_DEBUG("Sync Data Received:  " << state);
 
@@ -325,8 +292,8 @@ FullProducer::onSyncData(const ndn::Interest& interest, const ndn::Data& data)
     sendSyncInterest();
   }
   else {
-    NDN_LOG_TRACE("No new update, interest nonce: " << interest.getNonce()  <<
-                  " , hash: " << std::hash<ndn::Name>{}(interestName));
+    NDN_LOG_TRACE("No new update, interest nonce: " << interest.getNonce() <<
+                  " , hash: " << std::hash<ndn::Name>{}(interest.getName()));
   }
 }
 
@@ -396,41 +363,6 @@ FullProducer::deletePendingInterests(const ndn::Name& interestName) {
       ++it;
     }
   }
-}
-
-void
-FullProducer::sendRecoveryInterest(const ndn::Interest& interest)
-{
-  if (m_outstandingInterestId != nullptr) {
-    m_face.removePendingInterest(m_outstandingInterestId);
-    m_outstandingInterestId = nullptr;
-  }
-
-  ndn::Name ibltName;
-  m_iblt.appendToName(ibltName);
-
-  ndn::Name recoveryInterestName(m_syncPrefix);
-  recoveryInterestName.appendNumber(std::hash<ndn::Name>{}(ibltName));
-  recoveryInterestName.append(RECOVERY_PREFIX);
-
-  ndn::Interest recoveryInterest(recoveryInterestName);
-  recoveryInterest.setInterestLifetime(m_syncInterestLifetime);
-
-  auto fetcher = ndn::util::SegmentFetcher::start(m_face,
-                                                  recoveryInterest,
-                                                  ndn::security::v2::getAcceptAllValidator());
-
-  fetcher->onComplete.connect([this, recoveryInterest] (ndn::ConstBufferPtr bufferPtr) {
-                                NDN_LOG_TRACE("Segment fetcher got data");
-                                ndn::Data data;
-                                data.setContent(std::move(bufferPtr));
-                                onSyncData(recoveryInterest, data);
-                              });
-
-  fetcher->onError.connect([] (uint32_t errorCode, const std::string& msg) {
-                             NDN_LOG_ERROR("Cannot recover, error: " << errorCode <<
-                                           " message: " << msg);
-                           });
 }
 
 } // namespace psync
