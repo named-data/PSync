@@ -34,7 +34,8 @@ SegmentPublisher::SegmentPublisher(ndn::Face& face, ndn::KeyChain& keyChain,
 
 void
 SegmentPublisher::publish(const ndn::Name& interestName, const ndn::Name& dataName,
-                          const ndn::Block& block, ndn::time::milliseconds freshness)
+                          const ndn::Block& block, ndn::time::milliseconds freshness,
+                          const ndn::security::SigningInfo& signingInfo)
 {
   uint64_t interestSegment = 0;
   if (interestName[-1].isSegment()) {
@@ -52,6 +53,9 @@ SegmentPublisher::publish(const ndn::Name& interestName, const ndn::Name& dataNa
 
   uint64_t totalSegments = buffer.size() / maxPacketSize;
 
+  ndn::Name segmentPrefix(dataName);
+  segmentPrefix.appendVersion();
+
   uint64_t segmentNo = 0;
   do {
     const uint8_t* segmentEnd = segmentBegin + maxPacketSize;
@@ -59,7 +63,7 @@ SegmentPublisher::publish(const ndn::Name& interestName, const ndn::Name& dataNa
       segmentEnd = end;
     }
 
-    ndn::Name segmentName(dataName);
+    ndn::Name segmentName(segmentPrefix);
     segmentName.appendSegment(segmentNo);
 
     // We get a std::exception: bad_weak_ptr from m_ims if we don't use shared_ptr for data
@@ -70,7 +74,7 @@ SegmentPublisher::publish(const ndn::Name& interestName, const ndn::Name& dataNa
 
     segmentBegin = segmentEnd;
 
-    m_keyChain.sign(*data);
+    m_keyChain.sign(*data, signingInfo);
 
     // Put on face only the segment which has a pending interest
     // otherwise the segment is unsolicited

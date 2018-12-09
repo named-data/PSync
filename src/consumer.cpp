@@ -101,7 +101,7 @@ Consumer::sendHelloInterest()
 
   m_helloFetcher->afterSegmentValidated.connect([this] (const ndn::Data& data) {
                                                   if (data.getFinalBlock()) {
-                                                    m_helloDataName = data.getName().getPrefix(-1);
+                                                    m_helloDataName = data.getName().getPrefix(-2);
                                                   }
                                                 });
 
@@ -189,7 +189,7 @@ Consumer::sendSyncInterest()
 
   m_syncFetcher->afterSegmentValidated.connect([this] (const ndn::Data& data) {
                                                  if (data.getFinalBlock()) {
-                                                   m_syncDataName = data.getName().getPrefix(-1);
+                                                   m_syncDataName = data.getName().getPrefix(-2);
                                                    m_syncDataContentType = data.getContentType();
                                                  }
 

@@ -362,6 +362,19 @@ BOOST_AUTO_TEST_CASE(SegmentedHello)
   consumers[0]->sendHelloInterest();
   advanceClocks(ndn::time::milliseconds(10));
   BOOST_CHECK_EQUAL(numHelloDataRcvd, 1);
+
+  // Simulate sending delayed interest for second segment
+  Name dataName = face.sentData.back().getName();
+  face.sentData.clear();
+  BOOST_CHECK_EQUAL(producer->m_segmentPublisher.m_ims.size(), 2);
+
+  advanceClocks(ndn::time::milliseconds(1000));
+  BOOST_CHECK_EQUAL(producer->m_segmentPublisher.m_ims.size(), 0);
+
+  producer->onHelloInterest(consumers[0]->m_helloInterestPrefix, Interest(dataName));
+  advanceClocks(ndn::time::milliseconds(10));
+  BOOST_CHECK_EQUAL(producer->m_segmentPublisher.m_ims.size(), 2);
+  BOOST_CHECK_EQUAL(face.sentData.front().getName()[-1].toSegment(), 1);
 }
 
 BOOST_AUTO_TEST_CASE(SegmentedSync)
@@ -382,6 +395,13 @@ BOOST_AUTO_TEST_CASE(SegmentedSync)
   advanceClocks(ndn::time::milliseconds(10));
   BOOST_CHECK_EQUAL(numHelloDataRcvd, 1);
 
+  // To be used later to simulate sending delayed segmented interest
+  ndn::Name syncInterestName(consumers[0]->m_syncInterestPrefix);
+  consumers[0]->m_bloomFilter.appendToName(syncInterestName);
+  syncInterestName.append(consumers[0]->m_iblt);
+  syncInterestName.appendVersion();
+  syncInterestName.appendSegment(1);
+
   oldSeqMap = producer->m_prefixes;
   for (int i = 1; i < 10; i++) {
     producer->updateSeqNo(longNameToExceedDataSize.toUri() + "-" + to_string(i), 1);
@@ -392,6 +412,20 @@ BOOST_AUTO_TEST_CASE(SegmentedSync)
 
   advanceClocks(ndn::time::milliseconds(1500));
   BOOST_CHECK_EQUAL(numSyncDataRcvd, 1);
+
+  // Simulate sending delayed interest for second segment
+  face.sentData.clear();
+  consumerFaces[0]->sentData.clear();
+
+  BOOST_CHECK_EQUAL(producer->m_segmentPublisher.m_ims.size(), 2);
+
+  advanceClocks(ndn::time::milliseconds(2000));
+  BOOST_CHECK_EQUAL(producer->m_segmentPublisher.m_ims.size(), 0);
+
+  producer->onSyncInterest(consumers[0]->m_syncInterestPrefix, Interest(syncInterestName));
+  advanceClocks(ndn::time::milliseconds(10));
+  BOOST_CHECK_EQUAL(producer->m_segmentPublisher.m_ims.size(), 2);
+  BOOST_CHECK_EQUAL(face.sentData.front().getName()[-1].toSegment(), 1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

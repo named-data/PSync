@@ -97,6 +97,7 @@ private:
   void
   satisfyPendingSyncInterests(const ndn::Name& prefix);
 
+PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   /**
    * @brief Receive hello interest from consumer and respond with hello data
    *
@@ -105,7 +106,6 @@ private:
   void
   onHelloInterest(const ndn::Name& prefix, const ndn::Interest& interest);
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   /**
    * @brief Receive sync interest from consumer
    *

@@ -126,7 +126,7 @@ BOOST_AUTO_TEST_CASE(Basic)
   BOOST_CHECK_EQUAL(numRepliesFromStore, 2);
 
   numRepliesFromStore = 0;
-  face.expressInterest(Interest(Name("/hello/world/").appendSegment(0)),
+  face.expressInterest(Interest(Name("/hello/world/")),
                        [this] (const Interest& interest, const Data& data) {
                          numComplete++;
                        },

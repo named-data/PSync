@@ -394,6 +394,46 @@ BOOST_AUTO_TEST_CASE(DiffIBFDecodeFailureMultipleNodes)
   }
 }
 
+BOOST_AUTO_TEST_CASE(DelayedSecondSegment)
+{
+  addNode(0);
+
+  for (int i = 0; i < 300; i++) {
+    Name prefixToPublish("userNode0-" + to_string(i));
+    nodes[0]->addUserNode(prefixToPublish);
+    nodes[0]->publishName(prefixToPublish);
+  }
+
+  advanceClocks(ndn::time::milliseconds(10), 100);
+
+  Name syncInterestName(syncPrefix);
+  IBLT iblt(40);
+  iblt.appendToName(syncInterestName);
+
+  nodes[0]->onSyncInterest(syncPrefix, Interest(syncInterestName));
+
+  advanceClocks(ndn::time::milliseconds(10));
+
+  BOOST_CHECK_EQUAL(nodes[0]->m_segmentPublisher.m_ims.size(), 2);
+  // Expire contents from segmentPublisher
+  advanceClocks(ndn::time::milliseconds(10), 100);
+  BOOST_CHECK_EQUAL(nodes[0]->m_segmentPublisher.m_ims.size(), 0);
+
+  // Get data name from face and increase segment number to form next interest
+  Name dataName = faces[0]->sentData.front().getName();
+  Name interestName = dataName.getSubName(0, dataName.size() - 1);
+  interestName.appendSegment(1);
+  faces[0]->sentData.clear();
+
+  nodes[0]->onSyncInterest(syncPrefix, Interest(interestName));
+  advanceClocks(ndn::time::milliseconds(10));
+
+  // Should have repopulated SegmentPublisher
+  BOOST_CHECK_EQUAL(nodes[0]->m_segmentPublisher.m_ims.size(), 2);
+  // Should have received the second data segment this time
+  BOOST_CHECK_EQUAL(faces[0]->sentData.front().getName()[-1].toSegment(), 1);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 } // namespace psync

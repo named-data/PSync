@@ -74,14 +74,14 @@ PartialProducer::publishName(const ndn::Name& prefix, ndn::optional<uint64_t> se
 void
 PartialProducer::onHelloInterest(const ndn::Name& prefix, const ndn::Interest& interest)
 {
-  // Last component or third last component (in case of interest with IBF and segment)
-  // needs to be hello
-  if (interest.getName().get(interest.getName().size()-1).toUri() != "hello" &&
-      interest.getName().get(interest.getName().size()-3).toUri() != "hello") {
+  if (m_segmentPublisher.replyFromStore(interest.getName())) {
     return;
   }
 
-  if (m_segmentPublisher.replyFromStore(interest.getName())) {
+  // Last component or fourth last component (in case of interest with version and segment)
+  // needs to be hello
+  if (interest.getName().get(interest.getName().size()-1).toUri() != "hello" &&
+      interest.getName().get(interest.getName().size()-4).toUri() != "hello") {
     return;
   }
 
@@ -104,17 +104,25 @@ PartialProducer::onHelloInterest(const ndn::Name& prefix, const ndn::Interest& i
 void
 PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& interest)
 {
-  NDN_LOG_DEBUG("Sync Interest Received, nonce: " << interest.getNonce() <<
-                " hash: " << std::hash<std::string>{}(interest.getName().toUri()));
-
-  ndn::Name interestName = interest.getName();
-
-  if (interestName.get(interestName.size() - 5).toUri() != "sync" &&
-      interestName.get(interestName.size() - 7).toUri() != "sync") {
+  if (m_segmentPublisher.replyFromStore(interest.getName())) {
     return;
   }
 
-  if (m_segmentPublisher.replyFromStore(interest.getName())) {
+  NDN_LOG_DEBUG("Sync Interest Received, nonce: " << interest.getNonce() <<
+                " hash: " << std::hash<std::string>{}(interest.getName().toUri()));
+
+  ndn::Name nameWithoutSyncPrefix = interest.getName().getSubName(prefix.size());
+  ndn::Name interestName;
+
+  if (nameWithoutSyncPrefix.size() == 4) {
+    // Get /<prefix>/BF/IBF/ from /<prefix>/BF/IBF (3 components of BF + 1 for IBF)
+    interestName = interest.getName();
+  }
+  else if (nameWithoutSyncPrefix.size() == 6) {
+    // Get <prefix>/BF/IBF/ from /<prefix>/BF/IBF/<version>/<segment-no>
+    interestName = interest.getName().getPrefix(-2);
+  }
+  else {
     return;
   }
 

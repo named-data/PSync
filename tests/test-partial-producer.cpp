@@ -83,6 +83,7 @@ BOOST_AUTO_TEST_CASE(SameSyncInterest)
 
   Name syncInterestName(syncPrefix);
   syncInterestName.append("sync");
+  Name syncInterestPrefix = syncInterestName;
 
   BloomFilter bf(20, 0.001);
   bf.appendToName(syncInterestName);
@@ -92,7 +93,7 @@ BOOST_AUTO_TEST_CASE(SameSyncInterest)
   Interest syncInterest(syncInterestName);
   syncInterest.setInterestLifetime(time::milliseconds(1000));
   syncInterest.setNonce(1);
-  BOOST_REQUIRE_NO_THROW(producer.onSyncInterest(syncInterestName, syncInterest));
+  BOOST_REQUIRE_NO_THROW(producer.onSyncInterest(syncInterestPrefix, syncInterest));
   face.processEvents(time::milliseconds(10));
   BOOST_CHECK_EQUAL(producer.m_pendingEntries.size(), 1);
 
@@ -100,7 +101,7 @@ BOOST_AUTO_TEST_CASE(SameSyncInterest)
 
   // Same interest again - size of pending interest should remain same, but expirationEvent should change
   syncInterest.setNonce(2);
-  BOOST_REQUIRE_NO_THROW(producer.onSyncInterest(syncInterestName, syncInterest));
+  BOOST_REQUIRE_NO_THROW(producer.onSyncInterest(syncInterestPrefix, syncInterest));
   face.processEvents(time::milliseconds(10));
   BOOST_CHECK_EQUAL(producer.m_pendingEntries.size(), 1);
 

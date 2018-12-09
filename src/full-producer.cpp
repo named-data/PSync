@@ -137,16 +137,14 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
 
   ndn::Name nameWithoutSyncPrefix = interest.getName().getSubName(prefixName.size());
   ndn::Name interestName;
-  uint64_t interestSeq = 0;
 
   if (nameWithoutSyncPrefix.size() == 1) {
-    // Get /IBF from /IBF
+    // Get /<prefix>/IBF from /<prefix>/IBF
     interestName = interest.getName();
   }
-  else if (nameWithoutSyncPrefix.size() == 2) {
-    // Get /IBF from /IBF/<seq-no>
-    interestName = interest.getName().getPrefix(-1);
-    interestSeq = interest.getName().get(-1).toSegment();
+  else if (nameWithoutSyncPrefix.size() == 3) {
+    // Get /<prefix>/IBF from /<prefix>/IBF/<version>/<segment-no>
+    interestName = interest.getName().getPrefix(-2);
   }
   else {
     return;
@@ -207,9 +205,6 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
 
   if (!state.getContent().empty()) {
     NDN_LOG_DEBUG("Sending sync content: " << state);
-    if (interestSeq != 0) {
-      interestName.appendSegment(interestSeq);
-    }
     sendSyncData(interestName, state.wireEncode());
     return;
   }
