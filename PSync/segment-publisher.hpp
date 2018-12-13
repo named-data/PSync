@@ -20,7 +20,7 @@
 #ifndef PSYNC_SEGMENT_PUBLISHER_HPP
 #define PSYNC_SEGMENT_PUBLISHER_HPP
 
-#include "detail/test-access-control.hpp"
+#include "PSync/detail/test-access-control.hpp"
 
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/name.hpp>

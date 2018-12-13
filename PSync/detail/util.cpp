@@ -21,7 +21,7 @@
  * https://github.com/aappleby/smhasher/blob/master/src/murmurHash3.cpp
  **/
 
-#include "util.hpp"
+#include "PSync/detail/util.hpp"
 
 #include <ndn-cxx/util/backports.hpp>
 

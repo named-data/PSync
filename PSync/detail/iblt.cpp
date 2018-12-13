@@ -43,8 +43,8 @@
  * SOFTWARE.
 */
 
-#include "iblt.hpp"
-#include "util.hpp"
+#include "PSync/detail/iblt.hpp"
+#include "PSync/detail/util.hpp"
 
 #include <sstream>
 

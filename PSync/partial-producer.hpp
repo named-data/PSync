@@ -20,8 +20,8 @@
 #ifndef PSYNC_PARTIAL_PRODUCER_HPP
 #define PSYNC_PARTIAL_PRODUCER_HPP
 
-#include "detail/bloom-filter.hpp"
-#include "producer-base.hpp"
+#include "PSync/detail/bloom-filter.hpp"
+#include "PSync/producer-base.hpp"
 
 #include <map>
 #include <unordered_set>

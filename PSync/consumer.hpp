@@ -20,9 +20,9 @@
 #ifndef PSYNC_CONSUMER_HPP
 #define PSYNC_CONSUMER_HPP
 
-#include "detail/bloom-filter.hpp"
-#include "detail/util.hpp"
-#include "detail/test-access-control.hpp"
+#include "PSync/detail/bloom-filter.hpp"
+#include "PSync/detail/util.hpp"
+#include "PSync/detail/test-access-control.hpp"
 
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/util/scheduler.hpp>

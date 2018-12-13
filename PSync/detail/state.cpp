@@ -17,7 +17,7 @@
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
-#include "state.hpp"
+#include "PSync/detail/state.hpp"
 
 namespace psync {
 

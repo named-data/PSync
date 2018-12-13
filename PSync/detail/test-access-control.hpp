@@ -22,7 +22,7 @@
 #ifndef PSYNC_TEST_ACCESS_CONTROL_HPP
 #define PSYNC_TEST_ACCESS_CONTROL_HPP
 
-#include "psync-config.hpp"
+#include "PSync/detail/config.hpp"
 
 #ifdef WITH_TESTS
 #define VIRTUAL_WITH_TESTS virtual

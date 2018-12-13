@@ -45,26 +45,23 @@ def configure(conf):
     # system has a different version of the PSync library installed.
     conf.env['STLIBPATH'] = ['.'] + conf.env['STLIBPATH']
 
-    conf.write_config_header('psync-config.hpp')
+    conf.write_config_header('PSync/detail/config.hpp')
 
 def build(bld):
     bld.shlib(
         target='PSync',
-        source =  bld.path.ant_glob(['src/**/*.cpp']),
+        source =  bld.path.ant_glob('PSync/**/*.cpp'),
         use = 'BOOST NDN_CXX',
-        includes = ['src', '.'],
-        export_includes=['src', '.'],
+        includes = '.',
+        export_includes='.',
         )
 
-    bld.install_files(
-        dest = "%s/PSync" % bld.env['INCLUDEDIR'],
-        files = bld.path.ant_glob(['src/**/*.hpp', 'src/**/*.h']),
-        cwd = bld.path.find_dir("src"),
-        relative_trick = True,
-        )
+    headers = bld.path.ant_glob('PSync/**/*.hpp')
 
-    bld.install_files('%s/PSync' % bld.env['INCLUDEDIR'],
-                      bld.path.find_resource('psync-config.hpp'))
+    bld.install_files(bld.env['INCLUDEDIR'], headers, relative_trick=True)
+
+    bld.install_files('${INCLUDEDIR}/PSync/detail',
+                      bld.path.find_resource('PSync/detail/config.hpp'))
 
     pc = bld(
         features = "subst",
@@ -72,7 +69,7 @@ def build(bld):
         target='PSync.pc',
         install_path = '${LIBDIR}/pkgconfig',
         PREFIX       = bld.env['PREFIX'],
-        INCLUDEDIR   = "%s/PSync" % bld.env['INCLUDEDIR'],
+        INCLUDEDIR   = bld.env['INCLUDEDIR'],
         VERSION      = VERSION,
         )
 

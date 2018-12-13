@@ -43,8 +43,8 @@
  * SOFTWARE.
 */
 
-#include "bloom-filter.hpp"
-#include "util.hpp"
+#include "PSync/detail/bloom-filter.hpp"
+#include "PSync/detail/util.hpp"
 
 #include <ndn-cxx/util/logger.hpp>
 

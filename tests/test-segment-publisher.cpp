@@ -17,8 +17,8 @@
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
-#include "segment-publisher.hpp"
-#include "detail/state.hpp"
+#include "PSync/segment-publisher.hpp"
+#include "PSync/detail/state.hpp"
 #include "unit-test-time-fixture.hpp"
 
 #include <boost/test/unit_test.hpp>

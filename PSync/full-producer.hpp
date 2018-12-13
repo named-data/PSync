@@ -20,8 +20,8 @@
 #ifndef PSYNC_FULL_PRODUCER_HPP
 #define PSYNC_FULL_PRODUCER_HPP
 
-#include "producer-base.hpp"
-#include "detail/state.hpp"
+#include "PSync/producer-base.hpp"
+#include "PSync/detail/state.hpp"
 
 #include <map>
 #include <unordered_set>

@@ -17,7 +17,7 @@
  * NLSR, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
-#include "full-producer.hpp"
+#include "PSync/full-producer.hpp"
 
 #include <ndn-cxx/util/logger.hpp>
 #include <ndn-cxx/util/segment-fetcher.hpp>

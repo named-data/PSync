@@ -20,11 +20,11 @@
 #ifndef PSYNC_PRODUCER_BASE_HPP
 #define PSYNC_PRODUCER_BASE_HPP
 
-#include "detail/iblt.hpp"
-#include "detail/bloom-filter.hpp"
-#include "detail/util.hpp"
-#include "detail/test-access-control.hpp"
-#include "segment-publisher.hpp"
+#include "PSync/detail/iblt.hpp"
+#include "PSync/detail/bloom-filter.hpp"
+#include "PSync/detail/util.hpp"
+#include "PSync/detail/test-access-control.hpp"
+#include "PSync/segment-publisher.hpp"
 
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/util/scheduler.hpp>

@@ -17,10 +17,10 @@
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
-#include "full-producer.hpp"
-#include "consumer.hpp"
 #include "unit-test-time-fixture.hpp"
-#include "detail/state.hpp"
+#include "PSync/full-producer.hpp"
+#include "PSync/consumer.hpp"
+#include "PSync/detail/state.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <ndn-cxx/name.hpp>

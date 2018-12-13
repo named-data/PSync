@@ -17,7 +17,7 @@
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
-#include "partial-producer.hpp"
+#include "PSync/partial-producer.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <ndn-cxx/name.hpp>

@@ -17,8 +17,8 @@
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
-#include "partial-producer.hpp"
-#include "detail/state.hpp"
+#include "PSync/partial-producer.hpp"
+#include "PSync/detail/state.hpp"
 
 #include <ndn-cxx/util/logger.hpp>
 

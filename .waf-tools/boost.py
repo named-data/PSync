@@ -455,7 +455,7 @@ def check_boost(self, *k, **kw):
 				self.env['DEFINES_%s' % var] += ['BOOST_LOG_NO_THREADS']
 			if has_shlib('log'):
 				self.env['DEFINES_%s' % var] += ['BOOST_LOG_DYN_LINK']
-                        self.check_cxx(fragment=BOOST_LOG_CODE, use=var, execute=False)
+			self.check_cxx(fragment=BOOST_LOG_CODE, use=var, execute=False)
 
 	if params.get('linkage_autodetect', False):
 		self.start_msg("Attempting to detect boost linkage flags")

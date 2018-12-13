@@ -17,8 +17,8 @@
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
-#include "consumer.hpp"
-#include "detail/state.hpp"
+#include "PSync/consumer.hpp"
+#include "PSync/detail/state.hpp"
 
 #include <ndn-cxx/util/logger.hpp>
 #include <ndn-cxx/security/validator-null.hpp>

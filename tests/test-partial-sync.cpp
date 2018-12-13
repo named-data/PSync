@@ -17,8 +17,8 @@
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
-#include "partial-producer.hpp"
-#include "consumer.hpp"
+#include "PSync/partial-producer.hpp"
+#include "PSync/consumer.hpp"
 #include "unit-test-time-fixture.hpp"
 
 #include <boost/test/unit_test.hpp>
