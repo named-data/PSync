@@ -140,7 +140,7 @@ INLINE_INHERITED_MEMB  = YES
 # shortest path that makes the file name unique will be used
 # The default value is: YES.
 
-FULL_PATH_NAMES        = NO
+FULL_PATH_NAMES        = YES
 
 # The STRIP_FROM_PATH tag can be used to strip a user-defined part of the path.
 # Stripping is only done if one of the specified strings matches the left-hand
@@ -152,7 +152,7 @@ FULL_PATH_NAMES        = NO
 # will be relative from the directory where doxygen is started.
 # This tag requires that the tag FULL_PATH_NAMES is set to YES.
 
-STRIP_FROM_PATH        =
+STRIP_FROM_PATH        = ..
 
 # The STRIP_FROM_INC_PATH tag can be used to strip a user-defined part of the
 # path mentioned in the documentation of a class, which tells the reader which
@@ -451,7 +451,7 @@ EXTRACT_STATIC         = YES
 # for Java sources.
 # The default value is: YES.
 
-EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_LOCAL_CLASSES  = NO
 
 # This flag is only useful for Objective-C code. If set to YES, local methods,
 # which are defined in the implementation section but not in the interface are
@@ -867,7 +867,7 @@ EXAMPLE_PATTERNS       =
 # irrespective of the value of the RECURSIVE tag.
 # The default value is: NO.
 
-EXAMPLE_RECURSIVE      = NO
+EXAMPLE_RECURSIVE      = YES
 
 # The IMAGE_PATH tag can be used to specify one or more files or directories
 # that contain images that are to be included in the documentation (see the
@@ -2051,7 +2051,11 @@ INCLUDE_FILE_PATTERNS  =
 
 PREDEFINED             = DOXYGEN \
                          PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE=private \
-                         NDN_CXX_DECLARE_WIRE_ENCODE_INSTANTIATIONS(x)=
+                         NDN_CXX_DECLARE_WIRE_ENCODE_INSTANTIATIONS(x)= \
+                         NDN_LOG_INIT(x)= \
+                         PUBLIC_WITH_TESTS_ELSE_PROTECTED=protected \
+                         PUBLIC_WITH_TESTS_ELSE_PRIVATE=private \
+                         PROTECTED_WITH_TESTS_ELSE_PRIVATE=private
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this
 # tag can be used to specify a list of macro names that should be expanded. The
