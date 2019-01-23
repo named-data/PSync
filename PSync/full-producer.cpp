@@ -41,15 +41,14 @@ FullProducer::FullProducer(const size_t expectedNumEntries,
   : ProducerBase(expectedNumEntries, face, syncPrefix, userPrefix, syncReplyFreshness)
   , m_syncInterestLifetime(syncInterestLifetime)
   , m_onUpdate(onUpdateCallBack)
-  , m_scheduledSyncInterestId(m_scheduler)
 {
   int jitter = m_syncInterestLifetime.count() * .20;
   m_jitter = std::uniform_int_distribution<>(-jitter, jitter);
 
-  m_registerPrefixId =
-    m_face.setInterestFilter(ndn::InterestFilter(m_syncPrefix).allowLoopback(false),
-                             std::bind(&FullProducer::onSyncInterest, this, _1, _2),
-                             std::bind(&FullProducer::onRegisterFailed, this, _1, _2));
+  m_registeredPrefix = m_face.setInterestFilter(
+                         ndn::InterestFilter(m_syncPrefix).allowLoopback(false),
+                         std::bind(&FullProducer::onSyncInterest, this, _1, _2),
+                         std::bind(&FullProducer::onRegisterFailed, this, _1, _2));
 
   // Should we do this after setInterestFilter success call back
   // (Currently following ChronoSync's way)
@@ -61,8 +60,6 @@ FullProducer::~FullProducer()
   if (m_fetcher) {
     m_fetcher->stop();
   }
-
-  m_face.unsetInterestFilter(m_registerPrefixId);
 }
 
 void
@@ -209,16 +206,12 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
     return;
   }
 
-  ndn::util::scheduler::ScopedEventId scopedEventId(m_scheduler);
-  auto it = m_pendingEntries.emplace(interestName,
-                                     PendingEntryInfoFull{iblt, std::move(scopedEventId)});
-
-  it.first->second.expirationEvent =
-    m_scheduler.scheduleEvent(interest.getInterestLifetime(),
-                              [this, interest] {
-                                NDN_LOG_TRACE("Erase Pending Interest " << interest.getNonce());
-                                m_pendingEntries.erase(interest.getName());
-                              });
+  auto& entry = m_pendingEntries.emplace(interestName, PendingEntryInfoFull{iblt, {}}).first->second;
+  entry.expirationEvent = m_scheduler.scheduleEvent(interest.getInterestLifetime(),
+                          [this, interest] {
+                            NDN_LOG_TRACE("Erase Pending Interest " << interest.getNonce());
+                            m_pendingEntries.erase(interest.getName());
+                          });
 }
 
 void

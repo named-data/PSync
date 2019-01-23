@@ -38,21 +38,14 @@ PartialProducer::PartialProducer(size_t expectedNumEntries,
  : ProducerBase(expectedNumEntries, face, syncPrefix,
                 userPrefix, syncReplyFreshness, helloReplyFreshness)
 {
-  m_registerPrefixId =
-    m_face.registerPrefix(m_syncPrefix,
-      [this] (const ndn::Name& syncPrefix) {
-        m_face.setInterestFilter(ndn::Name(m_syncPrefix).append("hello"),
-                                 std::bind(&PartialProducer::onHelloInterest, this, _1, _2));
-
-        m_face.setInterestFilter(ndn::Name(m_syncPrefix).append("sync"),
-                                 std::bind(&PartialProducer::onSyncInterest, this, _1, _2));
-      },
-      std::bind(&PartialProducer::onRegisterFailed, this, _1, _2));
-}
-
-PartialProducer::~PartialProducer()
-{
-  m_face.unregisterPrefix(m_registerPrefixId, nullptr, nullptr);
+  m_registeredPrefix = m_face.registerPrefix(m_syncPrefix,
+    [this] (const ndn::Name& syncPrefix) {
+      m_face.setInterestFilter(ndn::Name(m_syncPrefix).append("hello"),
+                               std::bind(&PartialProducer::onHelloInterest, this, _1, _2));
+      m_face.setInterestFilter(ndn::Name(m_syncPrefix).append("sync"),
+                               std::bind(&PartialProducer::onSyncInterest, this, _1, _2));
+    },
+    std::bind(&PartialProducer::onRegisterFailed, this, _1, _2));
 }
 
 void
@@ -199,16 +192,12 @@ PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& in
     return;
   }
 
-  ndn::util::scheduler::ScopedEventId scopedEventId(m_scheduler);
-  auto it = m_pendingEntries.emplace(interestName,
-                                     PendingEntryInfo{bf, iblt, std::move(scopedEventId)});
-
-  it.first->second.expirationEvent =
-    m_scheduler.scheduleEvent(interest.getInterestLifetime(),
-                              [this, interest] {
-                                NDN_LOG_TRACE("Erase Pending Interest " << interest.getNonce());
-                                m_pendingEntries.erase(interest.getName());
-                              });
+  auto& entry = m_pendingEntries.emplace(interestName, PendingEntryInfo{bf, iblt, {}}).first->second;
+  entry.expirationEvent = m_scheduler.scheduleEvent(interest.getInterestLifetime(),
+                          [this, interest] {
+                            NDN_LOG_TRACE("Erase Pending Interest " << interest.getNonce());
+                            m_pendingEntries.erase(interest.getName());
+                          });
 }
 
 void

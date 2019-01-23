@@ -24,11 +24,10 @@
 
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/name.hpp>
+#include <ndn-cxx/ims/in-memory-storage-fifo.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
-#include <ndn-cxx/util/scheduler-scoped-event-id.hpp>
 #include <ndn-cxx/util/scheduler.hpp>
 #include <ndn-cxx/util/time.hpp>
-#include <ndn-cxx/ims/in-memory-storage-fifo.hpp>
 
 namespace psync {
 

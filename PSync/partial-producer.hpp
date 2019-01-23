@@ -27,10 +27,9 @@
 #include <unordered_set>
 
 #include <ndn-cxx/face.hpp>
-#include <ndn-cxx/util/scheduler.hpp>
-#include <ndn-cxx/util/scheduler-scoped-event-id.hpp>
-#include <ndn-cxx/util/time.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
+#include <ndn-cxx/util/scheduler.hpp>
+#include <ndn-cxx/util/time.hpp>
 
 namespace psync {
 
@@ -71,8 +70,6 @@ public:
                   const ndn::Name& userPrefix,
                   ndn::time::milliseconds helloReplyFreshness = HELLO_REPLY_FRESHNESS,
                   ndn::time::milliseconds syncReplyFreshness = SYNC_REPLY_FRESHNESS);
-
-  ~PartialProducer();
 
   /**
    * @brief Publish name to let subscribed consumers know
@@ -122,9 +119,8 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   onSyncInterest(const ndn::Name& prefix, const ndn::Interest& interest);
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  std::map <ndn::Name, PendingEntryInfo> m_pendingEntries;
-
-  const ndn::RegisteredPrefixId* m_registerPrefixId;
+  std::map<ndn::Name, PendingEntryInfo> m_pendingEntries;
+  ndn::ScopedRegisteredPrefixHandle m_registeredPrefix;
 };
 
 } // namespace psync

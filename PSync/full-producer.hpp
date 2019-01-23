@@ -28,11 +28,10 @@
 #include <random>
 
 #include <ndn-cxx/face.hpp>
-#include <ndn-cxx/util/scheduler.hpp>
-#include <ndn-cxx/util/scheduler-scoped-event-id.hpp>
-#include <ndn-cxx/util/time.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
+#include <ndn-cxx/util/scheduler.hpp>
 #include <ndn-cxx/util/segment-fetcher.hpp>
+#include <ndn-cxx/util/time.hpp>
 
 namespace psync {
 
@@ -171,7 +170,6 @@ private:
 
   /**
    * @brief Delete pending sync interests that match given name
-   *
    */
   void
   deletePendingInterests(const ndn::Name& interestName);
@@ -186,20 +184,13 @@ private:
   isFutureHash(const ndn::Name& prefix, const std::set<uint32_t>& negative);
 
 private:
-  std::map <ndn::Name, PendingEntryInfoFull> m_pendingEntries;
-
+  std::map<ndn::Name, PendingEntryInfoFull> m_pendingEntries;
   ndn::time::milliseconds m_syncInterestLifetime;
-
   UpdateCallback m_onUpdate;
-
   ndn::util::scheduler::ScopedEventId m_scheduledSyncInterestId;
-
   std::uniform_int_distribution<> m_jitter;
-
   ndn::Name m_outstandingInterestName;
-
-  const ndn::RegisteredPrefixId* m_registerPrefixId;
-
+  ndn::ScopedRegisteredPrefixHandle m_registeredPrefix;
   std::shared_ptr<ndn::util::SegmentFetcher> m_fetcher;
 };
 
