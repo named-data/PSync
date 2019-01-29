@@ -1,5 +1,5 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
+/*
  * Copyright (c) 2014-2019,  The University of Memphis
  *
  * This file is part of PSync.
@@ -17,8 +17,7 @@
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  *
  * \author Yingdi Yu <yingdi@cs.ucla.edu>
- *
- **/
+ */
 
 #ifndef PSYNC_TESTS_BOOST_TEST_HPP
 #define PSYNC_TESTS_BOOST_TEST_HPP
@@ -27,8 +26,7 @@
 #pragma GCC system_header
 #pragma clang system_header
 
+#define BOOST_TEST_DYN_LINK
 #include <boost/test/unit_test.hpp>
-#include <boost/concept_check.hpp>
-#include <boost/test/output_test_stream.hpp>
 
 #endif // PSYNC_TESTS_BOOST_TEST_HPP

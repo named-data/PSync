@@ -9,8 +9,8 @@ GIT_TAG_PREFIX = ''
 
 def options(opt):
     opt.load(['compiler_c', 'compiler_cxx', 'gnu_dirs'])
-    opt.load(['default-compiler-flags', 'boost', 'doxygen', 'sphinx_build',
-              'sanitizers', 'coverage', 'pch'],
+    opt.load(['default-compiler-flags', 'coverage', 'sanitizers',
+              'boost', 'doxygen', 'sphinx_build'],
              tooldir=['.waf-tools'])
 
     opt.add_option('--with-examples', action='store_true', default=False,
@@ -20,8 +20,9 @@ def options(opt):
                    help='Build unit tests')
 
 def configure(conf):
-    conf.load(['compiler_c', 'compiler_cxx', 'gnu_dirs', 'default-compiler-flags',
-               'boost', 'pch', 'doxygen', 'sphinx_build'])
+    conf.load(['compiler_c', 'compiler_cxx', 'gnu_dirs',
+               'default-compiler-flags', 'boost',
+               'doxygen', 'sphinx_build'])
 
     if 'PKG_CONFIG_PATH' not in os.environ:
         os.environ['PKG_CONFIG_PATH'] = Utils.subst_vars('${LIBDIR}/pkgconfig', conf.env)

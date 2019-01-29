@@ -1,5 +1,4 @@
-PSync authors
-=============
+# PSync authors
 
 ## Main Project Author(s):
 
@@ -12,11 +11,8 @@ The University of Memphis:
 ## Contributer(s):
 
 * Junxiao Shi <https://www.linkedin.com/in/shijunxiao>
+* Davide Pesavento <https://www.linkedin.com/in/davidepesavento>
 
 ## Technical advisor(s):
 
 * Lan Wang <http://www.cs.memphis.edu/~lanwang/>
-
-## Special thanks to:
-
-* Davide Pesavento <https://www.linkedin.com/in/davidepesavento>

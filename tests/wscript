@@ -4,19 +4,8 @@ def build(bld):
     if not bld.env['WITH_TESTS']:
         return
 
-    bld(
-        features='cxx',
-        name='unit-tests-main',
-        target='unit-tests-main',
-        source='main.cpp',
-        defines=['BOOST_TEST_MODULE=PSync Unit Tests'],
-        use='PSync'
-    )
-
-    bld.program(
-        target='../unit-tests',
-        features='cxx cxxprogram',
-        source=bld.path.ant_glob(['**/*.cpp'], excl=['main.cpp']),
-        use='PSync unit-tests-main',
-        install_path=None,
-    )
+    bld.program(target='../unit-tests',
+                name='unit-tests',
+                source=bld.path.ant_glob('**/*.cpp'),
+                use='PSync',
+                install_path=None)
