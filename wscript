@@ -33,7 +33,7 @@ def configure(conf):
     conf.env['WITH_TESTS'] = conf.options.with_tests
     conf.env['WITH_EXAMPLES'] = conf.options.with_examples
 
-    boost_libs = 'system thread log log_setup'
+    boost_libs = 'system thread log log_setup iostreams'
     if conf.env['WITH_TESTS']:
         conf.define('WITH_TESTS', 1);
         boost_libs += ' unit_test_framework'
