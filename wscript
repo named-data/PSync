@@ -56,6 +56,8 @@ def configure(conf):
 def build(bld):
     bld.shlib(
         target='PSync',
+        vnum=VERSION,
+        cnum=VERSION,
         source =  bld.path.ant_glob('PSync/**/*.cpp'),
         use = 'BOOST NDN_CXX',
         includes = '.',
