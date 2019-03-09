@@ -196,11 +196,12 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
 
   State state;
   for (const auto& hash : positive) {
-    ndn::Name prefix = m_hash2name[hash];
-    prefix = prefix.getPrefix(prefix.size() - 1);
+    ndn::Name name = m_hash2name[hash];
+    ndn::Name prefix = name.getPrefix(-1);
+
     // Don't sync up sequence number zero
     if (m_prefixes[prefix] != 0 && !isFutureHash(prefix.toUri(), negative)) {
-      state.addContent(ndn::Name(prefix).appendNumber(m_prefixes[prefix]));
+      state.addContent(name);
     }
   }
 
@@ -312,11 +313,11 @@ FullProducer::satisfyPendingInterests()
 
     State state;
     for (const auto& hash : positive) {
-      ndn::Name prefix = m_hash2name[hash];
-      prefix = prefix.getPrefix(prefix.size() - 1);
+      ndn::Name name = m_hash2name[hash];
+      ndn::Name prefix = name.getPrefix(-1);
 
       if (m_prefixes[prefix] != 0) {
-        state.addContent(ndn::Name(prefix).appendNumber(m_prefixes[prefix]));
+        state.addContent(name);
       }
     }
 
