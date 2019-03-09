@@ -115,6 +115,9 @@ public:
   void
   insertToIBF(const ndn::Name& prefix);
 
+  void
+  removeFromIBF(const ndn::Name& prefix);
+
 PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   /**
    * @brief Update m_prefixes and IBF with the given prefix and seq

@@ -66,14 +66,7 @@ ProducerBase::removeUserNode(const ndn::Name& prefix)
     uint64_t seqNo = it->second;
     m_prefixes.erase(it);
 
-    ndn::Name prefixWithSeq = ndn::Name(prefix).appendNumber(seqNo);
-    auto hashIt = m_name2hash.find(prefixWithSeq);
-    if (hashIt != m_name2hash.end()) {
-      uint32_t hash = hashIt->second;
-      m_name2hash.erase(hashIt);
-      m_hash2name.erase(hash);
-      m_iblt.erase(hash);
-    }
+    removeFromIBF(ndn::Name(prefix).appendNumber(seqNo));
   }
 }
 
@@ -100,14 +93,7 @@ ProducerBase::updateSeqNo(const ndn::Name& prefix, uint64_t seq)
   // Delete the last sequence prefix from the iblt
   // Because we don't insert zeroth prefix in IBF so no need to delete that
   if (oldSeq != 0) {
-    ndn::Name prefixWithSeq = ndn::Name(prefix).appendNumber(oldSeq);
-    auto hashIt = m_name2hash.find(prefixWithSeq);
-    if (hashIt != m_name2hash.end()) {
-      uint32_t hash = hashIt->second;
-      m_name2hash.erase(hashIt);
-      m_hash2name.erase(hash);
-      m_iblt.erase(hash);
-    }
+    removeFromIBF(ndn::Name(prefix).appendNumber(oldSeq));
   }
 
   // Insert the new seq no
@@ -123,6 +109,18 @@ ProducerBase::insertToIBF(const ndn::Name& prefix)
   m_name2hash[prefix] = newHash;
   m_hash2name[newHash] = prefix;
   m_iblt.insert(newHash);
+}
+
+void
+ProducerBase::removeFromIBF(const ndn::Name& prefix)
+{
+  auto hashIt = m_name2hash.find(prefix);
+  if (hashIt != m_name2hash.end()) {
+    uint32_t hash = hashIt->second;
+    m_name2hash.erase(hashIt);
+    m_hash2name.erase(hash);
+    m_iblt.erase(hash);
+  }
 }
 
 void
