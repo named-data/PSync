@@ -194,7 +194,8 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
 
   State state;
   for (const auto& hash : positive) {
-    const ndn::Name& prefix = m_hash2prefix[hash];
+    ndn::Name prefix = m_hash2name[hash];
+    prefix = prefix.getPrefix(prefix.size() - 1);
     // Don't sync up sequence number zero
     if (m_prefixes[prefix] != 0 && !isFutureHash(prefix.toUri(), negative)) {
       state.addContent(ndn::Name(prefix).appendNumber(m_prefixes[prefix]));
@@ -309,7 +310,8 @@ FullProducer::satisfyPendingInterests()
 
     State state;
     for (const auto& hash : positive) {
-      ndn::Name prefix = m_hash2prefix[hash];
+      ndn::Name prefix = m_hash2name[hash];
+      prefix = prefix.getPrefix(prefix.size() - 1);
 
       if (m_prefixes[prefix] != 0) {
         state.addContent(ndn::Name(prefix).appendNumber(m_prefixes[prefix]));

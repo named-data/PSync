@@ -51,18 +51,19 @@ BOOST_AUTO_TEST_CASE(Basic)
   BOOST_CHECK(producerBase.getSeqNo(userNode.toUri()).value() == 1);
 
   std::string prefixWithSeq = Name(userNode).appendNumber(1).toUri();
-  uint32_t hash = producerBase.m_prefix2hash[prefixWithSeq];
-  BOOST_CHECK_EQUAL(producerBase.m_hash2prefix[hash], userNode.toUri());
+  uint32_t hash = producerBase.m_name2hash[prefixWithSeq];
+  ndn::Name prefix = producerBase.m_hash2name[hash];
+  BOOST_CHECK_EQUAL(prefix.getPrefix(prefix.size() - 1), userNode.toUri());
 
   producerBase.removeUserNode(userNode);
   BOOST_CHECK(producerBase.getSeqNo(userNode.toUri()) == ndn::nullopt);
-  BOOST_CHECK(producerBase.m_prefix2hash.find(prefixWithSeq) == producerBase.m_prefix2hash.end());
-  BOOST_CHECK(producerBase.m_hash2prefix.find(hash) == producerBase.m_hash2prefix.end());
+  BOOST_CHECK(producerBase.m_name2hash.find(prefixWithSeq) == producerBase.m_name2hash.end());
+  BOOST_CHECK(producerBase.m_hash2name.find(hash) == producerBase.m_hash2name.end());
 
   Name nonExistentUserNode("/notAUser");
   producerBase.updateSeqNo(nonExistentUserNode, 1);
-  BOOST_CHECK(producerBase.m_prefix2hash.find(Name(nonExistentUserNode).appendNumber(1).toUri()) ==
-              producerBase.m_prefix2hash.end());
+  BOOST_CHECK(producerBase.m_name2hash.find(Name(nonExistentUserNode).appendNumber(1).toUri()) ==
+              producerBase.m_name2hash.end());
 }
 
 BOOST_AUTO_TEST_SUITE_END()
