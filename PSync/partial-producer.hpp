@@ -117,7 +117,23 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
   onSyncInterest(const ndn::Name& prefix, const ndn::Interest& interest);
 
+  /**
+   * @brief Sends a data packet with content type nack
+   *
+   * Producer sends a nack to consumer if consumer has very old IBF
+   * whose differences with latest IBF can't be decoded successfully
+   *
+   * @param name send application nack with this name
+   */
+  void
+  sendApplicationNack(const ndn::Name& name);
+
 PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+  ndn::Face& m_face;
+  ndn::KeyChain m_keyChain;
+  ndn::Scheduler m_scheduler;
+
+  SegmentPublisher m_segmentPublisher;
   std::map<ndn::Name, PendingEntryInfo> m_pendingEntries;
   ndn::ScopedRegisteredPrefixHandle m_registeredPrefix;
 };

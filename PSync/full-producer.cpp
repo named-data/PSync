@@ -38,7 +38,10 @@ FullProducer::FullProducer(const size_t expectedNumEntries,
                            const UpdateCallback& onUpdateCallBack,
                            ndn::time::milliseconds syncInterestLifetime,
                            ndn::time::milliseconds syncReplyFreshness)
-  : ProducerBase(expectedNumEntries, face, syncPrefix, userPrefix, syncReplyFreshness)
+  : ProducerBase(expectedNumEntries, syncPrefix, userPrefix, syncReplyFreshness)
+  , m_face(face)
+  , m_scheduler(m_face.getIoService())
+  , m_segmentPublisher(m_face, m_keyChain)
   , m_syncInterestLifetime(syncInterestLifetime)
   , m_onUpdate(onUpdateCallBack)
 {
