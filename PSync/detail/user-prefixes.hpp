@@ -65,13 +65,9 @@ public:
    * @brief Adds a user node for synchronization
    *
    * Initializes m_prefixes[prefix] to zero
-   * Does not add zero-th sequence number to IBF
-   * because if a large number of user nodes are added
-   * then decoding of the difference between own IBF and
-   * other IBF will not be possible
    *
    * @param prefix the user node to be added
-   * @return True if the prefix was added, false if the prefix was already in
+   * @return true if the prefix was added, false if the prefix was already in
    * m_prefixes.
    */
   bool
@@ -82,12 +78,31 @@ public:
    * m_prefixes, then do nothing.
    *
    * The caller should first check isUserNode(prefix) and erase the prefix from
-   * the IBF and other maps if needed.
+   * the IBLT and other maps if needed.
    *
    * @param prefix the user node to be removed
    */
   void
   removeUserNode(const ndn::Name& prefix);
+
+  /**
+   * @brief Update m_prefixes with the given prefix and sequence number. This
+   * does not update the IBLT. This logs a message for the update.
+   *
+   * Whoever calls this needs to make sure that isUserNode(prefix) is true.
+   *
+   * @param prefix the prefix of the update
+   * @param seqNo the sequence number of the update
+   * @param oldSeqNo This sets oldSeqNo to the old sequence number for the
+   * prefix. If this method returns true and oldSeqNo is not zero, the caller
+   * can remove the old prefix from the IBLT.
+   * @return True if the sequence number was updated, false if the prefix was
+   * not in m_prefixes, or if the seqNo is less than or equal to the old
+   * sequence number. If this returns false, the caller should not update the
+   * IBLT.
+   */
+  bool
+  updateSeqNo(const ndn::Name& prefix, uint64_t seqNo, uint64_t& oldSeqNo);
 
   // prefix and sequence number
   std::map <ndn::Name, uint64_t> m_prefixes;
