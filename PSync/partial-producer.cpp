@@ -174,7 +174,8 @@ PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& in
   NDN_LOG_TRACE("Size of positive set " << positive.size());
   NDN_LOG_TRACE("Size of negative set " << negative.size());
   for (const auto& hash : positive) {
-    ndn::Name prefix = m_hash2prefix[hash];
+    ndn::Name prefix = m_hash2name[hash];
+    prefix = prefix.getPrefix(prefix.size() - 1);
     if (bf.contains(prefix.toUri())) {
       // generate data
       state.addContent(ndn::Name(prefix).appendNumber(m_prefixes[prefix]));

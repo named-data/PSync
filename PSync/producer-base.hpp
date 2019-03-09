@@ -112,6 +112,9 @@ public:
   void
   removeUserNode(const ndn::Name& prefix);
 
+  void
+  insertToIBF(const ndn::Name& prefix);
+
 PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   /**
    * @brief Update m_prefixes and IBF with the given prefix and seq
@@ -154,10 +157,10 @@ PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   // prefix and sequence number
   std::map <ndn::Name, uint64_t> m_prefixes;
   // Just for looking up hash faster (instead of calculating it again)
-  // Only used in updateSeqNo, prefix/seqNo is the key
-  std::map <ndn::Name, uint32_t> m_prefix2hash;
-  // Value is prefix (and not prefix/seqNo)
-  std::map <uint32_t, ndn::Name> m_hash2prefix;
+  // Only used in updateSeqNo, name (arbitrary or /prefix/seq) is the key
+  std::map <ndn::Name, uint32_t> m_name2hash;
+  // Value is name
+  std::map <uint32_t, ndn::Name> m_hash2name;
 
   ndn::Name m_syncPrefix;
   ndn::Name m_userPrefix;
