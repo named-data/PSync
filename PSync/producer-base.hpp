@@ -68,7 +68,6 @@ PUBLIC_WITH_TESTS_ELSE_PROTECTED:
    * @param helloReplyFreshness freshness of hello data
    */
   ProducerBase(size_t expectedNumEntries,
-               ndn::Face& face,
                const ndn::Name& syncPrefix,
                const ndn::Name& userPrefix,
                ndn::time::milliseconds syncReplyFreshness = SYNC_REPLY_FRESHNESS,
@@ -137,17 +136,6 @@ PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   }
 
   /**
-   * @brief Sends a data packet with content type nack
-   *
-   * Producer sends a nack to consumer if consumer has very old IBF
-   * whose differences with latest IBF can't be decoded successfully
-   *
-   * @param name send application nack with this name
-   */
-  void
-  sendApplicationNack(const ndn::Name& name);
-
-  /**
    * @brief Logs a message if setting an interest filter fails
    *
    * @param prefix
@@ -171,17 +159,11 @@ PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   // Value is prefix (and not prefix/seqNo)
   std::map <uint32_t, ndn::Name> m_hash2prefix;
 
-  ndn::Face& m_face;
-  ndn::KeyChain m_keyChain;
-  ndn::Scheduler m_scheduler;
-
   ndn::Name m_syncPrefix;
   ndn::Name m_userPrefix;
 
   ndn::time::milliseconds m_syncReplyFreshness;
   ndn::time::milliseconds m_helloReplyFreshness;
-
-  SegmentPublisher m_segmentPublisher;
 
   ndn::random::RandomNumberEngine& m_rng;
 };

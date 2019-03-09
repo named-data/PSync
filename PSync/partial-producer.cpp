@@ -35,8 +35,11 @@ PartialProducer::PartialProducer(size_t expectedNumEntries,
                                  const ndn::Name& userPrefix,
                                  ndn::time::milliseconds syncReplyFreshness,
                                  ndn::time::milliseconds helloReplyFreshness)
- : ProducerBase(expectedNumEntries, face, syncPrefix,
+ : ProducerBase(expectedNumEntries, syncPrefix,
                 userPrefix, syncReplyFreshness, helloReplyFreshness)
+ , m_face(face)
+ , m_scheduler(m_face.getIoService())
+ , m_segmentPublisher(m_face, m_keyChain)
 {
   m_registeredPrefix = m_face.registerPrefix(m_syncPrefix,
     [this] (const ndn::Name& syncPrefix) {
@@ -247,6 +250,22 @@ PartialProducer::satisfyPendingSyncInterests(const ndn::Name& prefix) {
       ++it;
     }
   }
+}
+
+void
+PartialProducer::sendApplicationNack(const ndn::Name& name)
+{
+  NDN_LOG_DEBUG("Sending application nack");
+  ndn::Name dataName(name);
+  m_iblt.appendToName(dataName);
+
+  dataName.appendSegment(0);
+  ndn::Data data(dataName);
+  data.setFreshnessPeriod(m_syncReplyFreshness);
+  data.setContentType(ndn::tlv::ContentType_Nack);
+  data.setFinalBlock(dataName[-1]);
+  m_keyChain.sign(data);
+  m_face.put(data);
 }
 
 } // namespace psync

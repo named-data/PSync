@@ -35,14 +35,14 @@ BOOST_AUTO_TEST_SUITE(TestProducerBase)
 BOOST_AUTO_TEST_CASE(Ctor)
 {
   util::DummyClientFace face;
-  BOOST_REQUIRE_NO_THROW(ProducerBase(40, face, Name("/psync"), Name("/testUser")));
+  BOOST_REQUIRE_NO_THROW(ProducerBase(40, Name("/psync"), Name("/testUser")));
 }
 
 BOOST_AUTO_TEST_CASE(Basic)
 {
   util::DummyClientFace face;
   Name userNode("/testUser");
-  ProducerBase producerBase(40, face, Name("/psync"), userNode);
+  ProducerBase producerBase(40, Name("/psync"), userNode);
   // Hash table size should be 40 + 40/2 = 60 (which is perfectly divisible by N_HASH = 3)
   BOOST_CHECK_EQUAL(producerBase.m_iblt.getHashTable().size(), 60);
   BOOST_CHECK_EQUAL(producerBase.getSeqNo(userNode).value(), 0);
@@ -63,21 +63,6 @@ BOOST_AUTO_TEST_CASE(Basic)
   producerBase.updateSeqNo(nonExistentUserNode, 1);
   BOOST_CHECK(producerBase.m_prefix2hash.find(Name(nonExistentUserNode).appendNumber(1).toUri()) ==
               producerBase.m_prefix2hash.end());
-}
-
-BOOST_AUTO_TEST_CASE(ApplicationNack)
-{
-  util::DummyClientFace face;
-  ProducerBase producerBase(40, face, Name("/psync"), Name("/testUser"));
-
-  BOOST_CHECK_EQUAL(face.sentData.size(), 0);
-  producerBase.m_syncReplyFreshness = time::milliseconds(1000);
-  producerBase.sendApplicationNack(Name("test"));
-  face.processEvents(time::milliseconds(10));
-  BOOST_CHECK_EQUAL(face.sentData.size(), 1);
-
-  Data data = *face.sentData.begin();
-  BOOST_CHECK_EQUAL(data.getContentType(), ndn::tlv::ContentType_Nack);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

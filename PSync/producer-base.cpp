@@ -31,7 +31,6 @@ namespace psync {
 NDN_LOG_INIT(psync.ProducerBase);
 
 ProducerBase::ProducerBase(size_t expectedNumEntries,
-                           ndn::Face& face,
                            const ndn::Name& syncPrefix,
                            const ndn::Name& userPrefix,
                            ndn::time::milliseconds syncReplyFreshness,
@@ -39,13 +38,10 @@ ProducerBase::ProducerBase(size_t expectedNumEntries,
   : m_iblt(expectedNumEntries)
   , m_expectedNumEntries(expectedNumEntries)
   , m_threshold(expectedNumEntries/2)
-  , m_face(face)
-  , m_scheduler(m_face.getIoService())
   , m_syncPrefix(syncPrefix)
   , m_userPrefix(userPrefix)
   , m_syncReplyFreshness(syncReplyFreshness)
   , m_helloReplyFreshness(helloReplyFreshness)
-  , m_segmentPublisher(m_face, m_keyChain)
   , m_rng(ndn::random::getRandomNumberEngine())
 {
   addUserNode(userPrefix);
@@ -122,22 +118,6 @@ ProducerBase::updateSeqNo(const ndn::Name& prefix, uint64_t seq)
   m_prefix2hash[prefixWithSeq] = newHash;
   m_hash2prefix[newHash] = prefix;
   m_iblt.insert(newHash);
-}
-
-void
-ProducerBase::sendApplicationNack(const ndn::Name& name)
-{
-  NDN_LOG_DEBUG("Sending application nack");
-  ndn::Name dataName(name);
-  m_iblt.appendToName(dataName);
-
-  dataName.appendSegment(0);
-  ndn::Data data(dataName);
-  data.setFreshnessPeriod(m_syncReplyFreshness);
-  data.setContentType(ndn::tlv::ContentType_Nack);
-  data.setFinalBlock(dataName[-1]);
-  m_keyChain.sign(data);
-  m_face.put(data);
 }
 
 void

@@ -184,6 +184,13 @@ private:
   isFutureHash(const ndn::Name& prefix, const std::set<uint32_t>& negative);
 
 private:
+  ndn::Face& m_face;
+  ndn::KeyChain m_keyChain;
+  ndn::Scheduler m_scheduler;
+
+PUBLIC_WITH_TESTS_ELSE_PROTECTED:
+  SegmentPublisher m_segmentPublisher;
+
   std::map<ndn::Name, PendingEntryInfoFull> m_pendingEntries;
   ndn::time::milliseconds m_syncInterestLifetime;
   UpdateCallback m_onUpdate;
