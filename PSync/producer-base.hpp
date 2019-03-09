@@ -161,7 +161,6 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   std::map <uint32_t, ndn::Name> m_hash2name;
 
   ndn::Name m_syncPrefix;
-  ndn::Name m_userPrefix;
 
   ndn::time::milliseconds m_syncReplyFreshness;
   ndn::time::milliseconds m_helloReplyFreshness;

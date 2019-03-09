@@ -39,7 +39,6 @@ ProducerBase::ProducerBase(size_t expectedNumEntries,
   , m_expectedNumEntries(expectedNumEntries)
   , m_threshold(expectedNumEntries/2)
   , m_syncPrefix(syncPrefix)
-  , m_userPrefix(userPrefix)
   , m_syncReplyFreshness(syncReplyFreshness)
   , m_helloReplyFreshness(helloReplyFreshness)
   , m_rng(ndn::random::getRandomNumberEngine())
