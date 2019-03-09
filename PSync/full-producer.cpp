@@ -148,7 +148,7 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
     return;
   }
 
-  ndn::name::Component ibltName = interestName.get(interestName.size()-1);
+  ndn::name::Component ibltName = interestName.get(-1);
 
   NDN_LOG_DEBUG("Full Sync Interest Received, nonce: " << interest.getNonce() <<
                 ", hash: " << std::hash<ndn::Name>{}(interestName));
@@ -264,7 +264,7 @@ FullProducer::onSyncData(const ndn::Interest& interest, const ndn::ConstBufferPt
 
   for (const auto& content : state.getContent()) {
     const ndn::Name& prefix = content.getPrefix(-1);
-    uint64_t seq = content.get(content.size() - 1).toNumber();
+    uint64_t seq = content.get(-1).toNumber();
 
     if (m_prefixes.find(prefix) == m_prefixes.end() || m_prefixes[prefix] < seq) {
       updates.push_back(MissingDataInfo{prefix, m_prefixes[prefix] + 1, seq});
