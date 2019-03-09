@@ -137,7 +137,7 @@ Consumer::onHelloData(const ndn::ConstBufferPtr& bufferPtr)
 
   for (const auto& content : state.getContent()) {
     ndn::Name prefix = content.getPrefix(-1);
-    uint64_t seq = content.get(content.size()-1).toNumber();
+    uint64_t seq = content.get(-1).toNumber();
     // If consumer is subscribed then prefix must already be present in
     // m_prefixes (see addSubscription). So [] operator is safe to use.
     if (isSubscribed(prefix) && seq > m_prefixes[prefix]) {
@@ -233,7 +233,7 @@ Consumer::onSyncData(const ndn::ConstBufferPtr& bufferPtr)
   for (const auto& content : state.getContent()) {
     NDN_LOG_DEBUG(content);
     ndn::Name prefix = content.getPrefix(-1);
-    uint64_t seq = content.get(content.size()-1).toNumber();
+    uint64_t seq = content.get(-1).toNumber();
     if (m_prefixes.find(prefix) == m_prefixes.end() || seq > m_prefixes[prefix]) {
       // If this is just the next seq number then we had already informed the consumer about
       // the previous sequence number and hence seq low and seq high should be equal to current seq

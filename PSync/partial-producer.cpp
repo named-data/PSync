@@ -70,14 +70,15 @@ PartialProducer::publishName(const ndn::Name& prefix, ndn::optional<uint64_t> se
 void
 PartialProducer::onHelloInterest(const ndn::Name& prefix, const ndn::Interest& interest)
 {
-  if (m_segmentPublisher.replyFromStore(interest.getName())) {
+  ndn::Name interestName = interest.getName();
+  if (m_segmentPublisher.replyFromStore(interestName)) {
     return;
   }
 
   // Last component or fourth last component (in case of interest with version and segment)
   // needs to be hello
-  if (interest.getName().get(interest.getName().size()-1).toUri() != "hello" &&
-      interest.getName().get(interest.getName().size()-4).toUri() != "hello") {
+  if (interestName.get(-1).toUri() != "hello" &&
+      interestName.get(-4).toUri() != "hello") {
     return;
   }
 
@@ -93,7 +94,7 @@ PartialProducer::onHelloInterest(const ndn::Name& prefix, const ndn::Interest& i
   ndn::Name helloDataName = prefix;
   m_iblt.appendToName(helloDataName);
 
-  m_segmentPublisher.publish(interest.getName(), helloDataName,
+  m_segmentPublisher.publish(interestName, helloDataName,
                              state.wireEncode(), m_helloReplyFreshness);
 }
 
@@ -126,11 +127,11 @@ PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& in
   unsigned int projectedCount;
   double falsePositiveProb;
   try {
-    projectedCount = interestName.get(interestName.size()-4).toNumber();
-    falsePositiveProb = interestName.get(interestName.size()-3).toNumber()/1000.;
-    bfName = interestName.get(interestName.size()-2);
+    projectedCount = interestName.get(-4).toNumber();
+    falsePositiveProb = interestName.get(-3).toNumber()/1000.;
+    bfName = interestName.get(-2);
 
-    ibltName = interestName.get(interestName.size()-1);
+    ibltName = interestName.get(-1);
   }
   catch (const std::exception& e) {
     NDN_LOG_ERROR("Cannot extract bloom filter and IBF from sync interest: " << e.what());
