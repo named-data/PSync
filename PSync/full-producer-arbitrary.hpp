@@ -45,7 +45,7 @@ struct PendingEntryInfoFull
 };
 
 typedef std::function<void(const std::vector<ndn::Name>&)> ArbitraryUpdateCallback;
-typedef std::function<void(const ndn::Name&)> SyncDataCallback;
+typedef std::function<bool(const ndn::Name&)> CanAddName;
 typedef std::function<bool(const ndn::Name&,
                            const std::set<uint32_t>&)> ShouldAddToSyncDataCallback;
 
@@ -82,7 +82,7 @@ public:
                         ndn::time::milliseconds syncInterestLifetime = SYNC_INTEREST_LIFTIME,
                         ndn::time::milliseconds syncReplyFreshness = SYNC_REPLY_FRESHNESS,
                         const ShouldAddToSyncDataCallback& onShouldAddToSyncDataCallback = ShouldAddToSyncDataCallback(),
-                        const SyncDataCallback onSyncDataCallBack = SyncDataCallback());
+                        const CanAddName& onCanAddName = CanAddName());
 
   ~FullProducerArbitrary();
 
@@ -201,7 +201,7 @@ PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   ndn::time::milliseconds m_syncInterestLifetime;
   ArbitraryUpdateCallback m_onArbitraryUpdateCallback;
   ShouldAddToSyncDataCallback m_onShouldAddToSyncDataCallback;
-  SyncDataCallback m_onSyncDataCallback;
+  CanAddName m_onCanAddName;
   ndn::util::scheduler::ScopedEventId m_scheduledSyncInterestId;
   std::uniform_int_distribution<> m_jitter;
   ndn::Name m_outstandingInterestName;
