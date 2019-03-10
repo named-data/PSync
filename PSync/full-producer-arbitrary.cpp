@@ -38,7 +38,7 @@ FullProducerArbitrary::FullProducerArbitrary(const size_t expectedNumEntries,
                            ndn::time::milliseconds syncInterestLifetime,
                            ndn::time::milliseconds syncReplyFreshness,
                            const ShouldAddToSyncDataCallback& onShouldAddToSyncDataCallback,
-                           const SyncDataCallback onSyncDataCallBack)
+                           const CanAddName& onCanAddName)
   : ProducerBase(expectedNumEntries, syncPrefix, syncReplyFreshness)
   , m_face(face)
   , m_scheduler(m_face.getIoService())
@@ -46,7 +46,7 @@ FullProducerArbitrary::FullProducerArbitrary(const size_t expectedNumEntries,
   , m_syncInterestLifetime(syncInterestLifetime)
   , m_onArbitraryUpdateCallback(onArbitraryUpdateCallback)
   , m_onShouldAddToSyncDataCallback(onShouldAddToSyncDataCallback)
-  , m_onSyncDataCallback(onSyncDataCallBack)
+  , m_onCanAddName(onCanAddName)
 {
   int jitter = m_syncInterestLifetime.count() * .20;
   m_jitter = std::uniform_int_distribution<>(-jitter, jitter);
@@ -193,10 +193,11 @@ FullProducerArbitrary::onSyncInterest(const ndn::Name& prefixName, const ndn::In
     ndn::Name name = m_hash2name[hash];
     ndn::Name prefix = name.getPrefix(-1);
 
-    // Don't sync up sequence number zero
-    if (m_name2hash.find(name) != m_name2hash.end() &&
-        m_onShouldAddToSyncDataCallback(prefix.toUri(), negative)) {
-      state.addContent(name);
+    if (m_name2hash.find(name) != m_name2hash.end()) {
+      if (!m_onShouldAddToSyncDataCallback ||
+          m_onShouldAddToSyncDataCallback(prefix.toUri(), negative)) {
+        state.addContent(name); 
+      }
     }
   }
 
@@ -264,11 +265,10 @@ FullProducerArbitrary::onSyncData(const ndn::Interest& interest, const ndn::Cons
 
   for (const auto& name : state.getContent()) {
     if (m_name2hash.find(name) == m_name2hash.end()) {
-      updates.push_back(name);
-      if (m_onSyncDataCallback) {
-        m_onSyncDataCallback(name);
-      }
-      else {
+      NDN_LOG_DEBUG("Checking whether to add");
+      if (!m_onCanAddName || m_onCanAddName(name)) {
+        NDN_LOG_DEBUG("Adding...");
+        updates.push_back(name);
         insertToIBF(name);
       }
       // We should not call satisfyPendingSyncInterests here because we just

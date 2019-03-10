@@ -52,8 +52,13 @@ FullProducer::FullProducer(const size_t expectedNumEntries,
 
                           if (m_prefixes.m_prefixes.find(prefix) == m_prefixes.m_prefixes.end() ||
                               m_prefixes.m_prefixes[prefix] < seq) {
-                            updateSeqNo(prefix, seq);
+                            uint64_t oldSeq = m_prefixes.m_prefixes[prefix];
+                            if (oldSeq != 0) {
+                              m_producerArbitrary.removeName(ndn::Name(prefix).appendNumber(oldSeq));
+                            }
+                            return true;
                           }
+                          return false;
                         })
   , m_onUpdateCallback(onUpdateCallBack)
 {
@@ -113,10 +118,10 @@ FullProducer::arbitraryUpdateCallBack(const std::vector<ndn::Name>& names)
     ndn::Name prefix = name.getPrefix(-1);
     uint64_t seq = name.get(-1).toNumber();
 
-    if (m_prefixes.m_prefixes.find(prefix) == m_prefixes.m_prefixes.end() ||
-        m_prefixes.m_prefixes[prefix] < seq) {
-      updates.push_back(MissingDataInfo{prefix, m_prefixes.m_prefixes[prefix] + 1, seq});
-    }
+    NDN_LOG_INFO("Updates: " << prefix << " " << seq);
+
+    updates.push_back(MissingDataInfo{prefix, m_prefixes.m_prefixes[prefix] + 1, seq});
+    m_prefixes.m_prefixes[prefix] = seq;
   }
 
   m_onUpdateCallback(updates);
