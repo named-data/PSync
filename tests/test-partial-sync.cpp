@@ -83,7 +83,7 @@ public:
                         for (const auto& update : updates) {
                           BOOST_CHECK(consumers[id]->isSubscribed(update.prefix));
                           BOOST_CHECK_EQUAL(oldSeqMap.at(update.prefix) + 1, update.lowSeq);
-                          BOOST_CHECK_EQUAL(producer->m_prefixes.at(update.prefix), update.highSeq);
+                          BOOST_CHECK_EQUAL(producer->m_prefixes.m_prefixes.at(update.prefix), update.highSeq);
                           BOOST_CHECK_EQUAL(consumers[id]->getSeqNo(update.prefix).value(), update.highSeq);
                         }
                       }, 40, 0.001);
@@ -102,7 +102,7 @@ public:
   bool
   checkSubList(const vector<Name>& availableSubs)
   {
-    for (const auto& prefix : producer->m_prefixes ) {
+    for (const auto& prefix : producer->m_prefixes.m_prefixes ) {
       if (std::find(availableSubs.begin(), availableSubs.end(), prefix.first) == availableSubs.end()) {
         return false;
       }
@@ -122,7 +122,7 @@ public:
   void
   publishUpdateFor(const std::string& prefix)
   {
-    oldSeqMap = producer->m_prefixes;
+    oldSeqMap = producer->m_prefixes.m_prefixes;
     producer->publishName(prefix);
     advanceClocks(ndn::time::milliseconds(10));
   }
@@ -130,7 +130,7 @@ public:
   void
   updateSeqFor(const std::string& prefix, uint64_t seq)
   {
-    oldSeqMap = producer->m_prefixes;
+    oldSeqMap = producer->m_prefixes.m_prefixes;
     producer->updateSeqNo(prefix, seq);
   }
 
@@ -326,7 +326,7 @@ BOOST_AUTO_TEST_CASE(ApplicationNack)
   publishUpdateFor("testUser-2");
   BOOST_CHECK_EQUAL(numSyncDataRcvd, 1);
 
-  oldSeqMap = producer->m_prefixes;
+  oldSeqMap = producer->m_prefixes.m_prefixes;
   for (int i = 0; i < 50; i++) {
     ndn::Name prefix("testUser-" + to_string(i));
     producer->updateSeqNo(prefix, producer->getSeqNo(prefix).value() + 1);
@@ -402,7 +402,7 @@ BOOST_AUTO_TEST_CASE(SegmentedSync)
   syncInterestName.appendVersion();
   syncInterestName.appendSegment(1);
 
-  oldSeqMap = producer->m_prefixes;
+  oldSeqMap = producer->m_prefixes.m_prefixes;
   for (int i = 1; i < 10; i++) {
     producer->updateSeqNo(longNameToExceedDataSize.toUri() + "-" + to_string(i), 1);
   }
