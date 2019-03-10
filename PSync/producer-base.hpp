@@ -41,7 +41,6 @@ namespace psync {
 using namespace ndn::time_literals;
 
 const ndn::time::milliseconds SYNC_REPLY_FRESHNESS = 1_s;
-const ndn::time::milliseconds HELLO_REPLY_FRESHNESS = 1_s;
 
 /**
  * @brief Base class for PartialProducer and FullProducer
@@ -69,54 +68,7 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
    */
   ProducerBase(size_t expectedNumEntries,
                const ndn::Name& syncPrefix,
-               const ndn::Name& userPrefix,
-               ndn::time::milliseconds syncReplyFreshness = SYNC_REPLY_FRESHNESS,
-               ndn::time::milliseconds helloReplyFreshness = HELLO_REPLY_FRESHNESS);
-public:
-  /**
-   * @brief Returns the current sequence number of the given prefix
-   *
-   * @param prefix prefix to get the sequence number of
-   */
-  ndn::optional<uint64_t>
-  getSeqNo(const ndn::Name& prefix) const
-  {
-    auto it = m_prefixes.find(prefix);
-    if (it == m_prefixes.end()) {
-      return ndn::nullopt;
-    }
-    return it->second;
-  }
-
-  /**
-   * @brief Adds a user node for synchronization
-   *
-   * Initializes m_prefixes[prefix] to zero
-   * Does not add zero-th sequence number to IBF
-   * because if a large number of user nodes are added
-   * then decoding of the difference between own IBF and
-   * other IBF will not be possible
-   *
-   * @param prefix the user node to be added
-   */
-  bool
-  addUserNode(const ndn::Name& prefix);
-
-  /**
-   * @brief Remove the user node from synchronization
-   *
-   * Erases prefix from IBF and other maps
-   *
-   * @param prefix the user node to be removed
-   */
-  void
-  removeUserNode(const ndn::Name& prefix);
-
-  void
-  insertToIBF(const ndn::Name& prefix);
-
-  void
-  removeFromIBF(const ndn::Name& prefix);
+               ndn::time::milliseconds syncReplyFreshness = SYNC_REPLY_FRESHNESS);
 
 PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   /**
@@ -131,13 +83,10 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
    * @param seq sequence number of the update
    */
   void
-  updateSeqNo(const ndn::Name& prefix, uint64_t seq);
+  insertToIBF(const ndn::Name& name);
 
-  bool
-  isUserNode(const ndn::Name& prefix) const
-  {
-    return m_prefixes.find(prefix) != m_prefixes.end();
-  }
+  void
+  removeFromIBF(const ndn::Name& name);
 
   /**
    * @brief Logs a message if setting an interest filter fails
@@ -155,8 +104,6 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   // than it and whether we need to update the other side.
   uint32_t m_threshold;
 
-  // prefix and sequence number
-  std::map<ndn::Name, uint64_t> m_prefixes;
   // Just for looking up hash faster (instead of calculating it again)
   // Only used in updateSeqNo, name (arbitrary or /prefix/seq) is the key
   std::map <ndn::Name, uint32_t> m_name2hash;
@@ -166,7 +113,6 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   ndn::Name m_syncPrefix;
 
   ndn::time::milliseconds m_syncReplyFreshness;
-  ndn::time::milliseconds m_helloReplyFreshness;
 
   ndn::random::RandomNumberEngine& m_rng;
 };

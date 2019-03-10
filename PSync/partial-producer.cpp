@@ -35,12 +35,14 @@ PartialProducer::PartialProducer(size_t expectedNumEntries,
                                  const ndn::Name& userPrefix,
                                  ndn::time::milliseconds syncReplyFreshness,
                                  ndn::time::milliseconds helloReplyFreshness)
- : ProducerBase(expectedNumEntries, syncPrefix,
-                userPrefix, syncReplyFreshness, helloReplyFreshness)
+ : ProducerBase(expectedNumEntries, syncPrefix, syncReplyFreshness)
  , m_face(face)
  , m_scheduler(m_face.getIoService())
  , m_segmentPublisher(m_face, m_keyChain)
+ , m_helloReplyFreshness(helloReplyFreshness)
 {
+  addUserNode(userPrefix);
+
   m_registeredPrefix = m_face.registerPrefix(m_syncPrefix,
     [this] (const ndn::Name& syncPrefix) {
       m_face.setInterestFilter(ndn::Name(m_syncPrefix).append("hello"),
@@ -54,17 +56,31 @@ PartialProducer::PartialProducer(size_t expectedNumEntries,
 void
 PartialProducer::publishName(const ndn::Name& prefix, ndn::optional<uint64_t> seq)
 {
-  if (m_prefixes.find(prefix) == m_prefixes.end()) {
+  if (!m_prefixes.isUserNode(prefix)) {
     return;
   }
 
-  uint64_t newSeq = seq.value_or(m_prefixes[prefix] + 1);
+  uint64_t newSeq = seq.value_or(m_prefixes.m_prefixes[prefix] + 1);
 
   NDN_LOG_INFO("Publish: " << prefix << "/" << newSeq);
 
   updateSeqNo(prefix, newSeq);
 
   satisfyPendingSyncInterests(prefix);
+}
+
+void
+PartialProducer::updateSeqNo(const ndn::Name& prefix, uint64_t seq)
+{
+  uint64_t oldSeq;
+  if (!m_prefixes.updateSeqNo(prefix, seq, oldSeq))
+    return;  // Delete the last sequence prefix from the iblt
+  // Because we don't insert zeroth prefix in IBF so no need to delete that
+  if (oldSeq != 0) {
+    removeFromIBF(ndn::Name(prefix).appendNumber(oldSeq));
+  }  // Insert the new seq no
+  ndn::Name prefixWithSeq = ndn::Name(prefix).appendNumber(seq);
+  insertToIBF(prefixWithSeq);
 }
 
 void
@@ -86,7 +102,7 @@ PartialProducer::onHelloInterest(const ndn::Name& prefix, const ndn::Interest& i
 
   State state;
 
-  for (const auto& prefix : m_prefixes) {
+  for (const auto& prefix : m_prefixes.m_prefixes) {
     state.addContent(ndn::Name(prefix.first).appendNumber(prefix.second));
   }
   NDN_LOG_DEBUG("sending content p: " << state);
@@ -158,7 +174,7 @@ PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& in
   std::set<uint32_t> positive;
   std::set<uint32_t> negative;
 
-  NDN_LOG_TRACE("Number elements in IBF: " << m_prefixes.size());
+  NDN_LOG_TRACE("Number elements in IBF: " << m_prefixes.m_prefixes.size());
 
   bool peel = diff.listEntries(positive, negative);
 
@@ -181,7 +197,7 @@ PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& in
     if (bf.contains(prefix.toUri())) {
       // generate data
       state.addContent(name);
-      NDN_LOG_DEBUG("Content: " << prefix << " " << std::to_string(m_prefixes[prefix]));
+      NDN_LOG_DEBUG("Content: " << prefix << " " << std::to_string(m_prefixes.m_prefixes[prefix]));
     }
   }
 
@@ -221,7 +237,7 @@ PartialProducer::satisfyPendingSyncInterests(const ndn::Name& prefix) {
 
     NDN_LOG_TRACE("Result of listEntries on the difference: " << peel);
 
-    NDN_LOG_TRACE("Number elements in IBF: " << m_prefixes.size());
+    NDN_LOG_TRACE("Number elements in IBF: " << m_prefixes.m_prefixes.size());
     NDN_LOG_TRACE("m_threshold: " << m_threshold << " Total: " << positive.size() + negative.size());
 
     if (!peel) {
@@ -233,8 +249,8 @@ PartialProducer::satisfyPendingSyncInterests(const ndn::Name& prefix) {
     State state;
     if (entry.bf.contains(prefix.toUri()) || positive.size() + negative.size() >= m_threshold) {
       if (entry.bf.contains(prefix.toUri())) {
-        state.addContent(ndn::Name(prefix).appendNumber(m_prefixes[prefix]));
-        NDN_LOG_DEBUG("sending sync content " << prefix << " " << std::to_string(m_prefixes[prefix]));
+        state.addContent(ndn::Name(prefix).appendNumber(m_prefixes.m_prefixes[prefix]));
+        NDN_LOG_DEBUG("sending sync content " << prefix << " " << std::to_string(m_prefixes.m_prefixes[prefix]));
       }
       else {
         NDN_LOG_DEBUG("Sending with empty content to send latest IBF to consumer");

@@ -410,14 +410,14 @@ BOOST_AUTO_TEST_CASE(DelayedSecondSegment)
   IBLT iblt(40);
   iblt.appendToName(syncInterestName);
 
-  nodes[0]->onSyncInterest(syncPrefix, Interest(syncInterestName));
+  nodes[0]->m_producerArbitrary.onSyncInterest(syncPrefix, Interest(syncInterestName));
 
   advanceClocks(ndn::time::milliseconds(10));
 
-  BOOST_CHECK_EQUAL(nodes[0]->m_segmentPublisher.m_ims.size(), 2);
+  BOOST_CHECK_EQUAL(nodes[0]->m_producerArbitrary.m_segmentPublisher.m_ims.size(), 2);
   // Expire contents from segmentPublisher
   advanceClocks(ndn::time::milliseconds(10), 100);
-  BOOST_CHECK_EQUAL(nodes[0]->m_segmentPublisher.m_ims.size(), 0);
+  BOOST_CHECK_EQUAL(nodes[0]->m_producerArbitrary.m_segmentPublisher.m_ims.size(), 0);
 
   // Get data name from face and increase segment number to form next interest
   Name dataName = faces[0]->sentData.front().getName();
@@ -425,11 +425,11 @@ BOOST_AUTO_TEST_CASE(DelayedSecondSegment)
   interestName.appendSegment(1);
   faces[0]->sentData.clear();
 
-  nodes[0]->onSyncInterest(syncPrefix, Interest(interestName));
+  nodes[0]->m_producerArbitrary.onSyncInterest(syncPrefix, Interest(interestName));
   advanceClocks(ndn::time::milliseconds(10));
 
   // Should have repopulated SegmentPublisher
-  BOOST_CHECK_EQUAL(nodes[0]->m_segmentPublisher.m_ims.size(), 2);
+  BOOST_CHECK_EQUAL(nodes[0]->m_producerArbitrary.m_segmentPublisher.m_ims.size(), 2);
   // Should have received the second data segment this time
   BOOST_CHECK_EQUAL(faces[0]->sentData.front().getName()[-1].toSegment(), 1);
 }

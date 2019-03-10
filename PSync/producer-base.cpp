@@ -32,89 +32,29 @@ NDN_LOG_INIT(psync.ProducerBase);
 
 ProducerBase::ProducerBase(size_t expectedNumEntries,
                            const ndn::Name& syncPrefix,
-                           const ndn::Name& userPrefix,
-                           ndn::time::milliseconds syncReplyFreshness,
-                           ndn::time::milliseconds helloReplyFreshness)
+                           ndn::time::milliseconds syncReplyFreshness)
   : m_iblt(expectedNumEntries)
   , m_expectedNumEntries(expectedNumEntries)
   , m_threshold(expectedNumEntries/2)
   , m_syncPrefix(syncPrefix)
   , m_syncReplyFreshness(syncReplyFreshness)
-  , m_helloReplyFreshness(helloReplyFreshness)
   , m_rng(ndn::random::getRandomNumberEngine())
 {
-  addUserNode(userPrefix);
-}
-
-bool
-ProducerBase::addUserNode(const ndn::Name& prefix)
-{
-  if (m_prefixes.find(prefix) == m_prefixes.end()) {
-    m_prefixes[prefix] = 0;
-    return true;
-  }
-  else {
-    return false;
-  }
 }
 
 void
-ProducerBase::removeUserNode(const ndn::Name& prefix)
+ProducerBase::insertToIBF(const ndn::Name& name)
 {
-  auto it = m_prefixes.find(prefix);
-  if (it != m_prefixes.end()) {
-    uint64_t seqNo = it->second;
-    m_prefixes.erase(it);
-
-    removeFromIBF(ndn::Name(prefix).appendNumber(seqNo));
-  }
-}
-
-void
-ProducerBase::updateSeqNo(const ndn::Name& prefix, uint64_t seq)
-{
-  NDN_LOG_DEBUG("UpdateSeq: " << prefix << " " << seq);
-
-  uint64_t oldSeq;
-  auto it = m_prefixes.find(prefix);
-  if (it != m_prefixes.end()) {
-    oldSeq = it->second;
-  }
-  else {
-    NDN_LOG_WARN("Prefix not found in m_prefixes");
-    return;
-  }
-
-  if (oldSeq >= seq) {
-    NDN_LOG_WARN("Update has lower/equal seq no for prefix, doing nothing!");
-    return;
-  }
-
-  // Delete the last sequence prefix from the iblt
-  // Because we don't insert zeroth prefix in IBF so no need to delete that
-  if (oldSeq != 0) {
-    removeFromIBF(ndn::Name(prefix).appendNumber(oldSeq));
-  }
-
-  // Insert the new seq no
-  it->second = seq;
-  ndn::Name prefixWithSeq = ndn::Name(prefix).appendNumber(seq);
-  insertToIBF(prefixWithSeq);
-}
-
-void
-ProducerBase::insertToIBF(const ndn::Name& prefix)
-{
-  uint32_t newHash = murmurHash3(N_HASHCHECK, prefix.toUri());
-  m_name2hash[prefix] = newHash;
-  m_hash2name[newHash] = prefix;
+  uint32_t newHash = murmurHash3(N_HASHCHECK, name.toUri());
+  m_name2hash[name] = newHash;
+  m_hash2name[newHash] = name;
   m_iblt.insert(newHash);
 }
 
 void
-ProducerBase::removeFromIBF(const ndn::Name& prefix)
+ProducerBase::removeFromIBF(const ndn::Name& name)
 {
-  auto hashIt = m_name2hash.find(prefix);
+  auto hashIt = m_name2hash.find(name);
   if (hashIt != m_name2hash.end()) {
     uint32_t hash = hashIt->second;
     m_name2hash.erase(hashIt);

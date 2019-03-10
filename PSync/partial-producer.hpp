@@ -21,6 +21,7 @@
 #define PSYNC_PARTIAL_PRODUCER_HPP
 
 #include "PSync/detail/bloom-filter.hpp"
+#include "PSync/detail/user-prefixes.hpp"
 #include "PSync/producer-base.hpp"
 
 #include <map>
@@ -31,6 +32,9 @@
 #include <ndn-cxx/util/time.hpp>
 
 namespace psync {
+
+using namespace ndn::time_literals;
+const ndn::time::milliseconds HELLO_REPLY_FRESHNESS = 1_s;
 
 struct PendingEntryInfo
 {
@@ -71,6 +75,51 @@ public:
                   ndn::time::milliseconds syncReplyFreshness = SYNC_REPLY_FRESHNESS);
 
   /**
+   * @brief Returns the current sequence number of the given prefix
+   *
+   * @param prefix prefix to get the sequence number of
+   */
+  ndn::optional<uint64_t>
+  getSeqNo(const ndn::Name& prefix) const
+  {
+    return m_prefixes.getSeqNo(prefix);
+  }
+
+  /**
+   * @brief Adds a user node for synchronization
+   *
+   * Initializes m_prefixes[prefix] to zero
+   * Does not add zero-th sequence number to IBF
+   * because if a large number of user nodes are added
+   * then decoding of the difference between own IBF and
+   * other IBF will not be possible
+   *
+   * @param prefix the user node to be added
+   */
+  bool
+  addUserNode(const ndn::Name& prefix)
+  {
+    return m_prefixes.addUserNode(prefix);
+  }
+
+  /**
+   * @brief Remove the user node from synchronization
+   *
+   * Erases prefix from IBF and other maps
+   *
+   * @param prefix the user node to be removed
+   */
+  void
+  removeUserNode(const ndn::Name& prefix)
+  {
+    if (m_prefixes.isUserNode(prefix)) {
+      uint64_t seqNo = m_prefixes.m_prefixes[prefix];
+      m_prefixes.removeUserNode(prefix);
+      removeFromIBF(ndn::Name(prefix).appendNumber(seqNo));
+    }
+  }
+
+  /**
    * @brief Publish name to let subscribed consumers know
    *
    * If seq is null then the seq of prefix is incremented by 1 else
@@ -94,6 +143,9 @@ private:
   satisfyPendingSyncInterests(const ndn::Name& prefix);
 
 PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+  void
+  updateSeqNo(const ndn::Name& prefix, uint64_t seq);
+
   /**
    * @brief Receive hello interest from consumer and respond with hello data
    *
@@ -136,6 +188,9 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   SegmentPublisher m_segmentPublisher;
   std::map<ndn::Name, PendingEntryInfo> m_pendingEntries;
   ndn::ScopedRegisteredPrefixHandle m_registeredPrefix;
+
+  UserPrefixes m_prefixes;
+  ndn::time::milliseconds m_helloReplyFreshness;
 };
 
 } // namespace psync
