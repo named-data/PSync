@@ -38,7 +38,7 @@ FullProducer::FullProducer(const size_t expectedNumEntries,
                            const UpdateCallback& onUpdateCallBack,
                            ndn::time::milliseconds syncInterestLifetime,
                            ndn::time::milliseconds syncReplyFreshness)
-  : m_producerArbitrary(expectedNumEntries, face, syncPrefix, userPrefix,
+  : m_producerArbitrary(expectedNumEntries, face, syncPrefix,
                         [this] (const std::vector<ndn::Name>& names) {
                           arbitraryUpdateCallBack(names);
                         },

@@ -71,7 +71,6 @@ public:
    * @param expectedNumEntries expected entries in IBF
    * @param face application's face
    * @param syncPrefix The prefix of the sync group
-   * @param userPrefix The prefix of the first user in the group
    * @param onUpdateCallBack The call back to be called when there is new data
    * @param syncInterestLifetime lifetime of the sync interest
    * @param syncReplyFreshness freshness of sync data
@@ -79,7 +78,6 @@ public:
   FullProducerArbitrary(size_t expectedNumEntries,
                         ndn::Face& face,
                         const ndn::Name& syncPrefix,
-                        const ndn::Name& userPrefix,
                         const ArbitraryUpdateCallback& onArbitraryUpdateCallback,
                         ndn::time::milliseconds syncInterestLifetime = SYNC_INTEREST_LIFTIME,
                         ndn::time::milliseconds syncReplyFreshness = SYNC_REPLY_FRESHNESS,

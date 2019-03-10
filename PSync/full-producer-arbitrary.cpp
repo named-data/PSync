@@ -34,7 +34,6 @@ NDN_LOG_INIT(psync.FullProducerArbitrary);
 FullProducerArbitrary::FullProducerArbitrary(const size_t expectedNumEntries,
                            ndn::Face& face,
                            const ndn::Name& syncPrefix,
-                           const ndn::Name& userPrefix,
                            const ArbitraryUpdateCallback& onArbitraryUpdateCallback,
                            ndn::time::milliseconds syncInterestLifetime,
                            ndn::time::milliseconds syncReplyFreshness,
