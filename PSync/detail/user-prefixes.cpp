@@ -41,7 +41,6 @@ UserPrefixes::removeUserNode(const ndn::Name& prefix)
 {
   auto it = m_prefixes.find(prefix);
   if (it != m_prefixes.end()) {
-    uint64_t seqNo = it->second;
     m_prefixes.erase(it);
   }
 }
