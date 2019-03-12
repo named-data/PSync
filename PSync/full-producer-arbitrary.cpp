@@ -314,7 +314,6 @@ FullProducerArbitrary::satisfyPendingInterests()
     State state;
     for (const auto& hash : positive) {
       ndn::Name name = m_hash2name[hash];
-      ndn::Name prefix = name.getPrefix(-1);
 
       if (m_name2hash.find(name) != m_name2hash.end()) {
         state.addContent(name);
