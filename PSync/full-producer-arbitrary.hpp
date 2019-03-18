@@ -99,6 +99,7 @@ public:
   /**
    * @brief Publish name to let others know
    *
+   * However, if the name has already been published, do nothing.
    * @param name the Name to be updated
    */
   void
