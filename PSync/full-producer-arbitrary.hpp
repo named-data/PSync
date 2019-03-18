@@ -99,13 +99,7 @@ public:
   /**
    * @brief Publish name to let others know
    *
-   * addUserNode needs to be called before this to add the prefix
-   * if not already added via the constructor.
-   * If seq is null then the seq of prefix is incremented by 1 else
-   * the supplied sequence is set in the IBF.
-   *
-   * @param prefix the prefix to be updated
-   * @param seq the sequence number of the prefix
+   * @param name the Name to be updated
    */
   void
   publishName(const ndn::Name& name);
