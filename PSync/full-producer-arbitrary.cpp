@@ -71,6 +71,11 @@ FullProducerArbitrary::~FullProducerArbitrary()
 void
 FullProducerArbitrary::publishName(const ndn::Name& name)
 {
+  if (m_name2hash.find(name) != m_name2hash.end()) {
+    NDN_LOG_DEBUG("Already published, ignoring: " << name);
+    return;
+  }
+
   NDN_LOG_INFO("Publish: " << name);
 
   insertToIBF(name);
