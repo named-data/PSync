@@ -24,7 +24,6 @@
 #include "PSync/producer-base.hpp"
 
 #include <map>
-#include <unordered_set>
 
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
@@ -37,7 +36,7 @@ struct PendingEntryInfo
 {
   BloomFilter bf;
   IBLT iblt;
-  ndn::util::scheduler::ScopedEventId expirationEvent;
+  ndn::scheduler::ScopedEventId expirationEvent;
 };
 
 /**

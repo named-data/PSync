@@ -68,7 +68,7 @@ public:
 
 private:
   ndn::Face& m_face;
-  ndn::util::Scheduler m_scheduler;
+  ndn::Scheduler m_scheduler;
   ndn::KeyChain& m_keyChain;
 
 PUBLIC_WITH_TESTS_ELSE_PRIVATE:

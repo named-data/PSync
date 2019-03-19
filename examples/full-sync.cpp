@@ -19,8 +19,10 @@
 
 #include <PSync/full-producer.hpp>
 
+#include <ndn-cxx/face.hpp>
 #include <ndn-cxx/util/logger.hpp>
 #include <ndn-cxx/util/random.hpp>
+#include <ndn-cxx/util/scheduler.hpp>
 
 #include <iostream>
 
@@ -52,13 +54,9 @@ public:
     // Add user prefixes and schedule updates for them in specified interval
     for (int i = 0; i < m_numDataStreams; i++) {
       ndn::Name prefix(userPrefix + "-" + ndn::to_string(i));
-
       m_fullProducer.addUserNode(prefix);
-
-      m_scheduler.scheduleEvent(ndn::time::milliseconds(m_rangeUniformRandom(m_rng)),
-                                [this, prefix] {
-                                  doUpdate(prefix);
-                                });
+      m_scheduler.schedule(ndn::time::milliseconds(m_rangeUniformRandom(m_rng)),
+                           [this, prefix] { doUpdate(prefix); });
     }
   }
 
@@ -78,10 +76,8 @@ private:
     NDN_LOG_INFO("Publish: " << prefix << "/" << seqNo);
 
     if (seqNo < m_maxNumPublish) {
-      m_scheduler.scheduleEvent(ndn::time::milliseconds(m_rangeUniformRandom(m_rng)),
-                                [this, prefix] {
-                                  doUpdate(prefix);
-                                });
+      m_scheduler.schedule(ndn::time::milliseconds(m_rangeUniformRandom(m_rng)),
+                           [this, prefix] { doUpdate(prefix); });
     }
   }
 
@@ -97,7 +93,7 @@ private:
 
 private:
   ndn::Face m_face;
-  ndn::util::Scheduler m_scheduler;
+  ndn::Scheduler m_scheduler;
 
   psync::FullProducer m_fullProducer;
 

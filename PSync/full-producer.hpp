@@ -24,8 +24,8 @@
 #include "PSync/detail/state.hpp"
 
 #include <map>
-#include <unordered_set>
 #include <random>
+#include <set>
 
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
@@ -41,7 +41,7 @@ namespace psync {
 struct PendingEntryInfoFull
 {
   IBLT iblt;
-  ndn::util::scheduler::ScopedEventId expirationEvent;
+  ndn::scheduler::ScopedEventId expirationEvent;
 };
 
 typedef std::function<void(const std::vector<MissingDataInfo>&)> UpdateCallback;
@@ -187,7 +187,7 @@ private:
   std::map<ndn::Name, PendingEntryInfoFull> m_pendingEntries;
   ndn::time::milliseconds m_syncInterestLifetime;
   UpdateCallback m_onUpdate;
-  ndn::util::scheduler::ScopedEventId m_scheduledSyncInterestId;
+  ndn::scheduler::ScopedEventId m_scheduledSyncInterestId;
   std::uniform_int_distribution<> m_jitter;
   ndn::Name m_outstandingInterestName;
   ndn::ScopedRegisteredPrefixHandle m_registeredPrefix;

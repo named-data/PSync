@@ -83,39 +83,36 @@ void
 Consumer::sendHelloInterest()
 {
   ndn::Interest helloInterest(m_helloInterestPrefix);
-
   NDN_LOG_DEBUG("Send Hello Interest " << helloInterest);
 
   if (m_helloFetcher) {
     m_helloFetcher->stop();
   }
 
-  ndn::util::SegmentFetcher::Options options;
+  using ndn::util::SegmentFetcher;
+  SegmentFetcher::Options options;
   options.interestLifetime = m_helloInterestLifetime;
   options.maxTimeout = m_helloInterestLifetime;
 
-  m_helloFetcher = ndn::util::SegmentFetcher::start(m_face,
-                                                    helloInterest,
-                                                    ndn::security::v2::getAcceptAllValidator(),
-                                                    options);
+  m_helloFetcher = SegmentFetcher::start(m_face, helloInterest,
+                                         ndn::security::v2::getAcceptAllValidator(), options);
 
   m_helloFetcher->afterSegmentValidated.connect([this] (const ndn::Data& data) {
-                                                  if (data.getFinalBlock()) {
-                                                    m_helloDataName = data.getName().getPrefix(-2);
-                                                  }
-                                                });
+    if (data.getFinalBlock()) {
+      m_helloDataName = data.getName().getPrefix(-2);
+    }
+  });
 
-  m_helloFetcher->onComplete.connect([this] (ndn::ConstBufferPtr bufferPtr) {
-                                       onHelloData(bufferPtr);
-                                     });
+  m_helloFetcher->onComplete.connect([this] (const ndn::ConstBufferPtr& bufferPtr) {
+    onHelloData(bufferPtr);
+  });
 
   m_helloFetcher->onError.connect([this] (uint32_t errorCode, const std::string& msg) {
-                                    NDN_LOG_TRACE("Cannot fetch hello data, error: " <<
-                                                   errorCode << " message: " << msg);
-                                    ndn::time::milliseconds after(m_rangeUniformRandom(m_rng));
-                                    NDN_LOG_TRACE("Scheduling after " << after);
-                                    m_scheduler.scheduleEvent(after, [this] { sendHelloInterest(); });
-                                  });
+    NDN_LOG_TRACE("Cannot fetch hello data, error: " << errorCode << " message: " << msg);
+    ndn::time::milliseconds after(m_rangeUniformRandom(m_rng));
+    NDN_LOG_TRACE("Scheduling after " << after);
+    m_scheduler.schedule(after, [this] { sendHelloInterest(); });
+  });
 }
 
 void
@@ -128,7 +125,7 @@ Consumer::onHelloData(const ndn::ConstBufferPtr& bufferPtr)
 
   NDN_LOG_TRACE("m_iblt: " << std::hash<std::string>{}(m_iblt.toUri()));
 
-  State state(ndn::Block(std::move(bufferPtr)));
+  State state{ndn::Block{bufferPtr}};
 
   std::vector<MissingDataInfo> updates;
   std::vector<ndn::Name> availableSubscriptions;
@@ -136,7 +133,7 @@ Consumer::onHelloData(const ndn::ConstBufferPtr& bufferPtr)
   NDN_LOG_DEBUG("Hello Data:  " << state);
 
   for (const auto& content : state.getContent()) {
-    ndn::Name prefix = content.getPrefix(-1);
+    const ndn::Name& prefix = content.getPrefix(-1);
     uint64_t seq = content.get(content.size()-1).toNumber();
     // If consumer is subscribed then prefix must already be present in
     // m_prefixes (see addSubscription). So [] operator is safe to use.
@@ -174,66 +171,61 @@ Consumer::sendSyncInterest()
   NDN_LOG_DEBUG("sendSyncInterest, nonce: " << syncInterest.getNonce() <<
                 " hash: " << std::hash<std::string>{}(syncInterest.getName().toUri()));
 
-  ndn::util::SegmentFetcher::Options options;
-  options.interestLifetime = m_syncInterestLifetime;
-  options.maxTimeout = m_syncInterestLifetime;;
-
   if (m_syncFetcher) {
     m_syncFetcher->stop();
   }
 
-  m_syncFetcher = ndn::util::SegmentFetcher::start(m_face,
-                                                   syncInterest,
-                                                   ndn::security::v2::getAcceptAllValidator(),
-                                                   options);
+  using ndn::util::SegmentFetcher;
+  SegmentFetcher::Options options;
+  options.interestLifetime = m_syncInterestLifetime;
+  options.maxTimeout = m_syncInterestLifetime;;
+
+  m_syncFetcher = SegmentFetcher::start(m_face, syncInterest,
+                                        ndn::security::v2::getAcceptAllValidator(), options);
 
   m_syncFetcher->afterSegmentValidated.connect([this] (const ndn::Data& data) {
-                                                 if (data.getFinalBlock()) {
-                                                   m_syncDataName = data.getName().getPrefix(-2);
-                                                   m_syncDataContentType = data.getContentType();
-                                                 }
+    if (data.getFinalBlock()) {
+      m_syncDataName = data.getName().getPrefix(-2);
+      m_syncDataContentType = data.getContentType();
+    }
 
-                                                 if (m_syncDataContentType == ndn::tlv::ContentType_Nack)
-                                                 {
-                                                   NDN_LOG_DEBUG("Received application"
-                                                                  << " Nack from producer,"
-                                                                  << " sending hello again");
-                                                   sendHelloInterest();
-                                                 }
-                                               });
+    if (m_syncDataContentType == ndn::tlv::ContentType_Nack) {
+      NDN_LOG_DEBUG("Received application Nack from producer, sending hello again");
+      sendHelloInterest();
+    }
+  });
 
-  m_syncFetcher->onComplete.connect([this] (ndn::ConstBufferPtr bufferPtr) {
-                                      if (m_syncDataContentType == ndn::tlv::ContentType_Nack) {
-                                        m_syncDataContentType = ndn::tlv::ContentType_Blob;
-                                        return;
-                                      }
-                                      NDN_LOG_TRACE("Segment fetcher got sync data");
-                                      onSyncData(bufferPtr);
-                                    });
+  m_syncFetcher->onComplete.connect([this] (const ndn::ConstBufferPtr& bufferPtr) {
+    if (m_syncDataContentType == ndn::tlv::ContentType_Nack) {
+      m_syncDataContentType = ndn::tlv::ContentType_Blob;
+      return;
+    }
+    NDN_LOG_TRACE("Segment fetcher got sync data");
+    onSyncData(bufferPtr);
+  });
 
   m_syncFetcher->onError.connect([this] (uint32_t errorCode, const std::string& msg) {
-                                   NDN_LOG_TRACE("Cannot fetch sync data, error: "
-                                                 << errorCode << " message: " << msg);
-                                   ndn::time::milliseconds after(m_rangeUniformRandom(m_rng));
-                                   NDN_LOG_TRACE("Scheduling after " << after);
-                                   m_scheduler.scheduleEvent(after, [this] { sendSyncInterest(); });
-                                 });
+    NDN_LOG_TRACE("Cannot fetch sync data, error: " << errorCode << " message: " << msg);
+    ndn::time::milliseconds after(m_rangeUniformRandom(m_rng));
+    NDN_LOG_TRACE("Scheduling after " << after);
+    m_scheduler.schedule(after, [this] { sendSyncInterest(); });
+  });
 }
 
 void
 Consumer::onSyncData(const ndn::ConstBufferPtr& bufferPtr)
 {
   // Extract IBF from sync data name which is the last component
-  m_iblt = m_syncDataName.getSubName(m_syncDataName.size()-1, 1);
+  m_iblt = m_syncDataName.getSubName(m_syncDataName.size() - 1, 1);
 
-  State state(ndn::Block(std::move(bufferPtr)));
+  State state{ndn::Block{bufferPtr}};
 
-  std::vector <MissingDataInfo> updates;
+  std::vector<MissingDataInfo> updates;
 
   for (const auto& content : state.getContent()) {
     NDN_LOG_DEBUG(content);
-    ndn::Name prefix = content.getPrefix(-1);
-    uint64_t seq = content.get(content.size()-1).toNumber();
+    const ndn::Name& prefix = content.getPrefix(-1);
+    uint64_t seq = content.get(content.size() - 1).toNumber();
     if (m_prefixes.find(prefix) == m_prefixes.end() || seq > m_prefixes[prefix]) {
       // If this is just the next seq number then we had already informed the consumer about
       // the previous sequence number and hence seq low and seq high should be equal to current seq
@@ -243,7 +235,7 @@ Consumer::onSyncData(const ndn::ConstBufferPtr& bufferPtr)
     // Else updates will be empty and consumer will not be notified.
   }
 
-  NDN_LOG_DEBUG("Sync Data:  " << state);
+  NDN_LOG_DEBUG("Sync Data: " << state);
 
   if (!updates.empty()) {
     m_onUpdate(updates);

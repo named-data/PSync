@@ -19,8 +19,10 @@
 
 #include <PSync/partial-producer.hpp>
 
+#include <ndn-cxx/face.hpp>
 #include <ndn-cxx/util/logger.hpp>
 #include <ndn-cxx/util/random.hpp>
+#include <ndn-cxx/util/scheduler.hpp>
 
 #include <iostream>
 
@@ -52,10 +54,8 @@ public:
       m_producer.addUserNode(updateName);
 
       // Each user prefix is updated at random interval between 0 and 60 second
-      m_scheduler.scheduleEvent(ndn::time::milliseconds(m_rangeUniformRandom(m_rng)),
-                                [this, updateName] {
-                                  doUpdate(updateName);
-                                });
+      m_scheduler.schedule(ndn::time::milliseconds(m_rangeUniformRandom(m_rng)),
+                           [this, updateName] { doUpdate(updateName); });
     }
   }
 
@@ -77,16 +77,14 @@ private:
 
     if (seqNo < m_maxNumPublish) {
       // Schedule the next update for this user prefix b/w 0 and 60 seconds
-      m_scheduler.scheduleEvent(ndn::time::milliseconds(m_rangeUniformRandom(m_rng)),
-                                [this, updateName] {
-                                  doUpdate(updateName);
-                                });
+      m_scheduler.schedule(ndn::time::milliseconds(m_rangeUniformRandom(m_rng)),
+                           [this, updateName] { doUpdate(updateName); });
     }
   }
 
 private:
   ndn::Face m_face;
-  ndn::util::Scheduler m_scheduler;
+  ndn::Scheduler m_scheduler;
 
   psync::PartialProducer m_producer;
 

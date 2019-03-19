@@ -23,8 +23,7 @@
 
 namespace psync {
 
-SegmentPublisher::SegmentPublisher(ndn::Face& face, ndn::KeyChain& keyChain,
-                                   size_t imsLimit)
+SegmentPublisher::SegmentPublisher(ndn::Face& face, ndn::KeyChain& keyChain, size_t imsLimit)
   : m_face(face)
   , m_scheduler(m_face.getIoService())
   , m_keyChain(keyChain)
@@ -43,7 +42,7 @@ SegmentPublisher::publish(const ndn::Name& interestName, const ndn::Name& dataNa
   }
 
   ndn::EncodingBuffer buffer;
-  buffer.prependBlock(std::move(block));
+  buffer.prependBlock(block);
 
   const uint8_t* rawBuffer = buffer.buf();
   const uint8_t* segmentBegin = rawBuffer;
@@ -67,7 +66,7 @@ SegmentPublisher::publish(const ndn::Name& interestName, const ndn::Name& dataNa
     segmentName.appendSegment(segmentNo);
 
     // We get a std::exception: bad_weak_ptr from m_ims if we don't use shared_ptr for data
-    std::shared_ptr<ndn::Data> data = std::make_shared<ndn::Data>(segmentName);
+    auto data = std::make_shared<ndn::Data>(segmentName);
     data->setContent(segmentBegin, segmentEnd - segmentBegin);
     data->setFreshnessPeriod(freshness);
     data->setFinalBlock(ndn::name::Component::fromSegment(totalSegments));
@@ -83,10 +82,7 @@ SegmentPublisher::publish(const ndn::Name& interestName, const ndn::Name& dataNa
     }
 
     m_ims.insert(*data, freshness);
-    m_scheduler.scheduleEvent(freshness,
-                                [this, segmentName] {
-                                m_ims.erase(segmentName);
-                              });
+    m_scheduler.schedule(freshness, [this, segmentName] { m_ims.erase(segmentName); });
 
     ++segmentNo;
   } while (segmentBegin < end);

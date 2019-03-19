@@ -193,7 +193,7 @@ PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& in
   }
 
   auto& entry = m_pendingEntries.emplace(interestName, PendingEntryInfo{bf, iblt, {}}).first->second;
-  entry.expirationEvent = m_scheduler.scheduleEvent(interest.getInterestLifetime(),
+  entry.expirationEvent = m_scheduler.schedule(interest.getInterestLifetime(),
                           [this, interest] {
                             NDN_LOG_TRACE("Erase Pending Interest " << interest.getNonce());
                             m_pendingEntries.erase(interest.getName());

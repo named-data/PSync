@@ -98,28 +98,26 @@ FullProducer::sendSyncInterest()
   m_outstandingInterestName = syncInterestName;
 
   m_scheduledSyncInterestId =
-    m_scheduler.scheduleEvent(m_syncInterestLifetime / 2 + ndn::time::milliseconds(m_jitter(m_rng)),
-                              [this] { sendSyncInterest(); });
+    m_scheduler.schedule(m_syncInterestLifetime / 2 + ndn::time::milliseconds(m_jitter(m_rng)),
+                         [this] { sendSyncInterest(); });
 
   ndn::Interest syncInterest(syncInterestName);
 
-  ndn::util::SegmentFetcher::Options options;
+  using ndn::util::SegmentFetcher;
+  SegmentFetcher::Options options;
   options.interestLifetime = m_syncInterestLifetime;
   options.maxTimeout = m_syncInterestLifetime;
 
-  m_fetcher = ndn::util::SegmentFetcher::start(m_face,
-                                               syncInterest,
-                                               ndn::security::v2::getAcceptAllValidator(),
-                                               options);
+  m_fetcher = SegmentFetcher::start(m_face, syncInterest,
+                                    ndn::security::v2::getAcceptAllValidator(), options);
 
-  m_fetcher->onComplete.connect([this, syncInterest] (ndn::ConstBufferPtr bufferPtr) {
-                                  onSyncData(syncInterest, bufferPtr);
-                                });
+  m_fetcher->onComplete.connect([this, syncInterest] (const ndn::ConstBufferPtr& bufferPtr) {
+    onSyncData(syncInterest, bufferPtr);
+  });
 
   m_fetcher->onError.connect([] (uint32_t errorCode, const std::string& msg) {
-                               NDN_LOG_ERROR("Cannot fetch sync data, error: " <<
-                                              errorCode << " message: " << msg);
-                             });
+    NDN_LOG_ERROR("Cannot fetch sync data, error: " << errorCode << " message: " << msg);
+  });
 
   NDN_LOG_DEBUG("sendFullSyncInterest, nonce: " << syncInterest.getNonce() <<
                 ", hash: " << std::hash<ndn::Name>{}(syncInterestName));
@@ -168,8 +166,8 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
 
   if (!diff.listEntries(positive, negative)) {
     NDN_LOG_TRACE("Cannot decode differences, positive: " << positive.size()
-                   << " negative: " << negative.size() << " m_threshold: "
-                   << m_threshold);
+                  << " negative: " << negative.size() << " m_threshold: "
+                  << m_threshold);
 
     // Send all data if greater then threshold, else send positive below as usual
     // Or send if we can't get neither positive nor negative differences
@@ -193,7 +191,7 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
 
   State state;
   for (const auto& hash : positive) {
-    ndn::Name prefix = m_hash2prefix[hash];
+    const ndn::Name& prefix = m_hash2prefix[hash];
     // Don't sync up sequence number zero
     if (m_prefixes[prefix] != 0 && !isFutureHash(prefix.toUri(), negative)) {
       state.addContent(ndn::Name(prefix).appendNumber(m_prefixes[prefix]));
@@ -207,7 +205,7 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
   }
 
   auto& entry = m_pendingEntries.emplace(interestName, PendingEntryInfoFull{iblt, {}}).first->second;
-  entry.expirationEvent = m_scheduler.scheduleEvent(interest.getInterestLifetime(),
+  entry.expirationEvent = m_scheduler.schedule(interest.getInterestLifetime(),
                           [this, interest] {
                             NDN_LOG_TRACE("Erase Pending Interest " << interest.getNonce());
                             m_pendingEntries.erase(interest.getName());
@@ -254,14 +252,14 @@ FullProducer::onSyncData(const ndn::Interest& interest, const ndn::ConstBufferPt
 {
   deletePendingInterests(interest.getName());
 
-  State state(ndn::Block(std::move(bufferPtr)));
+  State state{ndn::Block{bufferPtr}};
   std::vector<MissingDataInfo> updates;
 
-  NDN_LOG_DEBUG("Sync Data Received:  " << state);
+  NDN_LOG_DEBUG("Sync Data Received: " << state);
 
   for (const auto& content : state.getContent()) {
-    ndn::Name prefix = content.getPrefix(-1);
-    uint64_t seq = content.get(content.size()-1).toNumber();
+    const ndn::Name& prefix = content.getPrefix(-1);
+    uint64_t seq = content.get(content.size() - 1).toNumber();
 
     if (m_prefixes.find(prefix) == m_prefixes.end() || m_prefixes[prefix] < seq) {
       updates.push_back(MissingDataInfo{prefix, m_prefixes[prefix] + 1, seq});
@@ -301,7 +299,7 @@ FullProducer::satisfyPendingInterests()
       if (positive.size() + negative.size() >= m_threshold ||
           (positive.size() == 0 && negative.size() == 0)) {
         NDN_LOG_TRACE("pos + neg > threshold or no diff can be found, erase pending interest");
-        m_pendingEntries.erase(it++);
+        it = m_pendingEntries.erase(it);
         continue;
       }
     }
@@ -318,7 +316,7 @@ FullProducer::satisfyPendingInterests()
     if (!state.getContent().empty()) {
       NDN_LOG_DEBUG("Satisfying sync content: " << state);
       sendSyncData(it->first, state.wireEncode());
-      m_pendingEntries.erase(it++);
+      it = m_pendingEntries.erase(it);
     }
     else {
       ++it;
@@ -341,11 +339,12 @@ FullProducer::isFutureHash(const ndn::Name& prefix, const std::set<uint32_t>& ne
 }
 
 void
-FullProducer::deletePendingInterests(const ndn::Name& interestName) {
+FullProducer::deletePendingInterests(const ndn::Name& interestName)
+{
   for (auto it = m_pendingEntries.begin(); it != m_pendingEntries.end();) {
     if (it->first == interestName) {
       NDN_LOG_TRACE("Delete pending interest: " << interestName);
-      m_pendingEntries.erase(it++);
+      it = m_pendingEntries.erase(it);
     }
     else {
       ++it;
