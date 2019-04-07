@@ -20,9 +20,9 @@
 #ifndef PSYNC_CONSUMER_HPP
 #define PSYNC_CONSUMER_HPP
 
+#include "PSync/detail/access-specifiers.hpp"
 #include "PSync/detail/bloom-filter.hpp"
 #include "PSync/detail/util.hpp"
-#include "PSync/detail/test-access-control.hpp"
 
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/util/random.hpp>
@@ -166,7 +166,7 @@ private:
   void
   onSyncData(const ndn::ConstBufferPtr& bufferPtr);
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   ndn::Face& m_face;
   ndn::Scheduler m_scheduler;
 

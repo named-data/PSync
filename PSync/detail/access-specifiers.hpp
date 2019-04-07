@@ -1,5 +1,5 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
+/*
  * Copyright (c) 2014-2019,  The University of Memphis
  *
  * This file is part of PSync.
@@ -18,21 +18,21 @@
  *
  **/
 
-#ifndef PSYNC_TEST_ACCESS_CONTROL_HPP
-#define PSYNC_TEST_ACCESS_CONTROL_HPP
+#ifndef PSYNC_DETAIL_ACCESS_SPECIFIERS_HPP
+#define PSYNC_DETAIL_ACCESS_SPECIFIERS_HPP
 
 #include "PSync/detail/config.hpp"
 
-#ifdef WITH_TESTS
-#define VIRTUAL_WITH_TESTS virtual
-#define PUBLIC_WITH_TESTS_ELSE_PROTECTED public
-#define PUBLIC_WITH_TESTS_ELSE_PRIVATE public
-#define PROTECTED_WITH_TESTS_ELSE_PRIVATE protected
+#ifdef PSYNC_WITH_TESTS
+#define PSYNC_VIRTUAL_WITH_TESTS virtual
+#define PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED public
+#define PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE public
+#define PSYNC_PROTECTED_WITH_TESTS_ELSE_PRIVATE protected
 #else
-#define VIRTUAL_WITH_TESTS
-#define PUBLIC_WITH_TESTS_ELSE_PROTECTED protected
-#define PUBLIC_WITH_TESTS_ELSE_PRIVATE private
-#define PROTECTED_WITH_TESTS_ELSE_PRIVATE private
+#define PSYNC_VIRTUAL_WITH_TESTS
+#define PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED protected
+#define PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE private
+#define PSYNC_PROTECTED_WITH_TESTS_ELSE_PRIVATE private
 #endif
 
-#endif // PSYNC_TEST_ACCESS_CONTROL_HPP
+#endif // PSYNC_DETAIL_ACCESS_SPECIFIERS_HPP

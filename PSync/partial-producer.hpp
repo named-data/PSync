@@ -93,7 +93,7 @@ private:
   void
   satisfyPendingSyncInterests(const ndn::Name& prefix);
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   /**
    * @brief Receive hello interest from consumer and respond with hello data
    *
@@ -117,7 +117,7 @@ PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
   onSyncInterest(const ndn::Name& prefix, const ndn::Interest& interest);
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   std::map<ndn::Name, PendingEntryInfo> m_pendingEntries;
   ndn::ScopedRegisteredPrefixHandle m_registeredPrefix;
 };

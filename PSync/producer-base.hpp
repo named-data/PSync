@@ -20,10 +20,10 @@
 #ifndef PSYNC_PRODUCER_BASE_HPP
 #define PSYNC_PRODUCER_BASE_HPP
 
-#include "PSync/detail/iblt.hpp"
+#include "PSync/detail/access-specifiers.hpp"
 #include "PSync/detail/bloom-filter.hpp"
+#include "PSync/detail/iblt.hpp"
 #include "PSync/detail/util.hpp"
-#include "PSync/detail/test-access-control.hpp"
 #include "PSync/segment-publisher.hpp"
 
 #include <ndn-cxx/face.hpp>
@@ -56,7 +56,7 @@ class ProducerBase
     using std::runtime_error::runtime_error;
   };
 
-PUBLIC_WITH_TESTS_ELSE_PROTECTED:
+PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   /**
    * @brief constructor
    *
@@ -113,7 +113,7 @@ public:
   void
   removeUserNode(const ndn::Name& prefix);
 
-PUBLIC_WITH_TESTS_ELSE_PROTECTED:
+PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   /**
    * @brief Update m_prefixes and IBF with the given prefix and seq
    *
@@ -129,11 +129,9 @@ PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   updateSeqNo(const ndn::Name& prefix, uint64_t seq);
 
   bool
-  isUserNode(const ndn::Name& prefix) {
-    if (m_prefixes.find(prefix) == m_prefixes.end()) {
-      return false;
-    }
-    return true;
+  isUserNode(const ndn::Name& prefix) const
+  {
+    return m_prefixes.find(prefix) != m_prefixes.end();
   }
 
   /**
@@ -156,7 +154,7 @@ PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   void
   onRegisterFailed(const ndn::Name& prefix, const std::string& msg) const;
 
-PUBLIC_WITH_TESTS_ELSE_PROTECTED:
+PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   IBLT m_iblt;
   uint32_t m_expectedNumEntries;
   // Threshold is used check if the differences are greater
@@ -164,12 +162,12 @@ PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   uint32_t m_threshold;
 
   // prefix and sequence number
-  std::map <ndn::Name, uint64_t> m_prefixes;
+  std::map<ndn::Name, uint64_t> m_prefixes;
   // Just for looking up hash faster (instead of calculating it again)
   // Only used in updateSeqNo, prefix/seqNo is the key
-  std::map <ndn::Name, uint32_t> m_prefix2hash;
+  std::map<ndn::Name, uint32_t> m_prefix2hash;
   // Value is prefix (and not prefix/seqNo)
-  std::map <uint32_t, ndn::Name> m_hash2prefix;
+  std::map<uint32_t, ndn::Name> m_hash2prefix;
 
   ndn::Face& m_face;
   ndn::KeyChain m_keyChain;

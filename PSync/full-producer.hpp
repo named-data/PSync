@@ -108,7 +108,7 @@ private:
   void
   sendSyncInterest();
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   /**
    * @brief Process sync interest from other parties
    *

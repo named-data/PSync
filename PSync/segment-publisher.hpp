@@ -20,7 +20,7 @@
 #ifndef PSYNC_SEGMENT_PUBLISHER_HPP
 #define PSYNC_SEGMENT_PUBLISHER_HPP
 
-#include "PSync/detail/test-access-control.hpp"
+#include "PSync/detail/access-specifiers.hpp"
 
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/name.hpp>
@@ -71,7 +71,7 @@ private:
   ndn::Scheduler m_scheduler;
   ndn::KeyChain& m_keyChain;
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   ndn::InMemoryStorageFifo m_ims;
 };
 

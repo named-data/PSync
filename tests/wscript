@@ -1,9 +1,6 @@
 top = '..'
 
 def build(bld):
-    if not bld.env['WITH_TESTS']:
-        return
-
     bld.program(target='../unit-tests',
                 name='unit-tests',
                 source=bld.path.ant_glob('**/*.cpp'),
