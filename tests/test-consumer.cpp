@@ -18,6 +18,7 @@
  **/
 
 #include "PSync/consumer.hpp"
+#include "unit-test-time-fixture.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <ndn-cxx/name.hpp>
@@ -54,6 +55,29 @@ BOOST_AUTO_TEST_CASE(AddSubscription)
   BOOST_CHECK(!consumer.isSubscribed(subscription));
   BOOST_CHECK(consumer.addSubscription(subscription));
   BOOST_CHECK(!consumer.addSubscription(subscription));
+}
+
+BOOST_FIXTURE_TEST_CASE(ConstantTimeoutForFirstSegment, ndn::tests::UnitTestTimeFixture)
+{
+  util::DummyClientFace face(io, {true, true});
+  Consumer consumer(Name("/psync"), face,
+                    [] (const vector<Name>&) {},
+                    [] (const vector<MissingDataInfo>&) {},
+                    40, 0.001,
+                    ndn::time::milliseconds(4000),
+                    ndn::time::milliseconds(4000));
+
+  consumer.sendHelloInterest();
+  advanceClocks(ndn::time::milliseconds(4000));
+  BOOST_CHECK_EQUAL(face.sentInterests.size(), 1);
+  face.sentInterests.clear();
+  consumer.stop();
+
+  consumer.m_iblt = ndn::Name("test");
+  consumer.sendSyncInterest();
+  advanceClocks(ndn::time::milliseconds(4000));
+  BOOST_CHECK_EQUAL(face.sentInterests.size(), 1);
+  consumer.stop();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

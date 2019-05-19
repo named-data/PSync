@@ -107,6 +107,7 @@ FullProducer::sendSyncInterest()
   SegmentFetcher::Options options;
   options.interestLifetime = m_syncInterestLifetime;
   options.maxTimeout = m_syncInterestLifetime;
+  options.rttOptions.initialRto = m_syncInterestLifetime;
 
   m_fetcher = SegmentFetcher::start(m_face, syncInterest,
                                     ndn::security::v2::getAcceptAllValidator(), options);
@@ -341,14 +342,10 @@ FullProducer::isFutureHash(const ndn::Name& prefix, const std::set<uint32_t>& ne
 void
 FullProducer::deletePendingInterests(const ndn::Name& interestName)
 {
-  for (auto it = m_pendingEntries.begin(); it != m_pendingEntries.end();) {
-    if (it->first == interestName) {
-      NDN_LOG_TRACE("Delete pending interest: " << interestName);
-      it = m_pendingEntries.erase(it);
-    }
-    else {
-      ++it;
-    }
+  auto it = m_pendingEntries.find(interestName);
+  if (it != m_pendingEntries.end()) {
+    NDN_LOG_TRACE("Delete pending interest: " << interestName);
+    it = m_pendingEntries.erase(it);
   }
 }
 

@@ -18,6 +18,7 @@
  **/
 
 #include "PSync/full-producer.hpp"
+#include "unit-test-time-fixture.hpp"
 
 #include <boost/test/unit_test.hpp>
 #include <ndn-cxx/name.hpp>
@@ -48,6 +49,20 @@ BOOST_AUTO_TEST_CASE(OnInterest)
   syncInterestName.append("malicious-IBF");
 
   BOOST_REQUIRE_NO_THROW(node.onSyncInterest(syncPrefix, Interest(syncInterestName)));
+}
+
+BOOST_FIXTURE_TEST_CASE(ConstantTimeoutForFirstSegment, ndn::tests::UnitTestTimeFixture)
+{
+  Name syncPrefix("/psync"), userNode("/testUser");
+  util::DummyClientFace face(io, {true, true});
+
+  FullProducer node(40, face, syncPrefix, userNode, nullptr, ndn::time::milliseconds(8000));
+  advanceClocks(ndn::time::milliseconds(10));
+  face.sentInterests.clear();
+
+  // full sync sends the next one in interest lifetime / 2 +- jitter
+  advanceClocks(ndn::time::milliseconds(6000));
+  BOOST_CHECK_EQUAL(face.sentInterests.size(), 1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

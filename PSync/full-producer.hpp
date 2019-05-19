@@ -97,7 +97,7 @@ public:
   void
   publishName(const ndn::Name& prefix, ndn::optional<uint64_t> seq = ndn::nullopt);
 
-private:
+PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   /**
    * @brief Send sync interest for full synchronization
    *
@@ -108,7 +108,6 @@ private:
   void
   sendSyncInterest();
 
-PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   /**
    * @brief Process sync interest from other parties
    *

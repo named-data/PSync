@@ -68,6 +68,8 @@ Consumer::addSubscription(const ndn::Name& prefix)
 void
 Consumer::stop()
 {
+  m_scheduler.cancelAllEvents();
+
   if (m_syncFetcher) {
     m_syncFetcher->stop();
     m_syncFetcher.reset();
@@ -93,6 +95,7 @@ Consumer::sendHelloInterest()
   SegmentFetcher::Options options;
   options.interestLifetime = m_helloInterestLifetime;
   options.maxTimeout = m_helloInterestLifetime;
+  options.rttOptions.initialRto = m_syncInterestLifetime;
 
   m_helloFetcher = SegmentFetcher::start(m_face, helloInterest,
                                          ndn::security::v2::getAcceptAllValidator(), options);
@@ -179,6 +182,7 @@ Consumer::sendSyncInterest()
   SegmentFetcher::Options options;
   options.interestLifetime = m_syncInterestLifetime;
   options.maxTimeout = m_syncInterestLifetime;;
+  options.rttOptions.initialRto = m_syncInterestLifetime;
 
   m_syncFetcher = SegmentFetcher::start(m_face, syncInterest,
                                         ndn::security::v2::getAcceptAllValidator(), options);
