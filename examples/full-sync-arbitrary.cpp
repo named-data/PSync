@@ -52,10 +52,10 @@ public:
       ndn::Name dataPrefix(userPrefix + "-" + ndn::to_string(i));
       m_nPublished[dataPrefix] = 0;
 
-      m_scheduler.scheduleEvent(ndn::time::milliseconds(m_rangeUniformRandom(m_rng)),
-                                [this, dataPrefix] {
-                                  doUpdate(dataPrefix);
-                                });
+      m_scheduler.schedule(ndn::time::milliseconds(m_rangeUniformRandom(m_rng)),
+                           [this, dataPrefix] {
+                             doUpdate(dataPrefix);
+                           });
     }
   }
 
@@ -77,10 +77,10 @@ private:
     ++m_nPublished[dataPrefix];
 
     if (m_nPublished[dataPrefix] < m_maxNumPublish) {
-      m_scheduler.scheduleEvent(ndn::time::milliseconds(m_rangeUniformRandom(m_rng)),
-                                [this, dataPrefix] {
-                                  doUpdate(dataPrefix);
-                                });
+      m_scheduler.schedule(ndn::time::milliseconds(m_rangeUniformRandom(m_rng)),
+                           [this, dataPrefix] {
+                             doUpdate(dataPrefix);
+                           });
     }
   }
 
@@ -94,7 +94,7 @@ private:
 
 private:
   ndn::Face m_face;
-  ndn::util::Scheduler m_scheduler;
+  ndn::Scheduler m_scheduler;
 
   psync::FullProducerArbitrary m_fullProducer;
 

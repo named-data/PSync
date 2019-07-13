@@ -83,7 +83,6 @@ public:
     return m_prefixes.getSeqNo(prefix);
   }
 
-PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   /**
    * @brief Adds a user node for synchronization
    *
