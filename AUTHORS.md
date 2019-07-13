@@ -12,6 +12,7 @@ The University of Memphis:
 
 * Junxiao Shi <https://www.linkedin.com/in/shijunxiao>
 * Davide Pesavento <https://www.linkedin.com/in/davidepesavento>
+* Jeff Thompson <jefft0@remap.ucla.edu>
 
 ## Technical advisor(s):
 

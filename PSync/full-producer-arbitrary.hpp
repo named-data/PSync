@@ -71,9 +71,11 @@ public:
    * @param expectedNumEntries expected entries in IBF
    * @param face application's face
    * @param syncPrefix The prefix of the sync group
-   * @param onUpdateCallBack The call back to be called when there is new data
+   * @param onArbitraryUpdateCallback The call back to be called when there is new data
    * @param syncInterestLifetime lifetime of the sync interest
    * @param syncReplyFreshness freshness of sync data
+   * @param onShouldAddToSyncDataCallback whether to add sync data to content being sent (FullProducer future hash)
+   * @param onCanAddName whether to add name to IBF
    */
   FullProducerArbitrary(size_t expectedNumEntries,
                         ndn::Face& face,

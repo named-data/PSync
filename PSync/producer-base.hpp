@@ -60,11 +60,8 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
    * @brief constructor
    *
    * @param expectedNumEntries expected number entries in IBF
-   * @param face application's face
    * @param syncPrefix The prefix of the sync group
-   * @param userPrefix The prefix of the first user in the group
    * @param syncReplyFreshness freshness of sync data
-   * @param helloReplyFreshness freshness of hello data
    */
   ProducerBase(size_t expectedNumEntries,
                const ndn::Name& syncPrefix,
@@ -79,8 +76,7 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
    * (unless seq is zero because we don't insert zero seq into IBF)
    * Then we update m_prefix, m_prefix2hash, m_hash2prefix, and IBF
    *
-   * @param prefix prefix of the update
-   * @param seq sequence number of the update
+   * @param name prefix of the update
    */
   void
   insertToIBF(const ndn::Name& name);

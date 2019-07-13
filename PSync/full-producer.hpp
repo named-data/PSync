@@ -60,7 +60,7 @@ public:
    * @param face application's face
    * @param syncPrefix The prefix of the sync group
    * @param userPrefix The prefix of the first user in the group
-   * @param onUpdateCallBack The call back to be called when there is new data
+   * @param onUpdateCallback The call back to be called when there is new data
    * @param syncInterestLifetime lifetime of the sync interest
    * @param syncReplyFreshness freshness of sync data
    */
