@@ -21,7 +21,9 @@
 #define PSYNC_FULL_PRODUCER_HPP
 
 #include "PSync/producer-base.hpp"
+#include "PSync/full-producer-arbitrary.hpp"
 #include "PSync/detail/state.hpp"
+#include "PSync/detail/user-prefixes.hpp"
 
 #include <map>
 #include <random>
@@ -35,18 +37,7 @@
 
 namespace psync {
 
-// Name has to be different than PendingEntryInfo
-// used in partial-producer otherwise get strange segmentation-faults
-// when partial producer is destructed
-struct PendingEntryInfoFull
-{
-  IBLT iblt;
-  ndn::scheduler::ScopedEventId expirationEvent;
-};
-
 typedef std::function<void(const std::vector<MissingDataInfo>&)> UpdateCallback;
-
-const ndn::time::milliseconds SYNC_INTEREST_LIFTIME = 1_s;
 
 /**
  * @brief Full sync logic to synchronize with other nodes
@@ -57,7 +48,7 @@ const ndn::time::milliseconds SYNC_INTEREST_LIFTIME = 1_s;
  * Multiple userPrefixes can be added by using addUserNode.
  * Currently, fetching and publishing of data needs to be handled by the application.
  */
-class FullProducer : public ProducerBase
+class FullProducer
 {
 public:
   /**
@@ -69,7 +60,7 @@ public:
    * @param face application's face
    * @param syncPrefix The prefix of the sync group
    * @param userPrefix The prefix of the first user in the group
-   * @param onUpdateCallBack The call back to be called when there is new data
+   * @param onUpdateCallback The call back to be called when there is new data
    * @param syncInterestLifetime lifetime of the sync interest
    * @param syncReplyFreshness freshness of sync data
    */
@@ -77,11 +68,54 @@ public:
                ndn::Face& face,
                const ndn::Name& syncPrefix,
                const ndn::Name& userPrefix,
-               const UpdateCallback& onUpdateCallBack,
+               const UpdateCallback& onUpdateCallback,
                ndn::time::milliseconds syncInterestLifetime = SYNC_INTEREST_LIFTIME,
                ndn::time::milliseconds syncReplyFreshness = SYNC_REPLY_FRESHNESS);
 
-  ~FullProducer();
+  /**
+   * @brief Returns the current sequence number of the given prefix
+   *
+   * @param prefix prefix to get the sequence number of
+   */
+  ndn::optional<uint64_t>
+  getSeqNo(const ndn::Name& prefix) const
+  {
+    return m_prefixes.getSeqNo(prefix);
+  }
+
+  /**
+   * @brief Adds a user node for synchronization
+   *
+   * Initializes m_prefixes[prefix] to zero
+   * Does not add zero-th sequence number to IBF
+   * because if a large number of user nodes are added
+   * then decoding of the difference between own IBF and
+   * other IBF will not be possible
+   *
+   * @param prefix the user node to be added
+   */
+  bool
+  addUserNode(const ndn::Name& prefix)
+  {
+    return m_prefixes.addUserNode(prefix);
+  }
+
+  /**
+   * @brief Remove the user node from synchronization
+   *
+   * Erases prefix from IBF and other maps
+   *
+   * @param prefix the user node to be removed
+   */
+  void
+  removeUserNode(const ndn::Name& prefix)
+  {
+    if (m_prefixes.isUserNode(prefix)) {
+      uint64_t seqNo = m_prefixes.prefixes[prefix];
+      m_prefixes.removeUserNode(prefix);
+      m_producerArbitrary.removeName(ndn::Name(prefix).appendNumber(seqNo));
+    }
+  }
 
   /**
    * @brief Publish name to let others know
@@ -98,82 +132,6 @@ public:
   publishName(const ndn::Name& prefix, ndn::optional<uint64_t> seq = ndn::nullopt);
 
 private:
-  /**
-   * @brief Send sync interest for full synchronization
-   *
-   * Forms the interest name: /<sync-prefix>/<own-IBF>
-   * Cancels any pending sync interest we sent earlier on the face
-   * Sends the sync interest
-   */
-  void
-  sendSyncInterest();
-
-PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
-  /**
-   * @brief Process sync interest from other parties
-   *
-   * Get differences b/w our IBF and IBF in the sync interest.
-   * If we cannot get the differences successfully then send an application nack.
-   *
-   * If we have some things in our IBF that the other side does not have, reply with the content or
-   * If no. of different items is greater than threshold or equals zero then send a nack.
-   * Otherwise add the sync interest into a map with interest name as key and PendingEntryInfoFull
-   * as value.
-   *
-   * @param prefixName prefix for sync group which we registered
-   * @param interest the interest we got
-   */
-  void
-  onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& interest);
-
-private:
-  /**
-   * @brief Send sync data
-   *
-   * Check if the data will satisfy our own pending interest,
-   * remove it first if it does, and then renew the sync interest
-   * Otherwise just send the data
-   *
-   * @param name name to be set as data name
-   * @param block the content of the data
-   */
-  void
-  sendSyncData(const ndn::Name& name, const ndn::Block& block);
-
-  /**
-   * @brief Process sync data
-   *
-   * Call deletePendingInterests to delete any pending sync interest with
-   * interest name would have been satisfied once NFD got the data.
-   *
-   * For each prefix/seq in data content check that we don't already have the
-   * prefix/seq and updateSeq(prefix, seq)
-   *
-   * Notify the application about the updates
-   * sendSyncInterest because the last one was satisfied by the incoming data
-   *
-   * @param interest interest for which we got the data
-   * @param bufferPtr sync data content
-   */
-  void
-  onSyncData(const ndn::Interest& interest, const ndn::ConstBufferPtr& bufferPtr);
-
-  /**
-   * @brief Satisfy pending sync interests
-   *
-   * For pending sync interests SI, if IBF of SI has any difference from our own IBF:
-   * send data back.
-   * If we can't decode differences from the stored IBF, then delete it.
-   */
-  void
-  satisfyPendingInterests();
-
-  /**
-   * @brief Delete pending sync interests that match given name
-   */
-  void
-  deletePendingInterests(const ndn::Name& interestName);
-
    /**
    * @brief Check if hash(prefix + 1) is in negative
    *
@@ -181,17 +139,21 @@ private:
    * gets to us before the data
    */
   bool
-  isFutureHash(const ndn::Name& prefix, const std::set<uint32_t>& negative);
+  isNotFutureHash(const ndn::Name& prefix, const std::set<uint32_t>& negative);
+
+PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
+  void
+  updateSeqNo(const ndn::Name& prefix, uint64_t seq);
 
 private:
-  std::map<ndn::Name, PendingEntryInfoFull> m_pendingEntries;
-  ndn::time::milliseconds m_syncInterestLifetime;
-  UpdateCallback m_onUpdate;
-  ndn::scheduler::ScopedEventId m_scheduledSyncInterestId;
-  std::uniform_int_distribution<> m_jitter;
-  ndn::Name m_outstandingInterestName;
-  ndn::ScopedRegisteredPrefixHandle m_registeredPrefix;
-  std::shared_ptr<ndn::util::SegmentFetcher> m_fetcher;
+  void
+  arbitraryUpdateCallBack(const std::vector<ndn::Name>& names);
+
+PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
+  FullProducerArbitrary m_producerArbitrary;
+  UpdateCallback m_onUpdateCallback;
+
+  UserPrefixes m_prefixes;
 };
 
 } // namespace psync

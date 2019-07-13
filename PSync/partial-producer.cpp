@@ -35,9 +35,14 @@ PartialProducer::PartialProducer(size_t expectedNumEntries,
                                  const ndn::Name& userPrefix,
                                  ndn::time::milliseconds syncReplyFreshness,
                                  ndn::time::milliseconds helloReplyFreshness)
- : ProducerBase(expectedNumEntries, face, syncPrefix,
-                userPrefix, syncReplyFreshness, helloReplyFreshness)
+ : ProducerBase(expectedNumEntries, syncPrefix, syncReplyFreshness)
+ , m_face(face)
+ , m_scheduler(m_face.getIoService())
+ , m_segmentPublisher(m_face, m_keyChain)
+ , m_helloReplyFreshness(helloReplyFreshness)
 {
+  addUserNode(userPrefix);
+
   m_registeredPrefix = m_face.registerPrefix(m_syncPrefix,
     [this] (const ndn::Name& syncPrefix) {
       m_face.setInterestFilter(ndn::Name(m_syncPrefix).append("hello"),
@@ -51,11 +56,11 @@ PartialProducer::PartialProducer(size_t expectedNumEntries,
 void
 PartialProducer::publishName(const ndn::Name& prefix, ndn::optional<uint64_t> seq)
 {
-  if (m_prefixes.find(prefix) == m_prefixes.end()) {
+  if (!m_prefixes.isUserNode(prefix)) {
     return;
   }
 
-  uint64_t newSeq = seq.value_or(m_prefixes[prefix] + 1);
+  uint64_t newSeq = seq.value_or(m_prefixes.prefixes[prefix] + 1);
 
   NDN_LOG_INFO("Publish: " << prefix << "/" << newSeq);
 
@@ -65,16 +70,31 @@ PartialProducer::publishName(const ndn::Name& prefix, ndn::optional<uint64_t> se
 }
 
 void
+PartialProducer::updateSeqNo(const ndn::Name& prefix, uint64_t seq)
+{
+  uint64_t oldSeq;
+  if (!m_prefixes.updateSeqNo(prefix, seq, oldSeq))
+    return;  // Delete the last sequence prefix from the iblt
+  // Because we don't insert zeroth prefix in IBF so no need to delete that
+  if (oldSeq != 0) {
+    removeFromIBF(ndn::Name(prefix).appendNumber(oldSeq));
+  }  // Insert the new seq no
+  ndn::Name prefixWithSeq = ndn::Name(prefix).appendNumber(seq);
+  insertToIBF(prefixWithSeq);
+}
+
+void
 PartialProducer::onHelloInterest(const ndn::Name& prefix, const ndn::Interest& interest)
 {
-  if (m_segmentPublisher.replyFromStore(interest.getName())) {
+  ndn::Name interestName = interest.getName();
+  if (m_segmentPublisher.replyFromStore(interestName)) {
     return;
   }
 
   // Last component or fourth last component (in case of interest with version and segment)
   // needs to be hello
-  if (interest.getName().get(interest.getName().size()-1).toUri() != "hello" &&
-      interest.getName().get(interest.getName().size()-4).toUri() != "hello") {
+  if (interestName.get(-1).toUri() != "hello" &&
+      interestName.get(-4).toUri() != "hello") {
     return;
   }
 
@@ -82,7 +102,7 @@ PartialProducer::onHelloInterest(const ndn::Name& prefix, const ndn::Interest& i
 
   State state;
 
-  for (const auto& prefix : m_prefixes) {
+  for (const auto& prefix : m_prefixes.prefixes) {
     state.addContent(ndn::Name(prefix.first).appendNumber(prefix.second));
   }
   NDN_LOG_DEBUG("sending content p: " << state);
@@ -90,7 +110,7 @@ PartialProducer::onHelloInterest(const ndn::Name& prefix, const ndn::Interest& i
   ndn::Name helloDataName = prefix;
   m_iblt.appendToName(helloDataName);
 
-  m_segmentPublisher.publish(interest.getName(), helloDataName,
+  m_segmentPublisher.publish(interestName, helloDataName,
                              state.wireEncode(), m_helloReplyFreshness);
 }
 
@@ -123,11 +143,11 @@ PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& in
   unsigned int projectedCount;
   double falsePositiveProb;
   try {
-    projectedCount = interestName.get(interestName.size()-4).toNumber();
-    falsePositiveProb = interestName.get(interestName.size()-3).toNumber()/1000.;
-    bfName = interestName.get(interestName.size()-2);
+    projectedCount = interestName.get(-4).toNumber();
+    falsePositiveProb = interestName.get(-3).toNumber()/1000.;
+    bfName = interestName.get(-2);
 
-    ibltName = interestName.get(interestName.size()-1);
+    ibltName = interestName.get(-1);
   }
   catch (const std::exception& e) {
     NDN_LOG_ERROR("Cannot extract bloom filter and IBF from sync interest: " << e.what());
@@ -154,7 +174,7 @@ PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& in
   std::set<uint32_t> positive;
   std::set<uint32_t> negative;
 
-  NDN_LOG_TRACE("Number elements in IBF: " << m_prefixes.size());
+  NDN_LOG_TRACE("Number elements in IBF: " << m_prefixes.prefixes.size());
 
   bool peel = diff.listEntries(positive, negative);
 
@@ -171,11 +191,13 @@ PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& in
   NDN_LOG_TRACE("Size of positive set " << positive.size());
   NDN_LOG_TRACE("Size of negative set " << negative.size());
   for (const auto& hash : positive) {
-    ndn::Name prefix = m_hash2prefix[hash];
+    ndn::Name name = m_hash2name[hash];
+    ndn::Name prefix = name.getPrefix(-1);
+
     if (bf.contains(prefix.toUri())) {
       // generate data
-      state.addContent(ndn::Name(prefix).appendNumber(m_prefixes[prefix]));
-      NDN_LOG_DEBUG("Content: " << prefix << " " << std::to_string(m_prefixes[prefix]));
+      state.addContent(name);
+      NDN_LOG_DEBUG("Content: " << prefix << " " << std::to_string(m_prefixes.prefixes[prefix]));
     }
   }
 
@@ -215,7 +237,7 @@ PartialProducer::satisfyPendingSyncInterests(const ndn::Name& prefix) {
 
     NDN_LOG_TRACE("Result of listEntries on the difference: " << peel);
 
-    NDN_LOG_TRACE("Number elements in IBF: " << m_prefixes.size());
+    NDN_LOG_TRACE("Number elements in IBF: " << m_prefixes.prefixes.size());
     NDN_LOG_TRACE("m_threshold: " << m_threshold << " Total: " << positive.size() + negative.size());
 
     if (!peel) {
@@ -227,8 +249,8 @@ PartialProducer::satisfyPendingSyncInterests(const ndn::Name& prefix) {
     State state;
     if (entry.bf.contains(prefix.toUri()) || positive.size() + negative.size() >= m_threshold) {
       if (entry.bf.contains(prefix.toUri())) {
-        state.addContent(ndn::Name(prefix).appendNumber(m_prefixes[prefix]));
-        NDN_LOG_DEBUG("sending sync content " << prefix << " " << std::to_string(m_prefixes[prefix]));
+        state.addContent(ndn::Name(prefix).appendNumber(m_prefixes.prefixes[prefix]));
+        NDN_LOG_DEBUG("sending sync content " << prefix << " " << std::to_string(m_prefixes.prefixes[prefix]));
       }
       else {
         NDN_LOG_DEBUG("Sending with empty content to send latest IBF to consumer");
@@ -247,6 +269,22 @@ PartialProducer::satisfyPendingSyncInterests(const ndn::Name& prefix) {
       ++it;
     }
   }
+}
+
+void
+PartialProducer::sendApplicationNack(const ndn::Name& name)
+{
+  NDN_LOG_DEBUG("Sending application nack");
+  ndn::Name dataName(name);
+  m_iblt.appendToName(dataName);
+
+  dataName.appendSegment(0);
+  ndn::Data data(dataName);
+  data.setFreshnessPeriod(m_syncReplyFreshness);
+  data.setContentType(ndn::tlv::ContentType_Nack);
+  data.setFinalBlock(dataName[-1]);
+  m_keyChain.sign(data);
+  m_face.put(data);
 }
 
 } // namespace psync

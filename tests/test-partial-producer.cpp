@@ -142,6 +142,21 @@ BOOST_AUTO_TEST_CASE(OnSyncInterest)
   BOOST_REQUIRE_NO_THROW(producer.onSyncInterest(syncInterestName, Interest(syncInterestName)));
 }
 
+BOOST_AUTO_TEST_CASE(ApplicationNack)
+{
+  util::DummyClientFace face;
+  PartialProducer producer(40, face, Name("/psync"), Name("/testUser"));
+
+  BOOST_CHECK_EQUAL(face.sentData.size(), 0);
+  producer.m_syncReplyFreshness = time::milliseconds(1000);
+  producer.sendApplicationNack(Name("test"));
+  face.processEvents(time::milliseconds(10));
+  BOOST_CHECK_EQUAL(face.sentData.size(), 1);
+
+  Data data = *face.sentData.begin();
+  BOOST_CHECK_EQUAL(data.getContentType(), ndn::tlv::ContentType_Nack);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 } // namespace psync
