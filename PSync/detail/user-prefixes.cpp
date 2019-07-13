@@ -17,8 +17,8 @@
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
-#include <ndn-cxx/util/logger.hpp>
 #include "PSync/detail/user-prefixes.hpp"
+#include <ndn-cxx/util/logger.hpp>
 
 namespace psync {
 
@@ -28,7 +28,7 @@ bool
 UserPrefixes::addUserNode(const ndn::Name& prefix)
 {
   if (!isUserNode(prefix)) {
-    m_prefixes[prefix] = 0;
+    prefixes[prefix] = 0;
     return true;
   }
   else {
@@ -39,9 +39,9 @@ UserPrefixes::addUserNode(const ndn::Name& prefix)
 void
 UserPrefixes::removeUserNode(const ndn::Name& prefix)
 {
-  auto it = m_prefixes.find(prefix);
-  if (it != m_prefixes.end()) {
-    m_prefixes.erase(it);
+  auto it = prefixes.find(prefix);
+  if (it != prefixes.end()) {
+    prefixes.erase(it);
   }
 }
 
@@ -52,12 +52,12 @@ UserPrefixes::updateSeqNo
   oldSeqNo = 0;
   NDN_LOG_DEBUG("UpdateSeq: " << prefix << " " << seqNo);
 
-  auto it = m_prefixes.find(prefix);
-  if (it != m_prefixes.end()) {
+  auto it = prefixes.find(prefix);
+  if (it != prefixes.end()) {
     oldSeqNo = it->second;
   }
   else {
-    NDN_LOG_WARN("Prefix not found in m_prefixes");
+    NDN_LOG_WARN("Prefix not found in prefixes");
     return false;
   }
 

@@ -112,7 +112,7 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   removeUserNode(const ndn::Name& prefix)
   {
     if (m_prefixes.isUserNode(prefix)) {
-      uint64_t seqNo = m_prefixes.m_prefixes[prefix];
+      uint64_t seqNo = m_prefixes.prefixes[prefix];
       m_prefixes.removeUserNode(prefix);
       m_producerArbitrary.removeName(ndn::Name(prefix).appendNumber(seqNo));
     }
@@ -142,7 +142,7 @@ private:
   bool
   isNotFutureHash(const ndn::Name& prefix, const std::set<uint32_t>& negative);
 
-PUBLIC_WITH_TESTS_ELSE_PROTECTED:
+PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   void
   updateSeqNo(const ndn::Name& prefix, uint64_t seq);
 
@@ -150,7 +150,7 @@ private:
   void
   arbitraryUpdateCallBack(const std::vector<ndn::Name>& names);
 
-PUBLIC_WITH_TESTS_ELSE_PROTECTED:
+PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   FullProducerArbitrary m_producerArbitrary;
   UpdateCallback m_onUpdateCallback;
 

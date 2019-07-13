@@ -113,7 +113,7 @@ public:
   removeUserNode(const ndn::Name& prefix)
   {
     if (m_prefixes.isUserNode(prefix)) {
-      uint64_t seqNo = m_prefixes.m_prefixes[prefix];
+      uint64_t seqNo = m_prefixes.prefixes[prefix];
       m_prefixes.removeUserNode(prefix);
       removeFromIBF(ndn::Name(prefix).appendNumber(seqNo));
     }

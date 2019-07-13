@@ -41,7 +41,7 @@ namespace psync {
 struct PendingEntryInfoFull
 {
   IBLT iblt;
-  ndn::util::scheduler::ScopedEventId expirationEvent;
+  ndn::scheduler::ScopedEventId expirationEvent;
 };
 
 typedef std::function<void(const std::vector<ndn::Name>&)> ArbitraryUpdateCallback;
@@ -116,7 +116,7 @@ private:
   void
   sendSyncInterest();
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   /**
    * @brief Process sync interest from other parties
    *
@@ -177,7 +177,7 @@ public:
   void
   satisfyPendingInterests();
 
-PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   /**
    * @brief Delete pending sync interests that match given name
    */
@@ -189,7 +189,7 @@ private:
   ndn::KeyChain m_keyChain;
   ndn::Scheduler m_scheduler;
 
-PUBLIC_WITH_TESTS_ELSE_PROTECTED:
+PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   SegmentPublisher m_segmentPublisher;
 
   std::map<ndn::Name, PendingEntryInfoFull> m_pendingEntries;
@@ -197,7 +197,7 @@ PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   ArbitraryUpdateCallback m_onArbitraryUpdateCallback;
   ShouldAddToSyncDataCallback m_onShouldAddToSyncDataCallback;
   CanAddName m_onCanAddName;
-  ndn::util::scheduler::ScopedEventId m_scheduledSyncInterestId;
+  ndn::scheduler::ScopedEventId m_scheduledSyncInterestId;
   std::uniform_int_distribution<> m_jitter;
   ndn::Name m_outstandingInterestName;
   ndn::ScopedRegisteredPrefixHandle m_registeredPrefix;

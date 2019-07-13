@@ -102,8 +102,8 @@ FullProducerArbitrary::sendSyncInterest()
   m_outstandingInterestName = syncInterestName;
 
   m_scheduledSyncInterestId =
-    m_scheduler.scheduleEvent(m_syncInterestLifetime / 2 + ndn::time::milliseconds(m_jitter(m_rng)),
-                              [this] { sendSyncInterest(); });
+    m_scheduler.schedule(m_syncInterestLifetime / 2 + ndn::time::milliseconds(m_jitter(m_rng)),
+                         [this] { sendSyncInterest(); });
 
   ndn::Interest syncInterest(syncInterestName);
 
@@ -201,7 +201,7 @@ FullProducerArbitrary::onSyncInterest(const ndn::Name& prefixName, const ndn::In
     if (m_name2hash.find(name) != m_name2hash.end()) {
       if (!m_onShouldAddToSyncDataCallback ||
           m_onShouldAddToSyncDataCallback(prefix.toUri(), negative)) {
-        state.addContent(name); 
+        state.addContent(name);
       }
     }
   }
@@ -216,7 +216,7 @@ FullProducerArbitrary::onSyncInterest(const ndn::Name& prefixName, const ndn::In
   }
 
   auto& entry = m_pendingEntries.emplace(interestName, PendingEntryInfoFull{iblt, {}}).first->second;
-  entry.expirationEvent = m_scheduler.scheduleEvent(interest.getInterestLifetime(),
+  entry.expirationEvent = m_scheduler.schedule(interest.getInterestLifetime(),
                           [this, interest] {
                             NDN_LOG_TRACE("Erase Pending Interest " << interest.getNonce());
                             m_pendingEntries.erase(interest.getName());

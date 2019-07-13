@@ -26,7 +26,7 @@
 namespace psync {
 
 /**
- * @brief UserPrefixes holds the m_prefixes map from prefix to sequence number,
+ * @brief UserPrefixes holds the prefixes map from prefix to sequence number,
  * used by PartialProducer and FullProducer.
  *
  * Contains code common to both
@@ -35,15 +35,15 @@ class UserPrefixes
 {
 public:
   /**
-   * @brief Check if the prefix is in m_prefixes.
+   * @brief Check if the prefix is in prefixes.
    *
    * @param prefix The prefix to check.
-   * @return True if the prefix is in m_prefixes.
+   * @return True if the prefix is in prefixes.
    */
   bool
   isUserNode(const ndn::Name& prefix) const
   {
-    return m_prefixes.find(prefix) != m_prefixes.end();
+    return prefixes.find(prefix) != prefixes.end();
   }
 
   /**
@@ -54,8 +54,8 @@ public:
   ndn::optional<uint64_t>
   getSeqNo(const ndn::Name& prefix) const
   {
-    auto it = m_prefixes.find(prefix);
-    if (it == m_prefixes.end()) {
+    auto it = prefixes.find(prefix);
+    if (it == prefixes.end()) {
       return ndn::nullopt;
     }
     return it->second;
@@ -64,18 +64,18 @@ public:
   /**
    * @brief Adds a user node for synchronization
    *
-   * Initializes m_prefixes[prefix] to zero
+   * Initializes prefixes[prefix] to zero
    *
    * @param prefix the user node to be added
    * @return true if the prefix was added, false if the prefix was already in
-   * m_prefixes.
+   * prefixes.
    */
   bool
   addUserNode(const ndn::Name& prefix);
 
   /**
    * @brief Remove the user node from synchronization. If the prefix is not in
-   * m_prefixes, then do nothing.
+   * prefixes, then do nothing.
    *
    * The caller should first check isUserNode(prefix) and erase the prefix from
    * the IBLT and other maps if needed.
@@ -86,7 +86,7 @@ public:
   removeUserNode(const ndn::Name& prefix);
 
   /**
-   * @brief Update m_prefixes with the given prefix and sequence number. This
+   * @brief Update prefixes with the given prefix and sequence number. This
    * does not update the IBLT. This logs a message for the update.
    *
    * Whoever calls this needs to make sure that isUserNode(prefix) is true.
@@ -97,7 +97,7 @@ public:
    * prefix. If this method returns true and oldSeqNo is not zero, the caller
    * can remove the old prefix from the IBLT.
    * @return True if the sequence number was updated, false if the prefix was
-   * not in m_prefixes, or if the seqNo is less than or equal to the old
+   * not in prefixes, or if the seqNo is less than or equal to the old
    * sequence number. If this returns false, the caller should not update the
    * IBLT.
    */
@@ -105,7 +105,7 @@ public:
   updateSeqNo(const ndn::Name& prefix, uint64_t seqNo, uint64_t& oldSeqNo);
 
   // prefix and sequence number
-  std::map <ndn::Name, uint64_t> m_prefixes;
+  std::map <ndn::Name, uint64_t> prefixes;
 };
 
 } // namespace psync

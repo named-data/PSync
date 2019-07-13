@@ -60,7 +60,7 @@ PartialProducer::publishName(const ndn::Name& prefix, ndn::optional<uint64_t> se
     return;
   }
 
-  uint64_t newSeq = seq.value_or(m_prefixes.m_prefixes[prefix] + 1);
+  uint64_t newSeq = seq.value_or(m_prefixes.prefixes[prefix] + 1);
 
   NDN_LOG_INFO("Publish: " << prefix << "/" << newSeq);
 
@@ -102,7 +102,7 @@ PartialProducer::onHelloInterest(const ndn::Name& prefix, const ndn::Interest& i
 
   State state;
 
-  for (const auto& prefix : m_prefixes.m_prefixes) {
+  for (const auto& prefix : m_prefixes.prefixes) {
     state.addContent(ndn::Name(prefix.first).appendNumber(prefix.second));
   }
   NDN_LOG_DEBUG("sending content p: " << state);
@@ -174,7 +174,7 @@ PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& in
   std::set<uint32_t> positive;
   std::set<uint32_t> negative;
 
-  NDN_LOG_TRACE("Number elements in IBF: " << m_prefixes.m_prefixes.size());
+  NDN_LOG_TRACE("Number elements in IBF: " << m_prefixes.prefixes.size());
 
   bool peel = diff.listEntries(positive, negative);
 
@@ -197,7 +197,7 @@ PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& in
     if (bf.contains(prefix.toUri())) {
       // generate data
       state.addContent(name);
-      NDN_LOG_DEBUG("Content: " << prefix << " " << std::to_string(m_prefixes.m_prefixes[prefix]));
+      NDN_LOG_DEBUG("Content: " << prefix << " " << std::to_string(m_prefixes.prefixes[prefix]));
     }
   }
 
@@ -237,7 +237,7 @@ PartialProducer::satisfyPendingSyncInterests(const ndn::Name& prefix) {
 
     NDN_LOG_TRACE("Result of listEntries on the difference: " << peel);
 
-    NDN_LOG_TRACE("Number elements in IBF: " << m_prefixes.m_prefixes.size());
+    NDN_LOG_TRACE("Number elements in IBF: " << m_prefixes.prefixes.size());
     NDN_LOG_TRACE("m_threshold: " << m_threshold << " Total: " << positive.size() + negative.size());
 
     if (!peel) {
@@ -249,8 +249,8 @@ PartialProducer::satisfyPendingSyncInterests(const ndn::Name& prefix) {
     State state;
     if (entry.bf.contains(prefix.toUri()) || positive.size() + negative.size() >= m_threshold) {
       if (entry.bf.contains(prefix.toUri())) {
-        state.addContent(ndn::Name(prefix).appendNumber(m_prefixes.m_prefixes[prefix]));
-        NDN_LOG_DEBUG("sending sync content " << prefix << " " << std::to_string(m_prefixes.m_prefixes[prefix]));
+        state.addContent(ndn::Name(prefix).appendNumber(m_prefixes.prefixes[prefix]));
+        NDN_LOG_DEBUG("sending sync content " << prefix << " " << std::to_string(m_prefixes.prefixes[prefix]));
       }
       else {
         NDN_LOG_DEBUG("Sending with empty content to send latest IBF to consumer");

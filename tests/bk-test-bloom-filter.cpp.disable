@@ -1,0 +1,100 @@
+/* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
+/*
+ * Copyright (c) 2014-2019,  The University of Memphis
+ *
+ * This file is part of PSync.
+ * See AUTHORS.md for complete list of PSync authors and contributors.
+ *
+ * PSync is free software: you can redistribute it and/or modify it under the terms
+ * of the GNU Lesser General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ *
+ * PSync is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License along with
+ * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
+ **/
+
+#include "PSync/detail/bloom-filter.hpp"
+
+#include <boost/test/unit_test.hpp>
+#include <ndn-cxx/name.hpp>
+
+#include <iostream>
+
+#include <boost/iostreams/device/array.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/filter/zlib.hpp>
+#include <boost/iostreams/copy.hpp>
+
+namespace psync {
+
+using namespace ndn;
+namespace bio = boost::iostreams;
+
+BOOST_AUTO_TEST_SUITE(TestBloomFilter)
+
+BOOST_AUTO_TEST_CASE(Basic)
+{
+  BloomFilter bf(100, 0.001);
+
+  std::string insertName("/memphis");
+  bf.insert(insertName);
+  BOOST_CHECK(bf.contains(insertName));
+}
+
+BOOST_AUTO_TEST_CASE(NameAppendAndExtract)
+{
+  Name bfName("/test");
+  BloomFilter bf(100, 0.001);
+  bf.insert("/memphis");
+
+  bf.appendToName(bfName);
+
+  BloomFilter bfFromName(100, 0.001, bfName.get(-1));
+
+  BOOST_CHECK_EQUAL(bfName.get(1).toNumber(), 100);
+  BOOST_CHECK_EQUAL(bfName.get(2).toNumber(), 1);
+  BOOST_CHECK_EQUAL(bf, bfFromName);
+
+  BOOST_CHECK_THROW(BloomFilter inCompatibleBf(200, 0.001, bfName.get(-1)), std::runtime_error);
+}
+
+BOOST_AUTO_TEST_CASE(SizeTest)
+{
+  BloomFilter bf(1000, 0.01);
+  Name bfName("/test");
+
+  for(int i = 0; i < 1000; ++i) {
+    bf.insert("/memphis" + std::to_string(i));
+  }
+  bf.appendToName(bfName);
+  std::cout << bfName << std::endl;
+
+  std::cout << "Size of name: " << bfName.toUri() << std::endl;
+  std::cout << "Size of name: " << bfName.toUri().size() << std::endl;
+  // std::cout << "Size of name: " << bfName.wireEncode().size() << std::endl;
+
+  std::vector<char> table;
+  for (const auto i : bf.table()) {
+    table.push_back(i);
+  }
+  bio::filtering_streambuf<bio::input> in;
+  in.push(bio::zlib_compressor());
+  in.push(bio::array_source(table.data(), table.size()));
+
+  std::stringstream sstream;
+  bio::copy(in, sstream);
+
+  Name bfName2("/test");
+  std::string compressedIBF = sstream.str();
+  bfName2.append(compressedIBF.begin(), compressedIBF.end());
+  std::cout << "Size of compressed name: " << bfName2 << std::endl;
+  std::cout << "Size of compressed name: " << bfName2.toUri().size() << std::endl;
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+} // namespace psync

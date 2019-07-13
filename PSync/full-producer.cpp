@@ -50,9 +50,9 @@ FullProducer::FullProducer(const size_t expectedNumEntries,
                           ndn::Name prefix = name.getPrefix(-1);
                           uint64_t seq = name.get(-1).toNumber();
 
-                          if (m_prefixes.m_prefixes.find(prefix) == m_prefixes.m_prefixes.end() ||
-                              m_prefixes.m_prefixes[prefix] < seq) {
-                            uint64_t oldSeq = m_prefixes.m_prefixes[prefix];
+                          if (m_prefixes.prefixes.find(prefix) == m_prefixes.prefixes.end() ||
+                              m_prefixes.prefixes[prefix] < seq) {
+                            uint64_t oldSeq = m_prefixes.prefixes[prefix];
                             if (oldSeq != 0) {
                               m_producerArbitrary.removeName(ndn::Name(prefix).appendNumber(oldSeq));
                             }
@@ -72,7 +72,7 @@ FullProducer::publishName(const ndn::Name& prefix, ndn::optional<uint64_t> seq)
     return;
   }
 
-  uint64_t newSeq = seq.value_or(m_prefixes.m_prefixes[prefix] + 1);
+  uint64_t newSeq = seq.value_or(m_prefixes.prefixes[prefix] + 1);
 
   NDN_LOG_INFO("Publish: " << prefix << "/" << newSeq);
 
@@ -99,7 +99,7 @@ bool
 FullProducer::isNotFutureHash(const ndn::Name& prefix, const std::set<uint32_t>& negative)
 {
   uint32_t nextHash = murmurHash3(N_HASHCHECK,
-                                  ndn::Name(prefix).appendNumber(m_prefixes.m_prefixes[prefix] + 1).toUri());
+                                  ndn::Name(prefix).appendNumber(m_prefixes.prefixes[prefix] + 1).toUri());
   for (const auto& nHash : negative) {
     if (nHash == nextHash) {
       return false;
@@ -120,8 +120,8 @@ FullProducer::arbitraryUpdateCallBack(const std::vector<ndn::Name>& names)
 
     NDN_LOG_INFO("Updates: " << prefix << " " << seq);
 
-    updates.push_back(MissingDataInfo{prefix, m_prefixes.m_prefixes[prefix] + 1, seq});
-    m_prefixes.m_prefixes[prefix] = seq;
+    updates.push_back(MissingDataInfo{prefix, m_prefixes.prefixes[prefix] + 1, seq});
+    m_prefixes.prefixes[prefix] = seq;
   }
 
   m_onUpdateCallback(updates);
