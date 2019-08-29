@@ -149,7 +149,7 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
   ndn::name::Component ibltName = interestName.get(interestName.size()-1);
 
   NDN_LOG_DEBUG("Full Sync Interest Received, nonce: " << interest.getNonce() <<
-                ", hash: " << std::hash<ndn::Name>{}(interestName));
+                ", hash: " << std::hash<ndn::Name>{}(interestName.toUri()));
 
   IBLT iblt(m_expectedNumEntries);
   try {
@@ -218,11 +218,11 @@ FullProducer::sendSyncData(const ndn::Name& name, const ndn::Block& block)
 {
   NDN_LOG_DEBUG("Checking if data will satisfy our own pending interest");
 
-  ndn::Name nameWithIblt;
-  m_iblt.appendToName(nameWithIblt);
+  ndn::Name ibltName;
+  m_iblt.appendToName(ibltName);
 
   // Append hash of our IBF so that data name maybe different for each node answering
-  ndn::Name dataName(ndn::Name(name).appendNumber(std::hash<ndn::Name>{}(nameWithIblt)));
+  ndn::Name dataName(ndn::Name(name).append(ibltName));
 
   // checking if our own interest got satisfied
   if (m_outstandingInterestName == name) {
