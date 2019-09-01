@@ -19,6 +19,8 @@
 
 #include "PSync/detail/state.hpp"
 
+#include <ndn-cxx/util/ostream-joiner.hpp>
+
 namespace psync {
 
 State::State(const ndn::Block& block)
@@ -74,12 +76,10 @@ State::wireDecode(const ndn::Block& wire)
   auto blockType = wire.type();
   if (blockType != tlv::PSyncContent) {
     BOOST_THROW_EXCEPTION(ndn::tlv::Error("Expected PSyncContent Block, but Block is of type: #" +
-                                           ndn::to_string(blockType)));
-    return;
+                                          ndn::to_string(blockType)));
   }
 
   wire.parse();
-
   m_wire = wire;
 
   for (auto it = m_wire.elements_begin(); it != m_wire.elements_end(); ++it) {
@@ -96,7 +96,7 @@ State::wireDecode(const ndn::Block& wire)
 std::ostream&
 operator<<(std::ostream& os, const State& state)
 {
-  std::vector<ndn::Name> content = state.getContent();
+  auto content = state.getContent();
 
   os << "[";
   std::copy(content.begin(), content.end(), ndn::make_ostream_joiner(os, ", "));
