@@ -3,8 +3,7 @@ libdir=@LIBDIR@
 includedir=@INCLUDEDIR@
 
 Name: PSync
-Description: PSync library
+Description: NDN PSync library
 Version: @VERSION@
 Libs: -L${libdir} -lPSync
 Cflags: -I${includedir}
-

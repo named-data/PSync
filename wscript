@@ -27,9 +27,8 @@ def configure(conf):
     conf.env.WITH_EXAMPLES = conf.options.with_examples
     conf.env.WITH_TESTS = conf.options.with_tests
 
-    if 'PKG_CONFIG_PATH' not in os.environ:
-        os.environ['PKG_CONFIG_PATH'] = Utils.subst_vars('${LIBDIR}/pkgconfig', conf.env)
-    conf.check_cfg(package='libndn-cxx', args=['--cflags', '--libs'], uselib_store='NDN_CXX')
+    conf.check_cfg(package='libndn-cxx', args=['--cflags', '--libs'], uselib_store='NDN_CXX',
+                   pkg_config_path=os.environ.get('PKG_CONFIG_PATH', '%s/pkgconfig' % conf.env.LIBDIR))
 
     boost_libs = ['system', 'iostreams']
     if conf.env.WITH_TESTS:
@@ -56,14 +55,13 @@ def configure(conf):
     conf.write_config_header('PSync/detail/config.hpp', define_prefix='PSYNC_')
 
 def build(bld):
-    bld.shlib(
-        target='PSync',
-        vnum=VERSION,
-        cnum=VERSION,
-        source=bld.path.ant_glob('PSync/**/*.cpp'),
-        use='BOOST NDN_CXX',
-        includes='.',
-        export_includes='.')
+    bld.shlib(target='PSync',
+              vnum=VERSION,
+              cnum=VERSION,
+              source=bld.path.ant_glob('PSync/**/*.cpp'),
+              use='NDN_CXX BOOST',
+              includes='.',
+              export_includes='.')
 
     if bld.env.WITH_TESTS:
         bld.recurse('tests')
@@ -72,7 +70,8 @@ def build(bld):
         bld.recurse('examples')
 
     headers = bld.path.ant_glob('PSync/**/*.hpp')
-    bld.install_files(bld.env['INCLUDEDIR'], headers, relative_trick=True)
+    bld.install_files(bld.env.INCLUDEDIR, headers,
+                      relative_trick=True)
 
     bld.install_files('${INCLUDEDIR}/PSync/detail',
                       bld.path.find_resource('PSync/detail/config.hpp'))
@@ -80,10 +79,8 @@ def build(bld):
     bld(features='subst',
         source='PSync.pc.in',
         target='PSync.pc',
-        install_path = '${LIBDIR}/pkgconfig',
-        PREFIX       = bld.env['PREFIX'],
-        INCLUDEDIR   = bld.env['INCLUDEDIR'],
-        VERSION      = VERSION)
+        install_path='${LIBDIR}/pkgconfig',
+        VERSION=VERSION)
 
 def docs(bld):
     from waflib import Options
@@ -121,7 +118,8 @@ def sphinx(bld):
         config='docs/conf.py',
         outdir='docs',
         source=bld.path.ant_glob('docs/**/*.rst'),
-        VERSION=VERSION)
+        version=VERSION_BASE,
+        release=VERSION)
 
 def version(ctx):
     # don't execute more than once
