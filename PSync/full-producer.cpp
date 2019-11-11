@@ -41,10 +41,8 @@ FullProducer::FullProducer(const size_t expectedNumEntries,
   : ProducerBase(expectedNumEntries, face, syncPrefix, userPrefix, syncReplyFreshness)
   , m_syncInterestLifetime(syncInterestLifetime)
   , m_onUpdate(onUpdateCallBack)
+  , m_jitter(100, 500)
 {
-  int jitter = m_syncInterestLifetime.count() * .20;
-  m_jitter = std::uniform_int_distribution<>(-jitter, jitter);
-
   m_registeredPrefix = m_face.setInterestFilter(
                          ndn::InterestFilter(m_syncPrefix).allowLoopback(false),
                          std::bind(&FullProducer::onSyncInterest, this, _1, _2),
@@ -116,8 +114,13 @@ FullProducer::sendSyncInterest()
     onSyncData(syncInterest, bufferPtr);
   });
 
-  m_fetcher->onError.connect([] (uint32_t errorCode, const std::string& msg) {
+  m_fetcher->onError.connect([this] (uint32_t errorCode, const std::string& msg) {
     NDN_LOG_ERROR("Cannot fetch sync data, error: " << errorCode << " message: " << msg);
+    if (errorCode == SegmentFetcher::ErrorCode::NACK_ERROR) {
+      auto after = ndn::time::milliseconds(m_jitter(m_rng));
+      NDN_LOG_DEBUG("Schedule sync interest after: " << after);
+      m_scheduledSyncInterestId = m_scheduler.schedule(after, [this] { sendSyncInterest(); });
+    }
   });
 
   NDN_LOG_DEBUG("sendFullSyncInterest, nonce: " << syncInterest.getNonce() <<
