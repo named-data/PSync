@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019,  The University of Memphis
+ * Copyright (c) 2014-2020,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -46,6 +46,8 @@
 #ifndef PSYNC_IBLT_HPP
 #define PSYNC_IBLT_HPP
 
+#include "PSync/detail/util.hpp"
+
 #include <ndn-cxx/name.hpp>
 
 #include <inttypes.h>
@@ -90,8 +92,10 @@ public:
    * @brief constructor
    *
    * @param expectedNumEntries the expected number of entries in the IBLT
+   * @param scheme compression scheme to be used for the IBLT
    */
-  explicit IBLT(size_t expectedNumEntries);
+  explicit
+  IBLT(size_t expectedNumEntries, CompressionScheme scheme = CompressionScheme::ZLIB);
 
   /**
    * @brief Populate the hash table using the vector representation of IBLT
@@ -125,7 +129,7 @@ public:
   IBLT
   operator-(const IBLT& other) const;
 
-  std::vector<HashTableEntry>
+  const std::vector<HashTableEntry>&
   getHashTable() const
   {
     return m_hashTable;
@@ -165,6 +169,7 @@ private:
   std::vector<HashTableEntry> m_hashTable;
   static const int INSERT = 1;
   static const int ERASE = -1;
+  CompressionScheme m_compressionScheme;
 };
 
 bool

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019,  The University of Memphis
+ * Copyright (c) 2014-2020,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -46,6 +46,27 @@ struct MissingDataInfo
   ndn::Name prefix;
   uint64_t lowSeq;
   uint64_t highSeq;
+};
+
+enum class CompressionScheme {
+  NONE,
+  ZLIB,
+  GZIP,
+  BZIP2,
+  LZMA,
+  ZSTD
+};
+
+std::shared_ptr<ndn::Buffer>
+compress(CompressionScheme scheme, const uint8_t* buffer, size_t bufferSize);
+
+std::shared_ptr<ndn::Buffer>
+decompress(CompressionScheme scheme, const uint8_t* buffer, size_t bufferSize);
+
+class Error : public std::runtime_error
+{
+public:
+  using std::runtime_error::runtime_error;
 };
 
 } // namespace psync

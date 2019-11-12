@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019,  The University of Memphis
+ * Copyright (c) 2014-2020,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -44,16 +44,8 @@
 */
 
 #include "PSync/detail/iblt.hpp"
-#include "PSync/detail/util.hpp"
-
-#include <boost/iostreams/device/array.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
-#include <boost/iostreams/filter/zlib.hpp>
-#include <boost/iostreams/copy.hpp>
 
 namespace psync {
-
-namespace bio = boost::iostreams;
 
 const size_t N_HASH(3);
 const size_t N_HASHCHECK(11);
@@ -75,7 +67,8 @@ HashTableEntry::isEmpty() const
   return count == 0 && keySum == 0 && keyCheck == 0;
 }
 
-IBLT::IBLT(size_t expectedNumEntries)
+IBLT::IBLT(size_t expectedNumEntries, CompressionScheme scheme)
+  : m_compressionScheme(scheme)
 {
   // 1.5x expectedNumEntries gives very low probability of decoding failure
   size_t nEntries = expectedNumEntries + expectedNumEntries / 2;
@@ -228,13 +221,14 @@ operator<<(std::ostream& out, const IBLT& iblt)
 void
 IBLT::appendToName(ndn::Name& name) const
 {
-  size_t n = m_hashTable.size();
-  size_t unitSize = (32 * 3) / 8; // hard coding
-  size_t tableSize = unitSize * n;
+  constexpr size_t unitSize = (sizeof(m_hashTable[0].count) +
+                               sizeof(m_hashTable[0].keySum) +
+                               sizeof(m_hashTable[0].keyCheck));
 
-  std::vector<char> table(tableSize);
+  size_t tableSize = unitSize * m_hashTable.size();
+  std::vector<uint8_t> table(tableSize);
 
-  for (size_t i = 0; i < n; i++) {
+  for (size_t i = 0; i < m_hashTable.size(); i++) {
     // table[i*12],   table[i*12+1], table[i*12+2], table[i*12+3] --> hashTable[i].count
 
     table[(i * unitSize)]   = 0xFF & m_hashTable[i].count;
@@ -257,40 +251,24 @@ IBLT::appendToName(ndn::Name& name) const
     table[(i * unitSize) + 11] = 0xFF & (m_hashTable[i].keyCheck >> 24);
   }
 
-  bio::filtering_streambuf<bio::input> in;
-  in.push(bio::zlib_compressor());
-  in.push(bio::array_source(table.data(), table.size()));
-
-  std::stringstream sstream;
-  bio::copy(in, sstream);
-
-  std::string compressedIBF = sstream.str();
-  name.append(compressedIBF.begin(), compressedIBF.end());
+  auto compressed = compress(m_compressionScheme, table.data(), table.size());
+  name.append(ndn::name::Component(std::move(compressed)));
 }
 
 std::vector<uint32_t>
 IBLT::extractValueFromName(const ndn::name::Component& ibltName) const
 {
-  std::string compressed(ibltName.value_begin(), ibltName.value_end());
+  auto decompressedBuf = decompress(m_compressionScheme, ibltName.value(), ibltName.value_size());
 
-  bio::filtering_streambuf<bio::input> in;
-  in.push(bio::zlib_decompressor());
-  in.push(bio::array_source(compressed.data(), compressed.size()));
-
-  std::stringstream sstream;
-  bio::copy(in, sstream);
-  std::string ibltStr = sstream.str();
-
-  std::vector<uint8_t> ibltValues(ibltStr.begin(), ibltStr.end());
-  size_t n = ibltValues.size() / 4;
+  size_t n = decompressedBuf->size() / 4;
 
   std::vector<uint32_t> values(n, 0);
 
   for (size_t i = 0; i < 4 * n; i += 4) {
-    uint32_t t = (ibltValues[i + 3] << 24) +
-                 (ibltValues[i + 2] << 16) +
-                 (ibltValues[i + 1] << 8)  +
-                 ibltValues[i];
+    uint32_t t = ((*decompressedBuf)[i + 3] << 24) +
+                 ((*decompressedBuf)[i + 2] << 16) +
+                 ((*decompressedBuf)[i + 1] << 8)  +
+                  (*decompressedBuf)[i];
     values[i / 4] = t;
   }
 

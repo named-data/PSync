@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019,  The University of Memphis
+ * Copyright (c) 2014-2020,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -41,7 +41,6 @@ namespace psync {
 using namespace ndn::time_literals;
 
 const ndn::time::milliseconds SYNC_REPLY_FRESHNESS = 1_s;
-const ndn::time::milliseconds HELLO_REPLY_FRESHNESS = 1_s;
 
 /**
  * @brief Base class for PartialProducer and FullProducer
@@ -65,14 +64,16 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
    * @param syncPrefix The prefix of the sync group
    * @param userPrefix The prefix of the first user in the group
    * @param syncReplyFreshness freshness of sync data
-   * @param helloReplyFreshness freshness of hello data
+   * @param ibltCompression Compression scheme to use for IBF
+   * @param contentCompression Compression scheme to use for Data content
    */
   ProducerBase(size_t expectedNumEntries,
                ndn::Face& face,
                const ndn::Name& syncPrefix,
                const ndn::Name& userPrefix,
                ndn::time::milliseconds syncReplyFreshness = SYNC_REPLY_FRESHNESS,
-               ndn::time::milliseconds helloReplyFreshness = HELLO_REPLY_FRESHNESS);
+               CompressionScheme ibltCompression = CompressionScheme::ZLIB,
+               CompressionScheme contentCompression = CompressionScheme::ZLIB);
 public:
   /**
    * @brief Returns the current sequence number of the given prefix
@@ -177,11 +178,12 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   ndn::Name m_userPrefix;
 
   ndn::time::milliseconds m_syncReplyFreshness;
-  ndn::time::milliseconds m_helloReplyFreshness;
 
   SegmentPublisher m_segmentPublisher;
 
   ndn::random::RandomNumberEngine& m_rng;
+  CompressionScheme m_ibltCompression;
+  CompressionScheme m_contentCompression;
 };
 
 } // namespace psync

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019,  The University of Memphis
+ * Copyright (c) 2014-2020,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -42,7 +42,7 @@ public:
   void
   addContent(const ndn::Name& prefix);
 
-  std::vector<ndn::Name>
+  const std::vector<ndn::Name>&
   getContent() const
   {
     return m_content;

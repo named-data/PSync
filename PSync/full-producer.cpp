@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019,  The University of Memphis
+ * Copyright (c) 2014-2020,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -37,8 +37,11 @@ FullProducer::FullProducer(const size_t expectedNumEntries,
                            const ndn::Name& userPrefix,
                            const UpdateCallback& onUpdateCallBack,
                            ndn::time::milliseconds syncInterestLifetime,
-                           ndn::time::milliseconds syncReplyFreshness)
-  : ProducerBase(expectedNumEntries, face, syncPrefix, userPrefix, syncReplyFreshness)
+                           ndn::time::milliseconds syncReplyFreshness,
+                           CompressionScheme ibltCompression,
+                           CompressionScheme contentCompression)
+  : ProducerBase(expectedNumEntries, face, syncPrefix, userPrefix, syncReplyFreshness,
+                 ibltCompression, contentCompression)
   , m_syncInterestLifetime(syncInterestLifetime)
   , m_onUpdate(onUpdateCallBack)
   , m_jitter(100, 500)
@@ -130,6 +133,7 @@ FullProducer::sendSyncInterest()
 void
 FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& interest)
 {
+  // TODO: answer only segments from store.
   if (m_segmentPublisher.replyFromStore(interest.getName())) {
     return;
   }
@@ -185,8 +189,7 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
       }
 
       if (!state.getContent().empty()) {
-        m_segmentPublisher.publish(interest.getName(), interest.getName(),
-                                   state.wireEncode(), m_syncReplyFreshness);
+        sendSyncData(interest.getName(), state.wireEncode());
       }
 
       return;
@@ -224,8 +227,10 @@ FullProducer::sendSyncData(const ndn::Name& name, const ndn::Block& block)
   ndn::Name nameWithIblt;
   m_iblt.appendToName(nameWithIblt);
 
-  // Append hash of our IBF so that data name maybe different for each node answering
+  // TODO: Remove appending of hash - serves no purpose to the receiver
   ndn::Name dataName(ndn::Name(name).appendNumber(std::hash<ndn::Name>{}(nameWithIblt)));
+
+  auto content = compress(m_contentCompression, block.wire(), block.size());
 
   // checking if our own interest got satisfied
   if (m_outstandingInterestName == name) {
@@ -240,14 +245,14 @@ FullProducer::sendSyncData(const ndn::Name& name, const ndn::Block& block)
     NDN_LOG_DEBUG("Sending Sync Data");
 
     // Send data after removing pending sync interest on face
-    m_segmentPublisher.publish(name, dataName, block, m_syncReplyFreshness);
+    m_segmentPublisher.publish(name, dataName, content, m_syncReplyFreshness);
 
     NDN_LOG_TRACE("Renewing sync interest");
     sendSyncInterest();
   }
   else {
     NDN_LOG_DEBUG("Sending Sync Data");
-    m_segmentPublisher.publish(name, dataName, block, m_syncReplyFreshness);
+    m_segmentPublisher.publish(name, dataName, content, m_syncReplyFreshness);
   }
 }
 
@@ -256,7 +261,16 @@ FullProducer::onSyncData(const ndn::Interest& interest, const ndn::ConstBufferPt
 {
   deletePendingInterests(interest.getName());
 
-  State state{ndn::Block{bufferPtr}};
+  State state;
+  try {
+    auto decompressed = decompress(m_contentCompression, bufferPtr->data(), bufferPtr->size());
+    state.wireDecode(ndn::Block(std::move(decompressed)));
+  }
+  catch (const std::exception& e) {
+    NDN_LOG_ERROR("Cannot parse received Sync Data: " << e.what());
+    return;
+  }
+
   std::vector<MissingDataInfo> updates;
 
   NDN_LOG_DEBUG("Sync Data Received: " << state);

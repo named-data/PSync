@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019,  The University of Memphis
+ * Copyright (c) 2014-2020,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -36,21 +36,28 @@ SegmentPublisher::publish(const ndn::Name& interestName, const ndn::Name& dataNa
                           const ndn::Block& block, ndn::time::milliseconds freshness,
                           const ndn::security::SigningInfo& signingInfo)
 {
+  auto buf = std::make_shared<const ndn::Buffer>(block.wire(), block.size());
+  publish(interestName, dataName, buf, freshness, signingInfo);
+}
+
+void
+SegmentPublisher::publish(const ndn::Name& interestName, const ndn::Name& dataName,
+                          const std::shared_ptr<const ndn::Buffer>& buffer,
+                          ndn::time::milliseconds freshness,
+                          const ndn::security::SigningInfo& signingInfo)
+{
   uint64_t interestSegment = 0;
   if (interestName[-1].isSegment()) {
     interestSegment = interestName[-1].toSegment();
   }
 
-  ndn::EncodingBuffer buffer;
-  buffer.prependBlock(block);
-
-  const uint8_t* rawBuffer = buffer.buf();
+  const uint8_t* rawBuffer = buffer->data();
   const uint8_t* segmentBegin = rawBuffer;
-  const uint8_t* end = rawBuffer + buffer.size();
+  const uint8_t* end = rawBuffer + buffer->size();
 
   size_t maxPacketSize = (ndn::MAX_NDN_PACKET_SIZE >> 1);
 
-  uint64_t totalSegments = buffer.size() / maxPacketSize;
+  uint64_t totalSegments = buffer->size() / maxPacketSize;
 
   ndn::Name segmentPrefix(dataName);
   segmentPrefix.appendVersion();

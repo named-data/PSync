@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019,  The University of Memphis
+ * Copyright (c) 2014-2020,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -22,10 +22,34 @@
  **/
 
 #include "PSync/detail/util.hpp"
+#include "PSync/detail/config.hpp"
 
+#include <ndn-cxx/encoding/buffer-stream.hpp>
 #include <ndn-cxx/util/backports.hpp>
+#include <ndn-cxx/util/exception.hpp>
+
+#include <boost/iostreams/device/array.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#ifdef PSYNC_HAVE_ZLIB
+  #include <boost/iostreams/filter/zlib.hpp>
+#endif
+#ifdef PSYNC_HAVE_GZIP
+  #include <boost/iostreams/filter/gzip.hpp>
+#endif
+#ifdef PSYNC_HAVE_BZIP2
+  #include <boost/iostreams/filter/bzip2.hpp>
+#endif
+#ifdef PSYNC_HAVE_LZMA
+  #include <boost/iostreams/filter/lzma.hpp>
+#endif
+#ifdef PSYNC_HAVE_ZSTD
+  #include <boost/iostreams/filter/zstd.hpp>
+#endif
+#include <boost/iostreams/copy.hpp>
 
 namespace psync {
+
+namespace bio = boost::iostreams;
 
 static uint32_t
 ROTL32 ( uint32_t x, int8_t r )
@@ -102,6 +126,116 @@ murmurHash3(uint32_t nHashSeed, uint32_t value)
   return murmurHash3(nHashSeed,
                      std::vector<unsigned char>((unsigned char*)&value,
                                                 (unsigned char*)&value + sizeof(uint32_t)));
+}
+
+std::shared_ptr<ndn::Buffer>
+compress(CompressionScheme scheme, const uint8_t* buffer, size_t bufferSize)
+{
+  ndn::OBufferStream out;
+  bio::filtering_streambuf<bio::input> in;
+  switch (scheme) {
+    case CompressionScheme::ZLIB:
+#ifdef PSYNC_HAVE_ZLIB
+      in.push(bio::zlib_compressor(bio::zlib::best_compression));
+#else
+      NDN_THROW(Error("ZLIB compression not supported!"));
+#endif
+      break;
+
+    case CompressionScheme::GZIP:
+#ifdef PSYNC_HAVE_GZIP
+      in.push(bio::gzip_compressor(bio::gzip::best_compression));
+#else
+      NDN_THROW(Error("GZIP compression not supported!"));
+#endif
+      break;
+
+    case CompressionScheme::BZIP2:
+#ifdef PSYNC_HAVE_BZIP2
+      in.push(bio::bzip2_compressor());
+#else
+      NDN_THROW(Error("BZIP2 compression not supported!"));
+#endif
+      break;
+
+    case CompressionScheme::LZMA:
+#ifdef PSYNC_HAVE_LZMA
+      in.push(bio::lzma_compressor(bio::lzma::best_compression));
+#else
+      NDN_THROW(Error("LZMA compression not supported!"));
+#endif
+      break;
+
+    case CompressionScheme::ZSTD:
+#ifdef PSYNC_HAVE_ZSTD
+      in.push(bio::zstd_compressor(bio::zstd::best_compression));
+#else
+      NDN_THROW(Error("ZSTD compression not supported!"));
+#endif
+      break;
+
+    case CompressionScheme::NONE:
+      break;
+  }
+  in.push(bio::array_source(reinterpret_cast<const char*>(buffer), bufferSize));
+  bio::copy(in, out);
+
+  return out.buf();
+}
+
+std::shared_ptr<ndn::Buffer>
+decompress(CompressionScheme scheme, const uint8_t* buffer, size_t bufferSize)
+{
+  ndn::OBufferStream out;
+  bio::filtering_streambuf<bio::input> in;
+  switch (scheme) {
+    case CompressionScheme::ZLIB:
+#ifdef PSYNC_HAVE_ZLIB
+      in.push(bio::zlib_decompressor());
+#else
+      NDN_THROW(Error("ZLIB decompression not supported!"));
+#endif
+      break;
+
+    case CompressionScheme::GZIP:
+#ifdef PSYNC_HAVE_GZIP
+      in.push(bio::gzip_decompressor());
+#else
+      NDN_THROW(Error("GZIP compression not supported!"));
+#endif
+      break;
+
+    case CompressionScheme::BZIP2:
+#ifdef PSYNC_HAVE_BZIP2
+      in.push(bio::bzip2_decompressor());
+#else
+      NDN_THROW(Error("BZIP2 compression not supported!"));
+#endif
+      break;
+
+    case CompressionScheme::LZMA:
+#ifdef PSYNC_HAVE_LZMA
+      in.push(bio::lzma_decompressor());
+#else
+      NDN_THROW(Error("LZMA compression not supported!"));
+#endif
+      break;
+
+    case CompressionScheme::ZSTD:
+#ifdef PSYNC_HAVE_ZSTD
+      in.push(bio::zstd_decompressor());
+#else
+      NDN_THROW(Error("ZSTD compression not supported!"));
+#endif
+      break;
+
+    case CompressionScheme::NONE:
+      break;
+  }
+  in.push(bio::array_source(reinterpret_cast<const char*>(buffer), bufferSize));
+  bio::copy(in, out);
+
+  return out.buf();
 }
 
 } // namespace psync

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019,  The University of Memphis
+ * Copyright (c) 2014-2020,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -55,6 +55,21 @@ public:
   void
   publish(const ndn::Name& interestName, const ndn::Name& dataName,
           const ndn::Block& block, ndn::time::milliseconds freshness,
+          const ndn::security::SigningInfo& signingInfo =
+            ndn::security::v2::KeyChain::getDefaultSigningInfo());
+
+  /**
+   * @brief Put all the segments in memory.
+   *
+   * @param interestName the interest name, to determine the sequence to be answered immediately
+   * @param dataName the data name, has components after interest name
+   * @param buffer the content of the data
+   * @param freshness freshness of the segments
+   * @param signingInfo signing info to sign the data with
+   */
+  void
+  publish(const ndn::Name& interestName, const ndn::Name& dataName,
+          const std::shared_ptr<const ndn::Buffer>& buffer, ndn::time::milliseconds freshness,
           const ndn::security::SigningInfo& signingInfo =
             ndn::security::v2::KeyChain::getDefaultSigningInfo());
 

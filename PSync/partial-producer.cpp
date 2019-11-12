@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019,  The University of Memphis
+ * Copyright (c) 2014-2020,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -33,10 +33,12 @@ PartialProducer::PartialProducer(size_t expectedNumEntries,
                                  ndn::Face& face,
                                  const ndn::Name& syncPrefix,
                                  const ndn::Name& userPrefix,
+                                 ndn::time::milliseconds helloReplyFreshness,
                                  ndn::time::milliseconds syncReplyFreshness,
-                                 ndn::time::milliseconds helloReplyFreshness)
+                                 CompressionScheme ibltCompression)
  : ProducerBase(expectedNumEntries, face, syncPrefix,
-                userPrefix, syncReplyFreshness, helloReplyFreshness)
+                userPrefix, syncReplyFreshness, ibltCompression)
+ , m_helloReplyFreshness(helloReplyFreshness)
 {
   m_registeredPrefix = m_face.registerPrefix(m_syncPrefix,
     [this] (const ndn::Name& syncPrefix) {
@@ -136,7 +138,7 @@ PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& in
   }
 
   BloomFilter bf;
-  IBLT iblt(m_expectedNumEntries);
+  IBLT iblt(m_expectedNumEntries, m_ibltCompression);
 
   try {
     bf = BloomFilter(projectedCount, falsePositiveProb, bfName);

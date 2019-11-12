@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019,  The University of Memphis
+ * Copyright (c) 2014-2020,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -72,6 +72,8 @@ public:
    * @param onUpdateCallBack The call back to be called when there is new data
    * @param syncInterestLifetime lifetime of the sync interest
    * @param syncReplyFreshness freshness of sync data
+   * @param ibltCompression Compression scheme to use for IBF
+   * @param contentCompression Compression scheme to use for Data content
    */
   FullProducer(size_t expectedNumEntries,
                ndn::Face& face,
@@ -79,7 +81,9 @@ public:
                const ndn::Name& userPrefix,
                const UpdateCallback& onUpdateCallBack,
                ndn::time::milliseconds syncInterestLifetime = SYNC_INTEREST_LIFTIME,
-               ndn::time::milliseconds syncReplyFreshness = SYNC_REPLY_FRESHNESS);
+               ndn::time::milliseconds syncReplyFreshness = SYNC_REPLY_FRESHNESS,
+               CompressionScheme ibltCompression = CompressionScheme::ZLIB,
+               CompressionScheme contentCompression = CompressionScheme::ZLIB);
 
   ~FullProducer();
 
@@ -125,7 +129,6 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
   onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& interest);
 
-private:
   /**
    * @brief Send sync data
    *
@@ -157,6 +160,7 @@ private:
   void
   onSyncData(const ndn::Interest& interest, const ndn::ConstBufferPtr& bufferPtr);
 
+private:
   /**
    * @brief Satisfy pending sync interests
    *

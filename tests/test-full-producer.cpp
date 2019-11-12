@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019,  The University of Memphis
+ * Copyright (c) 2014-2020,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -63,6 +63,26 @@ BOOST_FIXTURE_TEST_CASE(ConstantTimeoutForFirstSegment, ndn::tests::UnitTestTime
   // full sync sends the next one in interest lifetime / 2 +- jitter
   advanceClocks(ndn::time::milliseconds(6000));
   BOOST_CHECK_EQUAL(face.sentInterests.size(), 1);
+}
+
+BOOST_AUTO_TEST_CASE(OnSyncDataDecodeFailure)
+{
+  Name syncPrefix("/psync"), userNode("/testUser");
+  util::DummyClientFace face({true, true});
+
+  FullProducer node(40, face, syncPrefix, userNode, nullptr);
+
+  ndn::Name syncInterestName(syncPrefix);
+  node.m_iblt.appendToName(syncInterestName);
+  ndn::Interest syncInterest(syncInterestName);
+
+  auto badCompress = std::make_shared<const ndn::Buffer>(5);
+
+  BOOST_REQUIRE_NO_THROW(node.onSyncData(syncInterest, badCompress));
+
+  const uint8_t test[] = {'t', 'e', 's', 't'};
+  auto goodCompressBadBlock = compress(node.m_contentCompression, &test[0], sizeof(test));
+  BOOST_REQUIRE_NO_THROW(node.onSyncData(syncInterest, goodCompressBadBlock));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
