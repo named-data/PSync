@@ -173,11 +173,13 @@ PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& in
   NDN_LOG_TRACE("Size of positive set " << positive.size());
   NDN_LOG_TRACE("Size of negative set " << negative.size());
   for (const auto& hash : positive) {
-    ndn::Name prefix = m_hash2prefix[hash];
-    if (bf.contains(prefix.toUri())) {
-      // generate data
-      state.addContent(ndn::Name(prefix).appendNumber(m_prefixes[prefix]));
-      NDN_LOG_DEBUG("Content: " << prefix << " " << std::to_string(m_prefixes[prefix]));
+    auto nameIt = m_biMap.left.find(hash);
+    if (nameIt != m_biMap.left.end()) {
+      if (bf.contains(nameIt->second.getPrefix(-1).toUri())) {
+        // generate data
+        state.addContent(nameIt->second);
+        NDN_LOG_DEBUG("Content: " << nameIt->second << " " << nameIt->first);
+      }
     }
   }
 

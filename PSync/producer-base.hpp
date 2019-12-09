@@ -33,11 +33,14 @@
 #include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/security/validator-config.hpp>
 
+#include <boost/bimap.hpp>
+#include <boost/bimap/unordered_set_of.hpp>
+
 #include <map>
-#include <unordered_set>
 
 namespace psync {
 
+namespace bm = boost::bimaps;
 using namespace ndn::time_literals;
 
 const ndn::time::milliseconds SYNC_REPLY_FRESHNESS = 1_s;
@@ -121,7 +124,7 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
    * Whoever calls this needs to make sure that prefix is in m_prefixes
    * We remove already existing prefix/seq from IBF
    * (unless seq is zero because we don't insert zero seq into IBF)
-   * Then we update m_prefix, m_prefix2hash, m_hash2prefix, and IBF
+   * Then we update m_prefixes, m_biMap, and IBF
    *
    * @param prefix prefix of the update
    * @param seq sequence number of the update
@@ -155,6 +158,9 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   void
   onRegisterFailed(const ndn::Name& prefix, const std::string& msg) const;
 
+  using HashNameBiMap = bm::bimap<bm::unordered_set_of<uint32_t>,
+                                  bm::unordered_set_of<ndn::Name, std::hash<ndn::Name>>>;
+
 PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   IBLT m_iblt;
   uint32_t m_expectedNumEntries;
@@ -164,11 +170,7 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
 
   // prefix and sequence number
   std::map<ndn::Name, uint64_t> m_prefixes;
-  // Just for looking up hash faster (instead of calculating it again)
-  // Only used in updateSeqNo, prefix/seqNo is the key
-  std::map<ndn::Name, uint32_t> m_prefix2hash;
-  // Value is prefix (and not prefix/seqNo)
-  std::map<uint32_t, ndn::Name> m_hash2prefix;
+  HashNameBiMap m_biMap;
 
   ndn::Face& m_face;
   ndn::KeyChain m_keyChain;

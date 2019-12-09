@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019,  The University of Memphis
+ * Copyright (c) 2014-2020,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -147,7 +147,7 @@ public:
   int numSyncDataRcvd;
 };
 
-BOOST_FIXTURE_TEST_SUITE(PartialSync, PartialSyncFixture)
+BOOST_FIXTURE_TEST_SUITE(TestPartialSync, PartialSyncFixture)
 
 BOOST_AUTO_TEST_CASE(Simple)
 {

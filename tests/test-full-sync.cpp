@@ -54,7 +54,7 @@ public:
   shared_ptr<FullProducer> nodes[4];
 };
 
-BOOST_FIXTURE_TEST_SUITE(FullSync, FullSyncFixture)
+BOOST_FIXTURE_TEST_SUITE(TestFullSync, FullSyncFixture)
 
 BOOST_AUTO_TEST_CASE(TwoNodesSimple)
 {

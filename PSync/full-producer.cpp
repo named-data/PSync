@@ -198,10 +198,14 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
 
   State state;
   for (const auto& hash : positive) {
-    const ndn::Name& prefix = m_hash2prefix[hash];
-    // Don't sync up sequence number zero
-    if (m_prefixes[prefix] != 0 && !isFutureHash(prefix.toUri(), negative)) {
-      state.addContent(ndn::Name(prefix).appendNumber(m_prefixes[prefix]));
+    auto nameIt = m_biMap.left.find(hash);
+    if (nameIt != m_biMap.left.end()) {
+      ndn::Name nameWithoutSeq = nameIt->second.getPrefix(-1);
+      // Don't sync up sequence number zero
+      if (m_prefixes[nameWithoutSeq] != 0 &&
+          !isFutureHash(nameWithoutSeq.toUri(), negative)) {
+        state.addContent(nameIt->second);
+      }
     }
   }
 
@@ -276,7 +280,7 @@ FullProducer::onSyncData(const ndn::Interest& interest, const ndn::ConstBufferPt
   NDN_LOG_DEBUG("Sync Data Received: " << state);
 
   for (const auto& content : state.getContent()) {
-    const ndn::Name& prefix = content.getPrefix(-1);
+    ndn::Name prefix = content.getPrefix(-1);
     uint64_t seq = content.get(content.size() - 1).toNumber();
 
     if (m_prefixes.find(prefix) == m_prefixes.end() || m_prefixes[prefix] < seq) {
@@ -324,10 +328,11 @@ FullProducer::satisfyPendingInterests()
 
     State state;
     for (const auto& hash : positive) {
-      ndn::Name prefix = m_hash2prefix[hash];
-
-      if (m_prefixes[prefix] != 0) {
-        state.addContent(ndn::Name(prefix).appendNumber(m_prefixes[prefix]));
+      auto nameIt = m_biMap.left.find(hash);
+      if (nameIt != m_biMap.left.end()) {
+        if (m_prefixes[nameIt->second.getPrefix(-1)] != 0) {
+          state.addContent(nameIt->second);
+        }
       }
     }
 

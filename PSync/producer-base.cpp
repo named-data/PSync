@@ -74,12 +74,10 @@ ProducerBase::removeUserNode(const ndn::Name& prefix)
     m_prefixes.erase(it);
 
     ndn::Name prefixWithSeq = ndn::Name(prefix).appendNumber(seqNo);
-    auto hashIt = m_prefix2hash.find(prefixWithSeq);
-    if (hashIt != m_prefix2hash.end()) {
-      uint32_t hash = hashIt->second;
-      m_prefix2hash.erase(hashIt);
-      m_hash2prefix.erase(hash);
-      m_iblt.erase(hash);
+    auto hashIt = m_biMap.right.find(prefixWithSeq);
+    if (hashIt != m_biMap.right.end()) {
+      m_iblt.erase(hashIt->second);
+      m_biMap.right.erase(hashIt);
     }
   }
 }
@@ -108,21 +106,18 @@ ProducerBase::updateSeqNo(const ndn::Name& prefix, uint64_t seq)
   // Because we don't insert zeroth prefix in IBF so no need to delete that
   if (oldSeq != 0) {
     ndn::Name prefixWithSeq = ndn::Name(prefix).appendNumber(oldSeq);
-    auto hashIt = m_prefix2hash.find(prefixWithSeq);
-    if (hashIt != m_prefix2hash.end()) {
-      uint32_t hash = hashIt->second;
-      m_prefix2hash.erase(hashIt);
-      m_hash2prefix.erase(hash);
-      m_iblt.erase(hash);
+    auto hashIt = m_biMap.right.find(prefixWithSeq);
+    if (hashIt != m_biMap.right.end()) {
+      m_iblt.erase(hashIt->second);
+      m_biMap.right.erase(hashIt);
     }
   }
 
-  // Insert the new seq no
+  // Insert the new seq no in m_prefixes, m_biMap, and m_iblt
   it->second = seq;
   ndn::Name prefixWithSeq = ndn::Name(prefix).appendNumber(seq);
   uint32_t newHash = murmurHash3(N_HASHCHECK, prefixWithSeq.toUri());
-  m_prefix2hash[prefixWithSeq] = newHash;
-  m_hash2prefix[newHash] = prefix;
+  m_biMap.insert({newHash, prefixWithSeq});
   m_iblt.insert(newHash);
 }
 
