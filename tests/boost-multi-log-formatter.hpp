@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014-2019 Regents of the University of California.
+ * Copyright (c) 2014-2020 Regents of the University of California.
  *
  * Based on work by Martin Ba (http://stackoverflow.com/a/26718189)
  *

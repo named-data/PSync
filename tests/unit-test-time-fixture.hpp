@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-file-style: "gnu"; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2012-2019  University of California, Los Angeles
+ * Copyright (c) 2012-2020  University of California, Los Angeles
  *                          The University of Memphis
  *
  * This file is part of PSync.
