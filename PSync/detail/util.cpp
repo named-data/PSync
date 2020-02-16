@@ -22,7 +22,6 @@
  **/
 
 #include "PSync/detail/util.hpp"
-#include "PSync/detail/config.hpp"
 
 #include <ndn-cxx/encoding/buffer-stream.hpp>
 #include <ndn-cxx/util/backports.hpp>

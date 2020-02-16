@@ -31,6 +31,7 @@ State::State(const ndn::Block& block)
 void
 State::addContent(const ndn::Name& prefix)
 {
+  m_wire.reset();
   m_content.emplace_back(prefix);
 }
 
@@ -78,6 +79,8 @@ State::wireDecode(const ndn::Block& wire)
     BOOST_THROW_EXCEPTION(ndn::tlv::Error("Expected PSyncContent Block, but Block is of type: #" +
                                           ndn::to_string(blockType)));
   }
+
+  m_content.clear();
 
   wire.parse();
   m_wire = wire;

@@ -34,8 +34,8 @@ BOOST_AUTO_TEST_CASE(Equal)
 {
   int size = 10;
 
-  IBLT iblt1(size);
-  IBLT iblt2(size);
+  IBLT iblt1(size, CompressionScheme::DEFAULT);
+  IBLT iblt2(size, CompressionScheme::DEFAULT);
   BOOST_CHECK_EQUAL(iblt1, iblt2);
 
   std::string prefix = Name("/test/memphis").appendNumber(1).toUri();
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(NameAppendAndExtract)
 {
   int size = 10;
 
-  IBLT iblt(size);
+  IBLT iblt(size, CompressionScheme::DEFAULT);
   std::string prefix = Name("/test/memphis").appendNumber(1).toUri();
   uint32_t newHash = murmurHash3(11, prefix);
   iblt.insert(newHash);
@@ -63,12 +63,12 @@ BOOST_AUTO_TEST_CASE(NameAppendAndExtract)
   Name ibltName("sync");
   iblt.appendToName(ibltName);
 
-  IBLT rcvd(size);
+  IBLT rcvd(size, CompressionScheme::DEFAULT);
   rcvd.initialize(ibltName.get(-1));
 
   BOOST_CHECK_EQUAL(iblt, rcvd);
 
-  IBLT rcvdDiffSize(20);
+  IBLT rcvdDiffSize(20, CompressionScheme::DEFAULT);
   BOOST_CHECK_THROW(rcvdDiffSize.initialize(ibltName.get(-1)), std::runtime_error);
 }
 
@@ -76,7 +76,7 @@ BOOST_AUTO_TEST_CASE(CopyInsertErase)
 {
   int size = 10;
 
-  IBLT iblt1(size);
+  IBLT iblt1(size, CompressionScheme::DEFAULT);
 
   std::string prefix = Name("/test/memphis").appendNumber(1).toUri();
   uint32_t hash1 = murmurHash3(11, prefix);
@@ -105,8 +105,8 @@ BOOST_AUTO_TEST_CASE(HigherSeqTest)
   // Relevant to full sync case
   int size = 10;
 
-  IBLT ownIBF(size);
-  IBLT rcvdIBF(size);
+  IBLT ownIBF(size, CompressionScheme::DEFAULT);
+  IBLT rcvdIBF(size, CompressionScheme::DEFAULT);
 
   std::string prefix = Name("/test/memphis").appendNumber(3).toUri();
   uint32_t hash1 = murmurHash3(11, prefix);
@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE(Difference)
 {
   int size = 10;
 
-  IBLT ownIBF(size);
+  IBLT ownIBF(size, CompressionScheme::DEFAULT);
 
   IBLT rcvdIBF = ownIBF;
 
@@ -169,7 +169,7 @@ BOOST_AUTO_TEST_CASE(DifferenceBwOversizedIBFs)
 
   int size = 10;
 
-  IBLT ownIBF(size);
+  IBLT ownIBF(size, CompressionScheme::DEFAULT);
 
   for (int i = 0; i < 50; i++) {
     std::string prefix = Name("/test/memphis" + std::to_string(i)).appendNumber(1).toUri();

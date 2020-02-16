@@ -75,8 +75,8 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
                const ndn::Name& syncPrefix,
                const ndn::Name& userPrefix,
                ndn::time::milliseconds syncReplyFreshness = SYNC_REPLY_FRESHNESS,
-               CompressionScheme ibltCompression = CompressionScheme::ZLIB,
-               CompressionScheme contentCompression = CompressionScheme::ZLIB);
+               CompressionScheme ibltCompression = CompressionScheme::NONE,
+               CompressionScheme contentCompression = CompressionScheme::NONE);
 public:
   /**
    * @brief Returns the current sequence number of the given prefix

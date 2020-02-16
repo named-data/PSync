@@ -74,6 +74,20 @@ BOOST_AUTO_TEST_CASE(EmptyContent)
   BOOST_CHECK_EQUAL(state2.getContent().size(), 0);
 }
 
+BOOST_AUTO_TEST_CASE(ReEncode)
+{
+  State state;
+  state.addContent(ndn::Name("test1"));
+  state.addContent(ndn::Name("test2"));
+
+  state.wireEncode();
+
+  state.addContent(ndn::Name("test3"));
+
+  State state2(state.wireEncode());
+  BOOST_CHECK_EQUAL(state2.getContent().size(), 3);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 } // namespace psync

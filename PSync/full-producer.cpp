@@ -158,7 +158,7 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
   NDN_LOG_DEBUG("Full Sync Interest Received, nonce: " << interest.getNonce() <<
                 ", hash: " << std::hash<ndn::Name>{}(interestName));
 
-  IBLT iblt(m_expectedNumEntries);
+  IBLT iblt(m_expectedNumEntries, m_ibltCompression);
   try {
     iblt.initialize(ibltName);
   }

@@ -82,8 +82,8 @@ public:
                const UpdateCallback& onUpdateCallBack,
                ndn::time::milliseconds syncInterestLifetime = SYNC_INTEREST_LIFTIME,
                ndn::time::milliseconds syncReplyFreshness = SYNC_REPLY_FRESHNESS,
-               CompressionScheme ibltCompression = CompressionScheme::ZLIB,
-               CompressionScheme contentCompression = CompressionScheme::ZLIB);
+               CompressionScheme ibltCompression = CompressionScheme::DEFAULT,
+               CompressionScheme contentCompression = CompressionScheme::DEFAULT);
 
   ~FullProducer();
 

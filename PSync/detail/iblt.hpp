@@ -95,7 +95,7 @@ public:
    * @param scheme compression scheme to be used for the IBLT
    */
   explicit
-  IBLT(size_t expectedNumEntries, CompressionScheme scheme = CompressionScheme::ZLIB);
+  IBLT(size_t expectedNumEntries, CompressionScheme scheme);
 
   /**
    * @brief Populate the hash table using the vector representation of IBLT

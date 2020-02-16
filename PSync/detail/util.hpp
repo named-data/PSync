@@ -24,6 +24,8 @@
 #ifndef PSYNC_UTIL_HPP
 #define PSYNC_UTIL_HPP
 
+#include "PSync/detail/config.hpp"
+
 #include <ndn-cxx/name.hpp>
 
 #include <inttypes.h>
@@ -54,7 +56,12 @@ enum class CompressionScheme {
   GZIP,
   BZIP2,
   LZMA,
-  ZSTD
+  ZSTD,
+#ifdef PSYNC_HAVE_ZLIB
+  DEFAULT = ZLIB
+#else
+  DEFAULT = NONE
+#endif
 };
 
 std::shared_ptr<ndn::Buffer>

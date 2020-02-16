@@ -398,16 +398,26 @@ BOOST_AUTO_TEST_CASE(DelayedSecondSegment)
 {
   addNode(0);
 
-  for (int i = 0; i < 2000; i++) {
-    Name prefixToPublish("userNode0-" + to_string(i));
+  int i = 0;
+  State state;
+
+  std::shared_ptr<ndn::Buffer> compressed;
+  do {
+    Name prefixToPublish("userNode0-" + to_string(i++));
     nodes[0]->addUserNode(prefixToPublish);
     nodes[0]->publishName(prefixToPublish);
-  }
+
+    state.addContent(ndn::Name(prefixToPublish).appendNumber(nodes[0]->m_prefixes[prefixToPublish]));
+
+    auto block = state.wireEncode();
+    compressed = compress(nodes[0]->m_contentCompression, block.wire(), block.size());
+
+  } while (compressed->size() < (ndn::MAX_NDN_PACKET_SIZE >> 1));
 
   advanceClocks(ndn::time::milliseconds(10), 100);
 
   Name syncInterestName(syncPrefix);
-  IBLT iblt(40);
+  IBLT iblt(40, nodes[0]->m_ibltCompression);
   iblt.appendToName(syncInterestName);
 
   nodes[0]->onSyncInterest(syncPrefix, Interest(syncInterestName));
