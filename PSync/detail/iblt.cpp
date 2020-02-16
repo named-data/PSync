@@ -47,6 +47,8 @@
 
 namespace psync {
 
+namespace be = boost::endian;
+
 const size_t N_HASH(3);
 const size_t N_HASHCHECK(11);
 
@@ -87,7 +89,7 @@ IBLT::initialize(const ndn::name::Component& ibltName)
   const auto& values = extractValueFromName(ibltName);
 
   if (3 * m_hashTable.size() != values.size()) {
-    BOOST_THROW_EXCEPTION(Error("Received IBF cannot be decoded!"));
+    NDN_THROW(Error("Received IBF cannot be decoded!"));
   }
 
   for (size_t i = 0; i < m_hashTable.size(); i++) {
@@ -221,34 +223,21 @@ operator<<(std::ostream& out, const IBLT& iblt)
 void
 IBLT::appendToName(ndn::Name& name) const
 {
-  constexpr size_t unitSize = (sizeof(m_hashTable[0].count) +
-                               sizeof(m_hashTable[0].keySum) +
-                               sizeof(m_hashTable[0].keyCheck));
+  constexpr size_t unitSize = sizeof(m_hashTable[0].count) +
+                              sizeof(m_hashTable[0].keySum) +
+                              sizeof(m_hashTable[0].keyCheck);
 
   size_t tableSize = unitSize * m_hashTable.size();
   std::vector<uint8_t> table(tableSize);
 
   for (size_t i = 0; i < m_hashTable.size(); i++) {
-    // table[i*12],   table[i*12+1], table[i*12+2], table[i*12+3] --> hashTable[i].count
+    uint32_t count    = be::native_to_big(static_cast<uint32_t>(m_hashTable[i].count));
+    uint32_t keySum   = be::native_to_big(static_cast<uint32_t>(m_hashTable[i].keySum));
+    uint32_t keyCheck = be::native_to_big(static_cast<uint32_t>(m_hashTable[i].keyCheck));
 
-    table[(i * unitSize)]   = 0xFF & m_hashTable[i].count;
-    table[(i * unitSize) + 1] = 0xFF & (m_hashTable[i].count >> 8);
-    table[(i * unitSize) + 2] = 0xFF & (m_hashTable[i].count >> 16);
-    table[(i * unitSize) + 3] = 0xFF & (m_hashTable[i].count >> 24);
-
-    // table[i*12+4], table[i*12+5], table[i*12+6], table[i*12+7] --> hashTable[i].keySum
-
-    table[(i * unitSize) + 4] = 0xFF & m_hashTable[i].keySum;
-    table[(i * unitSize) + 5] = 0xFF & (m_hashTable[i].keySum >> 8);
-    table[(i * unitSize) + 6] = 0xFF & (m_hashTable[i].keySum >> 16);
-    table[(i * unitSize) + 7] = 0xFF & (m_hashTable[i].keySum >> 24);
-
-    // table[i*12+8], table[i*12+9], table[i*12+10], table[i*12+11] --> hashTable[i].keyCheck
-
-    table[(i * unitSize) + 8] = 0xFF & m_hashTable[i].keyCheck;
-    table[(i * unitSize) + 9] = 0xFF & (m_hashTable[i].keyCheck >> 8);
-    table[(i * unitSize) + 10] = 0xFF & (m_hashTable[i].keyCheck >> 16);
-    table[(i * unitSize) + 11] = 0xFF & (m_hashTable[i].keyCheck >> 24);
+    std::memcpy(&table[i * unitSize], &count, sizeof(count));
+    std::memcpy(&table[(i * unitSize) + 4], &keySum, sizeof(keySum));
+    std::memcpy(&table[(i * unitSize) + 8], &keyCheck, sizeof(keyCheck));
   }
 
   auto compressed = compress(m_compressionScheme, table.data(), table.size());
@@ -260,16 +249,18 @@ IBLT::extractValueFromName(const ndn::name::Component& ibltName) const
 {
   auto decompressedBuf = decompress(m_compressionScheme, ibltName.value(), ibltName.value_size());
 
+  if (decompressedBuf->size() % 4 != 0) {
+    NDN_THROW(Error("Received IBF cannot be decompressed correctly!"));
+  }
+
   size_t n = decompressedBuf->size() / 4;
 
   std::vector<uint32_t> values(n, 0);
 
-  for (size_t i = 0; i < 4 * n; i += 4) {
-    uint32_t t = ((*decompressedBuf)[i + 3] << 24) +
-                 ((*decompressedBuf)[i + 2] << 16) +
-                 ((*decompressedBuf)[i + 1] << 8)  +
-                  (*decompressedBuf)[i];
-    values[i / 4] = t;
+  for (size_t i = 0; i < n; i++) {
+    uint32_t t;
+    std::memcpy(&t, &(*decompressedBuf)[i * 4], sizeof(t));
+    values[i] = be::big_to_native(t);
   }
 
   return values;
