@@ -2054,7 +2054,7 @@ PREDEFINED             = DOXYGEN \
                          PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED=protected \
                          PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE=private \
                          PSYNC_PROTECTED_WITH_TESTS_ELSE_PRIVATE=private \
-                         PSYNC_VIRTUAL_WITH_TESTS
+                         PSYNC_VIRTUAL_WITH_TESTS=
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this
 # tag can be used to specify a list of macro names that should be expanded. The

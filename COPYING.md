@@ -3,20 +3,21 @@ version 3 or later.
 
 PSync relies on third-party software, licensed under the following licenses:
 
-- The Boost libraries are licensed under the terms of the
-  [Boost Software License, Version 1.0](https://www.boost.org/users/license.html)
+- The Boost libraries are licensed under the
+  [Boost Software License 1.0](https://www.boost.org/users/license.html)
 
-- ndn-cxx is licensed under the conditions of
-  [LGPL 3.0](https://github.com/named-data/ndn-cxx/blob/master/COPYING.md)
-
-- The waf build system is licensed under the terms of the
-  [BSD license](https://github.com/named-data/ndn-cxx/blob/master/waf)
+- ndn-cxx is licensed under the terms of the
+  [GNU Lesser General Public License version 3](https://github.com/named-data/ndn-cxx/blob/master/COPYING.md)
 
 - IBLT (Invertible Bloom Lookup Table) is licensed under the terms of the
   [MIT license](https://github.com/gavinandresen/IBLT_Cplusplus/blob/master/LICENSE)
 
 - Bloom is licensed under the terms of the
   [MIT license](http://www.partow.net/programming/bloomfilter/index.html)
+
+- The waf build system is licensed under the terms of the
+  [BSD license](https://github.com/named-data/PSync/blob/master/waf)
+
 
 The LGPL and GPL licenses are provided below in this file.  For more information
 about these licenses, see https://www.gnu.org/licenses/
