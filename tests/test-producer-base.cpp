@@ -20,8 +20,8 @@
 #include "PSync/producer-base.hpp"
 #include "PSync/detail/util.hpp"
 
-#include <boost/test/unit_test.hpp>
-#include <ndn-cxx/name.hpp>
+#include "tests/boost-test.hpp"
+
 #include <ndn-cxx/data.hpp>
 #include <ndn-cxx/interest.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>
@@ -75,10 +75,9 @@ BOOST_AUTO_TEST_CASE(ApplicationNack)
   producerBase.m_syncReplyFreshness = time::milliseconds(1000);
   producerBase.sendApplicationNack(Name("test"));
   face.processEvents(time::milliseconds(10));
-  BOOST_CHECK_EQUAL(face.sentData.size(), 1);
 
-  Data data = *face.sentData.begin();
-  BOOST_CHECK_EQUAL(data.getContentType(), ndn::tlv::ContentType_Nack);
+  BOOST_REQUIRE_EQUAL(face.sentData.size(), 1);
+  BOOST_CHECK_EQUAL(face.sentData.front().getContentType(), ndn::tlv::ContentType_Nack);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

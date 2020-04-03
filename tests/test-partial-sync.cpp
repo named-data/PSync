@@ -19,26 +19,26 @@
 
 #include "PSync/partial-producer.hpp"
 #include "PSync/consumer.hpp"
-#include "unit-test-time-fixture.hpp"
 
-#include <boost/test/unit_test.hpp>
+#include "tests/boost-test.hpp"
+#include "tests/unit-test-time-fixture.hpp"
+
 #include <ndn-cxx/name.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace psync {
 
 using namespace ndn;
-using namespace std;
 
 class PartialSyncFixture : public tests::UnitTestTimeFixture
 {
 public:
   PartialSyncFixture()
-   : face(io, {true, true})
-   , syncPrefix("psync")
-   , userPrefix("testUser-0")
-   , numHelloDataRcvd(0)
-   , numSyncDataRcvd(0)
+    : face(io, {true, true})
+    , syncPrefix("psync")
+    , userPrefix("testUser-0")
+    , numHelloDataRcvd(0)
+    , numSyncDataRcvd(0)
   {
     producer = make_shared<PartialProducer>(40, face, syncPrefix, userPrefix);
     addUserNodes("testUser", 10);
@@ -54,16 +54,16 @@ public:
   }
 
   void
-  addConsumer(int id, const vector<string>& subscribeTo, bool linkToProducer = true)
+  addConsumer(int id, const std::vector<std::string>& subscribeTo, bool linkToProducer = true)
   {
-    consumerFaces[id] = make_shared<util::DummyClientFace>(io, util::DummyClientFace::Options{true, true});
+    consumerFaces[id] = std::make_shared<util::DummyClientFace>(io, util::DummyClientFace::Options{true, true});
 
     if (linkToProducer) {
       face.linkTo(*consumerFaces[id]);
     }
 
-    consumers[id] = make_shared<Consumer>(syncPrefix, *consumerFaces[id],
-                      [&, id] (const vector<Name>& availableSubs)
+    consumers[id] = std::make_shared<Consumer>(syncPrefix, *consumerFaces[id],
+                      [&, id] (const std::vector<Name>& availableSubs)
                       {
                         numHelloDataRcvd++;
                         BOOST_CHECK(checkSubList(availableSubs));
@@ -100,9 +100,9 @@ public:
   }
 
   bool
-  checkSubList(const vector<Name>& availableSubs)
+  checkSubList(const std::vector<Name>& availableSubs) const
   {
-    for (const auto& prefix : producer->m_prefixes ) {
+    for (const auto& prefix : producer->m_prefixes) {
       if (std::find(availableSubs.begin(), availableSubs.end(), prefix.first) == availableSubs.end()) {
         return false;
       }
@@ -151,7 +151,7 @@ BOOST_FIXTURE_TEST_SUITE(TestPartialSync, PartialSyncFixture)
 
 BOOST_AUTO_TEST_CASE(Simple)
 {
-  vector<string> subscribeTo{"testUser-2", "testUser-4", "testUser-6"};
+  std::vector<std::string> subscribeTo{"testUser-2", "testUser-4", "testUser-6"};
   addConsumer(0, subscribeTo);
 
   consumers[0]->sendHelloInterest();
@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE(Simple)
 
 BOOST_AUTO_TEST_CASE(MissedUpdate)
 {
-  vector<string> subscribeTo{"testUser-2", "testUser-4", "testUser-6"};
+  std::vector<std::string> subscribeTo{"testUser-2", "testUser-4", "testUser-6"};
   addConsumer(0, subscribeTo);
 
   consumers[0]->sendHelloInterest();
@@ -189,7 +189,7 @@ BOOST_AUTO_TEST_CASE(MissedUpdate)
 
 BOOST_AUTO_TEST_CASE(LateSubscription)
 {
-  vector<string> subscribeTo{"testUser-2", "testUser-4", "testUser-6"};
+  std::vector<std::string> subscribeTo{"testUser-2", "testUser-4", "testUser-6"};
   addConsumer(0, subscribeTo);
 
   consumers[0]->sendHelloInterest();
@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE(LateSubscription)
 
 BOOST_AUTO_TEST_CASE(ConsumerSyncTimeout)
 {
-  vector<string> subscribeTo{"testUser-2", "testUser-4", "testUser-6"};
+  std::vector<std::string> subscribeTo{"testUser-2", "testUser-4", "testUser-6"};
   addConsumer(0, subscribeTo);
 
   consumers[0]->sendHelloInterest();
@@ -230,7 +230,7 @@ BOOST_AUTO_TEST_CASE(ConsumerSyncTimeout)
 
 BOOST_AUTO_TEST_CASE(MultipleConsumersWithSameSubList)
 {
-  vector<string> subscribeTo{"testUser-2", "testUser-4", "testUser-6"};
+  std::vector<std::string> subscribeTo{"testUser-2", "testUser-4", "testUser-6"};
   addConsumer(0, subscribeTo);
   addConsumer(1, subscribeTo);
   addConsumer(2, subscribeTo);
@@ -251,13 +251,13 @@ BOOST_AUTO_TEST_CASE(MultipleConsumersWithSameSubList)
 
 BOOST_AUTO_TEST_CASE(MultipleConsumersWithDifferentSubList)
 {
-  vector<string> subscribeTo{"testUser-2", "testUser-4", "testUser-6"};
+  std::vector<std::string> subscribeTo{"testUser-2", "testUser-4", "testUser-6"};
   addConsumer(0, subscribeTo);
 
-  vector<string> subscribeTo1{"testUser-1", "testUser-3", "testUser-5"};
+  std::vector<std::string> subscribeTo1{"testUser-1", "testUser-3", "testUser-5"};
   addConsumer(1, subscribeTo1);
 
-  vector<string> subscribeTo2{"testUser-2", "testUser-3"};
+  std::vector<std::string> subscribeTo2{"testUser-2", "testUser-3"};
   addConsumer(2, subscribeTo2);
 
   consumers[0]->sendHelloInterest();
@@ -277,7 +277,7 @@ BOOST_AUTO_TEST_CASE(MultipleConsumersWithDifferentSubList)
 
 BOOST_AUTO_TEST_CASE(ReplicatedProducer)
 {
-  vector<string> subscribeTo{"testUser-2", "testUser-4", "testUser-6"};
+  std::vector<std::string> subscribeTo{"testUser-2", "testUser-4", "testUser-6"};
   addConsumer(0, subscribeTo);
 
   consumers[0]->sendHelloInterest();
@@ -316,7 +316,7 @@ BOOST_AUTO_TEST_CASE(ApplicationNack)
   // 50 is more than expected number of entries of 40 in the producer's IBF
   addUserNodes("testUser", 50);
 
-  vector<string> subscribeTo{"testUser-2", "testUser-4", "testUser-6"};
+  std::vector<std::string> subscribeTo{"testUser-2", "testUser-4", "testUser-6"};
   addConsumer(0, subscribeTo);
 
   consumers[0]->sendHelloInterest();
@@ -354,7 +354,7 @@ BOOST_AUTO_TEST_CASE(ApplicationNack)
 
 BOOST_AUTO_TEST_CASE(SegmentedHello)
 {
-  vector<string> subscribeTo{"testUser-2", "testUser-4", "testUser-6"};
+  std::vector<std::string> subscribeTo{"testUser-2", "testUser-4", "testUser-6"};
   addConsumer(0, subscribeTo);
 
   addUserNodes("testUser", 400);
@@ -364,6 +364,7 @@ BOOST_AUTO_TEST_CASE(SegmentedHello)
   BOOST_CHECK_EQUAL(numHelloDataRcvd, 1);
 
   // Simulate sending delayed interest for second segment
+  BOOST_REQUIRE(!face.sentData.empty());
   Name dataName = face.sentData.back().getName();
   face.sentData.clear();
   BOOST_CHECK_EQUAL(producer->m_segmentPublisher.m_ims.size(), 2);
@@ -374,7 +375,8 @@ BOOST_AUTO_TEST_CASE(SegmentedHello)
   producer->onHelloInterest(consumers[0]->m_helloInterestPrefix, Interest(dataName));
   advanceClocks(ndn::time::milliseconds(10));
   BOOST_CHECK_EQUAL(producer->m_segmentPublisher.m_ims.size(), 2);
-  BOOST_CHECK_EQUAL(face.sentData.front().getName()[-1].toSegment(), 1);
+  BOOST_REQUIRE(!face.sentData.empty());
+  BOOST_CHECK_EQUAL(face.sentData.front().getName().at(-1).toSegment(), 1);
 }
 
 BOOST_AUTO_TEST_CASE(SegmentedSync)
@@ -385,7 +387,7 @@ BOOST_AUTO_TEST_CASE(SegmentedSync)
   }
   addUserNodes(longNameToExceedDataSize.toUri(), 10);
 
-  vector<string> subscribeTo;
+  std::vector<std::string> subscribeTo;
   for (int i = 1; i < 10; i++) {
     subscribeTo.push_back(longNameToExceedDataSize.toUri() + "-" + to_string(i));
   }
@@ -425,7 +427,8 @@ BOOST_AUTO_TEST_CASE(SegmentedSync)
   producer->onSyncInterest(consumers[0]->m_syncInterestPrefix, Interest(syncInterestName));
   advanceClocks(ndn::time::milliseconds(10));
   BOOST_CHECK_EQUAL(producer->m_segmentPublisher.m_ims.size(), 2);
-  BOOST_CHECK_EQUAL(face.sentData.front().getName()[-1].toSegment(), 1);
+  BOOST_REQUIRE(!face.sentData.empty());
+  BOOST_CHECK_EQUAL(face.sentData.front().getName().at(-1).toSegment(), 1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

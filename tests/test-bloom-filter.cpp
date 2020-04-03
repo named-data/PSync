@@ -19,7 +19,8 @@
 
 #include "PSync/detail/bloom-filter.hpp"
 
-#include <boost/test/unit_test.hpp>
+#include "tests/boost-test.hpp"
+
 #include <ndn-cxx/name.hpp>
 
 namespace psync {
@@ -42,16 +43,15 @@ BOOST_AUTO_TEST_CASE(NameAppendAndExtract)
   Name bfName("/test");
   BloomFilter bf(100, 0.001);
   bf.insert("/memphis");
-
   bf.appendToName(bfName);
 
-  BloomFilter bfFromName(100, 0.001, bfName.get(-1));
+  BloomFilter bfFromName(100, 0.001, bfName.at(-1));
 
-  BOOST_CHECK_EQUAL(bfName.get(1).toNumber(), 100);
-  BOOST_CHECK_EQUAL(bfName.get(2).toNumber(), 1);
+  BOOST_CHECK_EQUAL(bfName.at(1).toNumber(), 100);
+  BOOST_CHECK_EQUAL(bfName.at(2).toNumber(), 1);
   BOOST_CHECK_EQUAL(bf, bfFromName);
 
-  BOOST_CHECK_THROW(BloomFilter inCompatibleBf(200, 0.001, bfName.get(-1)), std::runtime_error);
+  BOOST_CHECK_THROW(BloomFilter(200, 0.001, bfName.at(-1)), std::runtime_error);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

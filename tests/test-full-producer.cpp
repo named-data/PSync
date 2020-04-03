@@ -18,17 +18,17 @@
  **/
 
 #include "PSync/full-producer.hpp"
-#include "unit-test-time-fixture.hpp"
 
-#include <boost/test/unit_test.hpp>
+#include "tests/boost-test.hpp"
+#include "tests/unit-test-time-fixture.hpp"
+
 #include <ndn-cxx/name.hpp>
-#include <ndn-cxx/util/dummy-client-face.hpp>
 #include <ndn-cxx/mgmt/nfd/control-parameters.hpp>
+#include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace psync {
 
 using namespace ndn;
-using namespace std;
 
 BOOST_AUTO_TEST_SUITE(TestFullProducer)
 
@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE(OnInterest)
   BOOST_REQUIRE_NO_THROW(node.onSyncInterest(syncPrefix, Interest(syncInterestName)));
 }
 
-BOOST_FIXTURE_TEST_CASE(ConstantTimeoutForFirstSegment, ndn::tests::UnitTestTimeFixture)
+BOOST_FIXTURE_TEST_CASE(ConstantTimeoutForFirstSegment, tests::UnitTestTimeFixture)
 {
   Name syncPrefix("/psync"), userNode("/testUser");
   util::DummyClientFace face(io, {true, true});

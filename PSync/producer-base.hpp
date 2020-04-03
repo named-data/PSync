@@ -151,9 +151,6 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
 
   /**
    * @brief Logs a message if setting an interest filter fails
-   *
-   * @param prefix
-   * @param msg
    */
   void
   onRegisterFailed(const ndn::Name& prefix, const std::string& msg) const;

@@ -19,15 +19,15 @@
 
 #include "PSync/partial-producer.hpp"
 
-#include <boost/test/unit_test.hpp>
+#include "tests/boost-test.hpp"
+
 #include <ndn-cxx/name.hpp>
-#include <ndn-cxx/util/dummy-client-face.hpp>
 #include <ndn-cxx/mgmt/nfd/control-parameters.hpp>
+#include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace psync {
 
 using namespace ndn;
-using namespace std;
 
 BOOST_AUTO_TEST_SUITE(TestPartialProducer)
 
@@ -46,12 +46,9 @@ BOOST_AUTO_TEST_CASE(RegisterPrefix)
   face.processEvents(time::milliseconds(-1));
 
   BOOST_REQUIRE_EQUAL(face.sentInterests.size(), 1);
-
-  face.sentInterests.back();
-  Interest interest = *face.sentInterests.begin();
-  BOOST_CHECK_EQUAL(interest.getName().get(3), name::Component("register"));
-  name::Component test = interest.getName().get(4);
-  nfd::ControlParameters params(test.blockFromValue());
+  auto interest = face.sentInterests.front();
+  BOOST_CHECK_EQUAL(interest.getName().at(3), name::Component("register"));
+  nfd::ControlParameters params(interest.getName().at(4).blockFromValue());
   BOOST_CHECK_EQUAL(params.getName(), syncPrefix);
 }
 

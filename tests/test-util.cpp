@@ -18,16 +18,10 @@
  **/
 
 #include "PSync/detail/util.hpp"
-#include "PSync/detail/config.hpp"
-#include "unit-test-time-fixture.hpp"
 
-#include <boost/test/unit_test.hpp>
-#include <iostream>
+#include "tests/boost-test.hpp"
 
 namespace psync {
-
-using namespace ndn;
-using namespace std;
 
 BOOST_AUTO_TEST_SUITE(TestUtil)
 

@@ -17,38 +17,35 @@
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
-#include "unit-test-time-fixture.hpp"
 #include "PSync/full-producer.hpp"
 #include "PSync/consumer.hpp"
 #include "PSync/detail/state.hpp"
 
-#include <boost/test/unit_test.hpp>
+#include "tests/boost-test.hpp"
+#include "tests/unit-test-time-fixture.hpp"
+
 #include <ndn-cxx/name.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace psync {
 
 using namespace ndn;
-using namespace std;
 
 class FullSyncFixture : public tests::UnitTestTimeFixture
 {
-public:
-  FullSyncFixture()
-   : syncPrefix("psync")
-  {
-  }
-
+protected:
   void
   addNode(int id)
   {
+    BOOST_ASSERT(id >= 0 && id <= 3);
     faces[id] = std::make_shared<util::DummyClientFace>(io, util::DummyClientFace::Options{true, true});
     userPrefixes[id] = Name("userPrefix" + to_string(id));
     nodes[id] = make_shared<FullProducer>(40, *faces[id], syncPrefix, userPrefixes[id],
-                                          [] (const std::vector<MissingDataInfo>& updates) {});
+                                          [] (const auto&) {});
   }
 
-  Name syncPrefix;
+protected:
+  const Name syncPrefix = "/psync";
   shared_ptr<util::DummyClientFace> faces[4];
   Name userPrefixes[4];
   shared_ptr<FullProducer> nodes[4];
@@ -134,7 +131,6 @@ BOOST_AUTO_TEST_CASE(MultipleNodes)
   for (int i = 0; i < 4; i++) {
     addNode(i);
   }
-
   for (int i = 0; i < 3; i++) {
     faces[i]->linkTo(*faces[i + 1]);
   }
@@ -158,16 +154,14 @@ BOOST_AUTO_TEST_CASE(MultipleNodes)
   }
 }
 
-BOOST_AUTO_TEST_CASE(MultipleNodesSimulataneousPublish)
+BOOST_AUTO_TEST_CASE(MultipleNodesSimultaneousPublish)
 {
   for (int i = 0; i < 4; i++) {
     addNode(i);
   }
-
   for (int i = 0; i < 3; i++) {
     faces[i]->linkTo(*faces[i + 1]);
   }
-
   for (int i = 0; i < 4; i++) {
     nodes[i]->publishName(userPrefixes[i]);
   }
@@ -196,7 +190,6 @@ BOOST_AUTO_TEST_CASE(NetworkPartition)
   for (int i = 0; i < 4; i++) {
     addNode(i);
   }
-
   for (int i = 0; i < 3; i++) {
     faces[i]->linkTo(*faces[i + 1]);
   }
@@ -210,7 +203,6 @@ BOOST_AUTO_TEST_CASE(NetworkPartition)
   for (int i = 0; i < 3; i++) {
     faces[i]->unlink();
   }
-
   faces[0]->linkTo(*faces[1]);
   faces[2]->linkTo(*faces[3]);
 
@@ -238,7 +230,6 @@ BOOST_AUTO_TEST_CASE(NetworkPartition)
   for (int i = 0; i < 3; i++) {
     faces[i]->unlink();
   }
-
   for (int i = 0; i < 3; i++) {
     faces[i]->linkTo(*faces[i + 1]);
   }
@@ -369,7 +360,6 @@ BOOST_AUTO_TEST_CASE(DiffIBFDecodeFailureMultipleNodes)
   for (int i = 0; i < 4; i++) {
     addNode(i);
   }
-
   for (int i = 0; i < 3; i++) {
     faces[i]->linkTo(*faces[i + 1]);
   }
@@ -400,19 +390,17 @@ BOOST_AUTO_TEST_CASE(DelayedSecondSegment)
 
   int i = 0;
   State state;
-
-  std::shared_ptr<ndn::Buffer> compressed;
+  std::shared_ptr<Buffer> compressed;
   do {
     Name prefixToPublish("userNode0-" + to_string(i++));
     nodes[0]->addUserNode(prefixToPublish);
     nodes[0]->publishName(prefixToPublish);
 
-    state.addContent(ndn::Name(prefixToPublish).appendNumber(nodes[0]->m_prefixes[prefixToPublish]));
+    state.addContent(Name(prefixToPublish).appendNumber(nodes[0]->m_prefixes[prefixToPublish]));
 
     auto block = state.wireEncode();
     compressed = compress(nodes[0]->m_contentCompression, block.wire(), block.size());
-
-  } while (compressed->size() < (ndn::MAX_NDN_PACKET_SIZE >> 1));
+  } while (compressed->size() < (MAX_NDN_PACKET_SIZE >> 1));
 
   advanceClocks(ndn::time::milliseconds(10), 100);
 
@@ -430,6 +418,7 @@ BOOST_AUTO_TEST_CASE(DelayedSecondSegment)
   BOOST_CHECK_EQUAL(nodes[0]->m_segmentPublisher.m_ims.size(), 0);
 
   // Get data name from face and increase segment number to form next interest
+  BOOST_REQUIRE(!faces[0]->sentData.empty());
   Name dataName = faces[0]->sentData.front().getName();
   Name interestName = dataName.getSubName(0, dataName.size() - 2);
   interestName.appendSegment(1);
@@ -441,7 +430,8 @@ BOOST_AUTO_TEST_CASE(DelayedSecondSegment)
   // Should have repopulated SegmentPublisher
   BOOST_CHECK_EQUAL(nodes[0]->m_segmentPublisher.m_ims.size(), 2);
   // Should have received the second data segment this time
-  BOOST_CHECK_EQUAL(faces[0]->sentData.front().getName()[-1].toSegment(), 1);
+  BOOST_REQUIRE(!faces[0]->sentData.empty());
+  BOOST_CHECK_EQUAL(faces[0]->sentData.front().getName().at(-1).toSegment(), 1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

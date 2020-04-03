@@ -19,10 +19,10 @@
 
 #include "PSync/segment-publisher.hpp"
 #include "PSync/detail/state.hpp"
-#include "unit-test-time-fixture.hpp"
 
-#include <boost/test/unit_test.hpp>
-#include <ndn-cxx/name.hpp>
+#include "tests/boost-test.hpp"
+#include "tests/unit-test-time-fixture.hpp"
+
 #include <ndn-cxx/data.hpp>
 #include <ndn-cxx/interest.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>

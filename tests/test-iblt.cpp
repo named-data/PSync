@@ -20,8 +20,8 @@
 #include "PSync/detail/iblt.hpp"
 #include "PSync/detail/util.hpp"
 
-#include <boost/test/unit_test.hpp>
-#include <ndn-cxx/name.hpp>
+#include "tests/boost-test.hpp"
+
 #include <ndn-cxx/interest.hpp>
 
 namespace psync {
@@ -71,40 +71,38 @@ static const uint8_t IBF[] = {
 
 BOOST_AUTO_TEST_CASE(NameAppendAndExtract)
 {
-  int size = 10;
+  const int size = 10;
 
   IBLT iblt(size, CompressionScheme::DEFAULT);
-  std::string prefix = Name("/test/memphis").appendNumber(1).toUri();
-  uint32_t newHash = murmurHash3(11, prefix);
-  iblt.insert(newHash);
+  auto prefix = Name("/test/memphis").appendNumber(1).toUri();
+  auto hash = murmurHash3(11, prefix);
+  iblt.insert(hash);
 
-  Name ibltName("sync");
+  Name ibltName("/sync");
   iblt.appendToName(ibltName);
 
   IBLT rcvd(size, CompressionScheme::DEFAULT);
-  rcvd.initialize(ibltName.get(-1));
-
+  rcvd.initialize(ibltName.at(-1));
   BOOST_CHECK_EQUAL(iblt, rcvd);
 
   IBLT rcvdDiffSize(20, CompressionScheme::DEFAULT);
-  BOOST_CHECK_THROW(rcvdDiffSize.initialize(ibltName.get(-1)), IBLT::Error);
+  BOOST_CHECK_THROW(rcvdDiffSize.initialize(ibltName.at(-1)), IBLT::Error);
 
-  Name malformedName("test");
+  IBLT iblt2(size, CompressionScheme::NONE);
+  iblt2.insert(hash);
+  Name ibltName2("/sync");
+  iblt2.appendToName(ibltName2);
+  BOOST_CHECK_EQUAL_COLLECTIONS(IBF, IBF + sizeof(IBF),
+                                ibltName2.at(-1).wireEncode().begin(),
+                                ibltName2.at(-1).wireEncode().end());
+
+  Name malformedName("/test");
   auto compressed = compress(CompressionScheme::DEFAULT,
                              malformedName.wireEncode().value(),
                              malformedName.wireEncode().value_size());
-  IBLT rcvdDiffSize1(size, CompressionScheme::DEFAULT);
   malformedName.append(compressed->data(), compressed->size());
-  BOOST_CHECK_THROW(rcvdDiffSize1.initialize(malformedName.get(-1)), IBLT::Error);
-
-  IBLT iblt2(size, CompressionScheme::NONE);
-  iblt2.insert(newHash);
-  Name ibltName2("sync");
-  iblt2.appendToName(ibltName2);
-
-  BOOST_CHECK_EQUAL_COLLECTIONS(IBF, IBF + sizeof(IBF),
-                                ibltName2.get(-1).wireEncode().begin(),
-                                ibltName2.get(-1).wireEncode().end());
+  IBLT rcvd2(size, CompressionScheme::DEFAULT);
+  BOOST_CHECK_THROW(rcvd2.initialize(malformedName.at(-1)), IBLT::Error);
 }
 
 BOOST_AUTO_TEST_CASE(CopyInsertErase)

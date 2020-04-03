@@ -18,36 +18,34 @@
  **/
 
 #include "PSync/consumer.hpp"
-#include "unit-test-time-fixture.hpp"
 
-#include <boost/test/unit_test.hpp>
+#include "tests/boost-test.hpp"
+#include "tests/unit-test-time-fixture.hpp"
+
 #include <ndn-cxx/name.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace psync {
 
 using namespace ndn;
-using namespace std;
 
 BOOST_AUTO_TEST_SUITE(TestConsumer)
 
 BOOST_AUTO_TEST_CASE(Constructor)
 {
   util::DummyClientFace face({true, true});
-  BOOST_REQUIRE_NO_THROW(Consumer(Name("/psync"),
-                                  face,
-                                  [] (const vector<Name>&) {},
-                                  [] (const vector<MissingDataInfo>&) {},
-                                  40,
-                                  0.001));
+  BOOST_REQUIRE_NO_THROW(Consumer(Name("/psync"), face,
+                                  [] (const std::vector<Name>&) {},
+                                  [] (const std::vector<MissingDataInfo>&) {},
+                                  40, 0.001));
 }
 
 BOOST_AUTO_TEST_CASE(AddSubscription)
 {
   util::DummyClientFace face({true, true});
   Consumer consumer(Name("/psync"), face,
-                    [] (const vector<Name>&) {},
-                    [] (const vector<MissingDataInfo>&) {},
+                    [] (const auto&) {},
+                    [] (const auto&) {},
                     40, 0.001);
 
   Name subscription("test");
@@ -57,12 +55,12 @@ BOOST_AUTO_TEST_CASE(AddSubscription)
   BOOST_CHECK(!consumer.addSubscription(subscription));
 }
 
-BOOST_FIXTURE_TEST_CASE(ConstantTimeoutForFirstSegment, ndn::tests::UnitTestTimeFixture)
+BOOST_FIXTURE_TEST_CASE(ConstantTimeoutForFirstSegment, tests::UnitTestTimeFixture)
 {
   util::DummyClientFace face(io, {true, true});
   Consumer consumer(Name("/psync"), face,
-                    [] (const vector<Name>&) {},
-                    [] (const vector<MissingDataInfo>&) {},
+                    [] (const auto&) {},
+                    [] (const auto&) {},
                     40, 0.001,
                     ndn::time::milliseconds(4000),
                     ndn::time::milliseconds(4000));

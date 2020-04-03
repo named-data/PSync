@@ -19,8 +19,8 @@
 
 #include "PSync/detail/state.hpp"
 
-#include <boost/test/unit_test.hpp>
-#include <ndn-cxx/name.hpp>
+#include "tests/boost-test.hpp"
+
 #include <ndn-cxx/data.hpp>
 
 namespace psync {

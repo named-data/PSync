@@ -119,9 +119,7 @@ public:
    * Entries listed in positive are in ownIBLT but not in rcvdIBLT
    * Entries listed in negative are in rcvdIBLT but not in ownIBLT
    *
-   * @param positive
-   * @param negative
-   * @return true if decoding is complete successfully
+   * @return whether decoding completed successfully
    */
   bool
   listEntries(std::set<uint32_t>& positive, std::set<uint32_t>& negative) const;
@@ -136,15 +134,13 @@ public:
   }
 
   /**
-   * @brief Appends self to name
+   * @brief Appends self to @p name
    *
    * Encodes our hash table from uint32_t vector to uint8_t vector
    * We create a uin8_t vector 12 times the size of uint32_t vector
    * We put the first count in first 4 cells, keySum in next 4, and keyCheck in next 4.
    * Repeat for all the other cells of the hash table.
    * Then we append this uint8_t vector to the name.
-   *
-   * @param name
    */
   void
   appendToName(ndn::Name& name) const;
