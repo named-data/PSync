@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public License along with
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
- **/
+ */
 
 #include "PSync/full-producer.hpp"
 
@@ -279,7 +279,7 @@ FullProducer::onSyncData(const ndn::Interest& interest, const ndn::ConstBufferPt
 
   NDN_LOG_DEBUG("Sync Data Received: " << state);
 
-  for (const auto& content : state.getContent()) {
+  for (const auto& content : state) {
     ndn::Name prefix = content.getPrefix(-1);
     uint64_t seq = content.get(content.size() - 1).toNumber();
 

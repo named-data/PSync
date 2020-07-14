@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public License along with
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
- **/
+ */
 
 #include "PSync/consumer.hpp"
 
@@ -35,8 +35,8 @@ BOOST_AUTO_TEST_CASE(Constructor)
 {
   util::DummyClientFace face({true, true});
   BOOST_REQUIRE_NO_THROW(Consumer(Name("/psync"), face,
-                                  [] (const std::vector<Name>&) {},
-                                  [] (const std::vector<MissingDataInfo>&) {},
+                                  [] (const auto&) {},
+                                  [] (const auto&) {},
                                   40, 0.001));
 }
 
@@ -51,8 +51,8 @@ BOOST_AUTO_TEST_CASE(AddSubscription)
   Name subscription("test");
 
   BOOST_CHECK(!consumer.isSubscribed(subscription));
-  BOOST_CHECK(consumer.addSubscription(subscription));
-  BOOST_CHECK(!consumer.addSubscription(subscription));
+  BOOST_CHECK(consumer.addSubscription(subscription, 0));
+  BOOST_CHECK(!consumer.addSubscription(subscription, 0));
 }
 
 BOOST_FIXTURE_TEST_CASE(ConstantTimeoutForFirstSegment, tests::UnitTestTimeFixture)

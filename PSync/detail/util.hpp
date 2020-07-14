@@ -19,7 +19,7 @@
  * murmurHash3 was written by Austin Appleby, and is placed in the public
  * domain. The author hereby disclaims copyright to this source code.
  * https://github.com/aappleby/smhasher/blob/master/src/murmurHash3.cpp
- **/
+ */
 
 #ifndef PSYNC_UTIL_HPP
 #define PSYNC_UTIL_HPP
@@ -45,6 +45,12 @@ murmurHash3(uint32_t nHashSeed, uint32_t value);
 
 struct MissingDataInfo
 {
+  MissingDataInfo(const ndn::Name& prefix, uint64_t lowSeq, uint64_t highSeq)
+    : prefix(prefix)
+    , lowSeq(lowSeq)
+    , highSeq(highSeq)
+  {}
+
   ndn::Name prefix;
   uint64_t lowSeq;
   uint64_t highSeq;

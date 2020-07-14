@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public License along with
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
- **/
+ */
 
 #ifndef PSYNC_CONSUMER_HPP
 #define PSYNC_CONSUMER_HPP
@@ -37,7 +37,7 @@ namespace psync {
 
 using namespace ndn::literals::time_literals;
 
-typedef std::function<void(const std::vector<ndn::Name>&)> ReceiveHelloCallback;
+typedef std::function<void(const std::map<ndn::Name, uint64_t>&)> ReceiveHelloCallback;
 typedef std::function<void(const std::vector<MissingDataInfo>&)> UpdateCallback;
 
 const ndn::time::milliseconds HELLO_INTEREST_LIFETIME = 1_s;
@@ -104,10 +104,16 @@ public:
    * @brief Add prefix to subscription list
    *
    * @param prefix prefix to be added to the list
+   * @param seqNo the latest sequence number for the prefix received in HelloData callback
+   * @param callSyncDataCb true by default to let app know that a new sequence number is available.
+   *        Usually sequence number is zero in hello data, but when it is not Consumer can
+   *        notify the app. Since the app is aware of the latest sequence number by
+   *        ReceiveHelloCallback, app may choose to not let Consumer call UpdateCallback
+   *        by setting this to false.
    * @return true if prefix is added, false if it is already present
    */
   bool
-  addSubscription(const ndn::Name& prefix);
+  addSubscription(const ndn::Name& prefix, uint64_t seqNo, bool callSyncDataCb = true);
 
   std::set<ndn::Name>
   getSubscriptionList() const

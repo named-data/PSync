@@ -63,7 +63,7 @@ public:
     }
 
     consumers[id] = std::make_shared<Consumer>(syncPrefix, *consumerFaces[id],
-                      [&, id] (const std::vector<Name>& availableSubs)
+                      [&, id] (const auto& availableSubs)
                       {
                         numHelloDataRcvd++;
                         BOOST_CHECK(checkSubList(availableSubs));
@@ -71,11 +71,12 @@ public:
                         checkIBFUpdated(id);
 
                         for (const auto& sub : subscribeTo) {
-                          consumers[id]->addSubscription(sub);
+                          auto it = availableSubs.find(sub);
+                          consumers[id]->addSubscription(sub, it->second);
                         }
                         consumers[id]->sendSyncInterest();
                       },
-                      [&, id] (const std::vector<MissingDataInfo>& updates) {
+                      [&, id] (const auto& updates) {
                         numSyncDataRcvd++;
 
                         checkIBFUpdated(id);
@@ -100,10 +101,11 @@ public:
   }
 
   bool
-  checkSubList(const std::vector<Name>& availableSubs) const
+  checkSubList(const std::map<Name, uint64_t>& availableSubs) const
   {
     for (const auto& prefix : producer->m_prefixes) {
-      if (std::find(availableSubs.begin(), availableSubs.end(), prefix.first) == availableSubs.end()) {
+      auto it = availableSubs.find(prefix.first);
+      if (it == availableSubs.end()) {
         return false;
       }
     }
@@ -199,7 +201,7 @@ BOOST_AUTO_TEST_CASE(LateSubscription)
   publishUpdateFor("testUser-2");
   BOOST_CHECK_EQUAL(numSyncDataRcvd, 1);
 
-  consumers[0]->addSubscription("testUser-3");
+  consumers[0]->addSubscription("testUser-3", 0);
   consumers[0]->sendSyncInterest();
   publishUpdateFor("testUser-3");
   BOOST_CHECK_EQUAL(numSyncDataRcvd, 2);
@@ -429,6 +431,23 @@ BOOST_AUTO_TEST_CASE(SegmentedSync)
   BOOST_CHECK_EQUAL(producer->m_segmentPublisher.m_ims.size(), 2);
   BOOST_REQUIRE(!face.sentData.empty());
   BOOST_CHECK_EQUAL(face.sentData.front().getName().at(-1).toSegment(), 1);
+}
+
+BOOST_AUTO_TEST_CASE(DelayedSubscription) // #5122
+{
+  publishUpdateFor("testUser-2");
+  std::vector<std::string> subscribeTo{"testUser-2", "testUser-4"};
+  addConsumer(0, subscribeTo);
+
+  consumers[0]->sendHelloInterest();
+  advanceClocks(ndn::time::milliseconds(10));
+  BOOST_CHECK_EQUAL(numHelloDataRcvd, 1);
+
+  // Application came up late and subscribed to testUser-2
+  // after Producer had already published the first update.
+  // So by default Consumer will let the application know that
+  // the prefix it subscribed to has already some updates
+  BOOST_CHECK_EQUAL(numSyncDataRcvd, 1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

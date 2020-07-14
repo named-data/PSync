@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019,  The University of Memphis
+ * Copyright (c) 2014-2020,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public License along with
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
- **/
+ */
 
 #include <PSync/consumer.hpp>
 
@@ -59,16 +59,22 @@ public:
 
 private:
   void
-  afterReceiveHelloData(const std::vector<ndn::Name>& availSubs)
+  afterReceiveHelloData(const std::map<ndn::Name, uint64_t>& availSubs)
   {
-    // Randomly subscribe to m_nSub prefixes
-    std::vector<ndn::Name> sensors = availSubs;
+    std::vector<ndn::Name> sensors;
+    sensors.reserve(availSubs.size());
+    for (const auto& it : availSubs) {
+      sensors.insert(sensors.end(), it.first);
+    }
 
     std::shuffle(sensors.begin(), sensors.end(), m_rng);
 
+    // Randomly subscribe to m_nSub prefixes
     for (int i = 0; i < m_nSub; i++) {
-      NDN_LOG_INFO("Subscribing to: " << sensors[i]);
-      m_consumer.addSubscription(sensors[i]);
+      ndn::Name prefix = sensors[i];
+      NDN_LOG_INFO("Subscribing to: " << prefix);
+      auto it = availSubs.find(prefix);
+      m_consumer.addSubscription(prefix, it->second);
     }
 
     // After setting the subscription list, send the sync interest

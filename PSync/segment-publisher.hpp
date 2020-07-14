@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public License along with
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
- **/
+ */
 
 #ifndef PSYNC_SEGMENT_PUBLISHER_HPP
 #define PSYNC_SEGMENT_PUBLISHER_HPP

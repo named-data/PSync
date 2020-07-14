@@ -54,14 +54,20 @@ Consumer::Consumer(const ndn::Name& syncPrefix,
 }
 
 bool
-Consumer::addSubscription(const ndn::Name& prefix)
+Consumer::addSubscription(const ndn::Name& prefix, uint64_t seqNo, bool callSyncDataCb)
 {
-  auto it = m_prefixes.insert(std::pair<ndn::Name, uint64_t>(prefix, 0));
+  auto it = m_prefixes.emplace(prefix, seqNo);
   if (!it.second) {
     return false;
   }
-  m_subscriptionList.insert(prefix);
+
+  m_subscriptionList.emplace(prefix);
   m_bloomFilter.insert(prefix.toUri());
+
+  if (callSyncDataCb && seqNo != 0) {
+    m_onUpdate({MissingDataInfo(prefix, seqNo, seqNo)});
+  }
+
   return true;
 }
 
@@ -124,28 +130,28 @@ Consumer::onHelloData(const ndn::ConstBufferPtr& bufferPtr)
   NDN_LOG_DEBUG("On Hello Data");
 
   // Extract IBF from name which is the last element in hello data's name
-  m_iblt = m_helloDataName.getSubName(m_helloDataName.size()-1, 1);
+  m_iblt = m_helloDataName.getSubName(m_helloDataName.size() - 1, 1);
 
   NDN_LOG_TRACE("m_iblt: " << std::hash<std::string>{}(m_iblt.toUri()));
 
   State state{ndn::Block{bufferPtr}};
 
   std::vector<MissingDataInfo> updates;
-  std::vector<ndn::Name> availableSubscriptions;
+  std::map<ndn::Name, uint64_t> availableSubscriptions;
 
-  NDN_LOG_DEBUG("Hello Data:  " << state);
+  NDN_LOG_DEBUG("Hello Data: " << state);
 
-  for (const auto& content : state.getContent()) {
+  for (const auto& content : state) {
     const ndn::Name& prefix = content.getPrefix(-1);
-    uint64_t seq = content.get(content.size()-1).toNumber();
+    uint64_t seq = content.get(content.size() - 1).toNumber();
     // If consumer is subscribed then prefix must already be present in
     // m_prefixes (see addSubscription). So [] operator is safe to use.
     if (isSubscribed(prefix) && seq > m_prefixes[prefix]) {
       // In case we are behind on this prefix and consumer is subscribed to it
-      updates.push_back(MissingDataInfo{prefix, m_prefixes[prefix] + 1, seq});
+      updates.emplace_back(prefix, m_prefixes[prefix] + 1, seq);
       m_prefixes[prefix] = seq;
     }
-    availableSubscriptions.push_back(prefix);
+    availableSubscriptions.emplace(prefix, seq);
   }
 
   m_onReceiveHelloData(availableSubscriptions);
@@ -226,14 +232,14 @@ Consumer::onSyncData(const ndn::ConstBufferPtr& bufferPtr)
 
   std::vector<MissingDataInfo> updates;
 
-  for (const auto& content : state.getContent()) {
+  for (const auto& content : state) {
     NDN_LOG_DEBUG(content);
     const ndn::Name& prefix = content.getPrefix(-1);
     uint64_t seq = content.get(content.size() - 1).toNumber();
     if (m_prefixes.find(prefix) == m_prefixes.end() || seq > m_prefixes[prefix]) {
       // If this is just the next seq number then we had already informed the consumer about
       // the previous sequence number and hence seq low and seq high should be equal to current seq
-      updates.push_back(MissingDataInfo{prefix, m_prefixes[prefix] + 1, seq});
+      updates.emplace_back(prefix, m_prefixes[prefix] + 1, seq);
       m_prefixes[prefix] = seq;
     }
     // Else updates will be empty and consumer will not be notified.

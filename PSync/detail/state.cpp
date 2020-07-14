@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public License along with
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
- **/
+ */
 
 #include "PSync/detail/state.hpp"
 
@@ -58,8 +58,7 @@ State::wireEncode(ndn::EncodingImpl<TAG>& block) const
 {
   size_t totalLength = 0;
 
-  for (std::vector<ndn::Name>::const_reverse_iterator it = m_content.rbegin();
-    it != m_content.rend(); ++it) {
+  for (auto it = m_content.rbegin(); it != m_content.rend(); ++it) {
     totalLength += it->wireEncode(block);
   }
 

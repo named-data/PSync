@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public License along with
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
- **/
+ */
 
 #ifndef PSYNC_STATE_HPP
 #define PSYNC_STATE_HPP
@@ -57,6 +57,18 @@ public:
 
   void
   wireDecode(const ndn::Block& wire);
+
+  std::vector<ndn::Name>::const_iterator
+  begin() const
+  {
+    return m_content.cbegin();
+  }
+
+  std::vector<ndn::Name>::const_iterator
+  end() const
+  {
+    return m_content.cend();
+  }
 
 private:
   std::vector<ndn::Name> m_content;
