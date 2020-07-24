@@ -111,7 +111,7 @@ FullProducer::sendSyncInterest()
   options.rttOptions.initialRto = m_syncInterestLifetime;
 
   m_fetcher = SegmentFetcher::start(m_face, syncInterest,
-                                    ndn::security::v2::getAcceptAllValidator(), options);
+                                    ndn::security::getAcceptAllValidator(), options);
 
   m_fetcher->onComplete.connect([this, syncInterest] (const ndn::ConstBufferPtr& bufferPtr) {
     onSyncData(syncInterest, bufferPtr);

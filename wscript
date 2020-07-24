@@ -15,9 +15,10 @@ int main() {{ boost::iostreams::{0}_compressor test; }}
 COMPRESSION_SCHEMES = ['zlib', 'gzip', 'bzip2', 'lzma', 'zstd']
 
 def options(opt):
-    opt.load(['compiler_c', 'compiler_cxx', 'gnu_dirs'])
-    opt.load(['default-compiler-flags', 'coverage', 'sanitizers',
-              'boost', 'doxygen', 'sphinx_build'],
+    opt.load(['compiler_cxx', 'gnu_dirs'])
+    opt.load(['default-compiler-flags',
+              'coverage', 'sanitizers', 'boost',
+              'doxygen', 'sphinx_build'],
              tooldir=['.waf-tools'])
 
     optgrp = opt.add_option_group('PSync Options')
@@ -31,7 +32,7 @@ def options(opt):
                           help='Build without {}'.format(scheme))
 
 def configure(conf):
-    conf.load(['compiler_c', 'compiler_cxx', 'gnu_dirs',
+    conf.load(['compiler_cxx', 'gnu_dirs',
                'default-compiler-flags', 'boost',
                'doxygen', 'sphinx_build'])
 

@@ -37,11 +37,11 @@ class SegmentPublisherFixture : public tests::UnitTestTimeFixture
 {
 public:
   SegmentPublisherFixture()
-  : face(io, util::DummyClientFace::Options{true, true})
-  , publisher(face, keyChain)
-  , freshness(1000)
-  , numComplete(0)
-  , numRepliesFromStore(0)
+    : face(io, util::DummyClientFace::Options{true, true})
+    , publisher(face, keyChain)
+    , freshness(1000)
+    , numComplete(0)
+    , numRepliesFromStore(0)
   {
     face.setInterestFilter(InterestFilter("/hello/world"),
                            bind(&SegmentPublisherFixture::onInterest, this, _1, _2),
@@ -55,25 +55,24 @@ public:
     }
   }
 
-  ~SegmentPublisherFixture() {
+  ~SegmentPublisherFixture()
+  {
     fetcher->stop();
   }
 
   void
-  expressInterest(const Interest& interest) {
-    fetcher = util::SegmentFetcher::start(face, interest, ndn::security::v2::getAcceptAllValidator());
-    fetcher->onComplete.connect([this] (ConstBufferPtr data) {
-                                 numComplete++;
-                               });
-    fetcher->onError.connect([] (uint32_t errorCode, const std::string& msg) {
-                              BOOST_CHECK(false);
-                            });
+  expressInterest(const Interest& interest)
+  {
+    fetcher = util::SegmentFetcher::start(face, interest, ndn::security::getAcceptAllValidator());
+    fetcher->onComplete.connect([this] (auto&&...) { numComplete++; });
+    fetcher->onError.connect([] (auto&&...) { BOOST_CHECK(false); });
 
     advanceClocks(ndn::time::milliseconds(10));
   }
 
   void
-  onInterest(const Name& prefix, const Interest& interest) {
+  onInterest(const Name& prefix, const Interest& interest)
+  {
     if (publisher.replyFromStore(interest.getName())) {
       numRepliesFromStore++;
       return;

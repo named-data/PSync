@@ -98,7 +98,7 @@ Consumer::sendHelloInterest()
   options.rttOptions.initialRto = m_syncInterestLifetime;
 
   m_helloFetcher = SegmentFetcher::start(m_face, helloInterest,
-                                         ndn::security::v2::getAcceptAllValidator(), options);
+                                         ndn::security::getAcceptAllValidator(), options);
 
   m_helloFetcher->afterSegmentValidated.connect([this] (const ndn::Data& data) {
     if (data.getFinalBlock()) {
@@ -185,7 +185,7 @@ Consumer::sendSyncInterest()
   options.rttOptions.initialRto = m_syncInterestLifetime;
 
   m_syncFetcher = SegmentFetcher::start(m_face, syncInterest,
-                                        ndn::security::v2::getAcceptAllValidator(), options);
+                                        ndn::security::getAcceptAllValidator(), options);
 
   m_syncFetcher->afterSegmentValidated.connect([this] (const ndn::Data& data) {
     if (data.getFinalBlock()) {

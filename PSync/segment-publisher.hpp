@@ -55,8 +55,7 @@ public:
   void
   publish(const ndn::Name& interestName, const ndn::Name& dataName,
           const ndn::Block& block, ndn::time::milliseconds freshness,
-          const ndn::security::SigningInfo& signingInfo =
-            ndn::security::v2::KeyChain::getDefaultSigningInfo());
+          const ndn::security::SigningInfo& signingInfo = ndn::security::SigningInfo());
 
   /**
    * @brief Put all the segments in memory.
@@ -70,8 +69,7 @@ public:
   void
   publish(const ndn::Name& interestName, const ndn::Name& dataName,
           const std::shared_ptr<const ndn::Buffer>& buffer, ndn::time::milliseconds freshness,
-          const ndn::security::SigningInfo& signingInfo =
-            ndn::security::v2::KeyChain::getDefaultSigningInfo());
+          const ndn::security::SigningInfo& signingInfo = ndn::security::SigningInfo());
 
   /**
    * @brief Try to reply from memory, return false if we cannot find the segment.
