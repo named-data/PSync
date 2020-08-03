@@ -66,14 +66,14 @@ BOOST_FIXTURE_TEST_CASE(ConstantTimeoutForFirstSegment, tests::UnitTestTimeFixtu
                     ndn::time::milliseconds(4000));
 
   consumer.sendHelloInterest();
-  advanceClocks(ndn::time::milliseconds(4000));
+  advanceClocks(4_s);
   BOOST_CHECK_EQUAL(face.sentInterests.size(), 1);
   face.sentInterests.clear();
   consumer.stop();
 
   consumer.m_iblt = ndn::Name("test");
   consumer.sendSyncInterest();
-  advanceClocks(ndn::time::milliseconds(4000));
+  advanceClocks(3999_ms);
   BOOST_CHECK_EQUAL(face.sentInterests.size(), 1);
   consumer.stop();
 }

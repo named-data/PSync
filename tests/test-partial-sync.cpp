@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public License along with
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
- **/
+ */
 
 #include "PSync/partial-producer.hpp"
 #include "PSync/consumer.hpp"
@@ -181,11 +181,11 @@ BOOST_AUTO_TEST_CASE(MissedUpdate)
   BOOST_CHECK_EQUAL(numSyncDataRcvd, 0);
 
   // The sync interest sent after hello will timeout
-  advanceClocks(ndn::time::milliseconds(1000));
+  advanceClocks(ndn::time::milliseconds(999));
   BOOST_CHECK_EQUAL(numSyncDataRcvd, 0);
 
   // Next sync interest will bring back the sync data
-  advanceClocks(ndn::time::milliseconds(1500));
+  advanceClocks(ndn::time::milliseconds(1));
   BOOST_CHECK_EQUAL(numSyncDataRcvd, 1);
 }
 
@@ -217,7 +217,8 @@ BOOST_AUTO_TEST_CASE(ConsumerSyncTimeout)
   advanceClocks(ndn::time::milliseconds(10));
   BOOST_CHECK_EQUAL(producer->m_pendingEntries.size(), 1);
   advanceClocks(ndn::time::milliseconds(10), 100);
-  BOOST_CHECK_EQUAL(producer->m_pendingEntries.size(), 0);
+  // The next Interest is sent after the first one immediately
+  BOOST_CHECK_EQUAL(producer->m_pendingEntries.size(), 1);
   advanceClocks(ndn::time::milliseconds(10), 100);
 
   int numSyncInterests = 0;
@@ -226,7 +227,7 @@ BOOST_AUTO_TEST_CASE(ConsumerSyncTimeout)
       numSyncInterests++;
     }
   }
-  BOOST_CHECK_EQUAL(numSyncInterests, 2);
+  BOOST_CHECK_EQUAL(numSyncInterests, 3);
   BOOST_CHECK_EQUAL(numSyncDataRcvd, 0);
 }
 
@@ -411,10 +412,10 @@ BOOST_AUTO_TEST_CASE(SegmentedSync)
     producer->updateSeqNo(longNameToExceedDataSize.toUri() + "-" + to_string(i), 1);
   }
 
-  advanceClocks(ndn::time::milliseconds(1000));
+  advanceClocks(ndn::time::milliseconds(999));
   BOOST_CHECK_EQUAL(numSyncDataRcvd, 0);
 
-  advanceClocks(ndn::time::milliseconds(1500));
+  advanceClocks(ndn::time::milliseconds(1));
   BOOST_CHECK_EQUAL(numSyncDataRcvd, 1);
 
   // Simulate sending delayed interest for second segment

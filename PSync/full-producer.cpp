@@ -119,7 +119,11 @@ FullProducer::sendSyncInterest()
 
   m_fetcher->onError.connect([this] (uint32_t errorCode, const std::string& msg) {
     NDN_LOG_ERROR("Cannot fetch sync data, error: " << errorCode << " message: " << msg);
-    if (errorCode == SegmentFetcher::ErrorCode::NACK_ERROR) {
+    // We would like to recover from errors like NoRoute NACK quicker than sync Interest timeout.
+    // We don't react to Interest timeout here as we have scheduled the next sync Interest
+    // to be sent in half the sync Interest lifetime + jitter above. So we would react to
+    // timeout before it happens.
+    if (errorCode != SegmentFetcher::ErrorCode::INTEREST_TIMEOUT) {
       auto after = ndn::time::milliseconds(m_jitter(m_rng));
       NDN_LOG_DEBUG("Schedule sync interest after: " << after);
       m_scheduledSyncInterestId = m_scheduler.schedule(after, [this] { sendSyncInterest(); });

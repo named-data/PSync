@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public License along with
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
- **/
+ */
 
 #include "PSync/consumer.hpp"
 #include "PSync/detail/state.hpp"
@@ -187,7 +187,7 @@ Consumer::sendSyncInterest()
   using ndn::util::SegmentFetcher;
   SegmentFetcher::Options options;
   options.interestLifetime = m_syncInterestLifetime;
-  options.maxTimeout = m_syncInterestLifetime;;
+  options.maxTimeout = m_syncInterestLifetime;
   options.rttOptions.initialRto = m_syncInterestLifetime;
 
   m_syncFetcher = SegmentFetcher::start(m_face, syncInterest,
@@ -216,9 +216,14 @@ Consumer::sendSyncInterest()
 
   m_syncFetcher->onError.connect([this] (uint32_t errorCode, const std::string& msg) {
     NDN_LOG_TRACE("Cannot fetch sync data, error: " << errorCode << " message: " << msg);
-    ndn::time::milliseconds after(m_rangeUniformRandom(m_rng));
-    NDN_LOG_TRACE("Scheduling after " << after);
-    m_scheduler.schedule(after, [this] { sendSyncInterest(); });
+    if (errorCode == SegmentFetcher::ErrorCode::INTEREST_TIMEOUT) {
+      sendSyncInterest();
+    }
+    else {
+      ndn::time::milliseconds after(m_rangeUniformRandom(m_rng));
+      NDN_LOG_TRACE("Scheduling sync Interest after: " << after);
+      m_scheduler.schedule(after, [this] { sendSyncInterest(); });
+    }
   });
 }
 
