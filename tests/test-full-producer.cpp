@@ -20,7 +20,7 @@
 #include "PSync/full-producer.hpp"
 
 #include "tests/boost-test.hpp"
-#include "tests/unit-test-time-fixture.hpp"
+#include "tests/io-fixture.hpp"
 
 #include <ndn-cxx/name.hpp>
 #include <ndn-cxx/mgmt/nfd/control-parameters.hpp>
@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_SUITE(TestFullProducer)
 BOOST_AUTO_TEST_CASE(Constructor)
 {
   util::DummyClientFace face({true, true});
-  BOOST_REQUIRE_NO_THROW(FullProducer(40, face, Name("/psync"), Name("/testUser"), nullptr));
+  BOOST_CHECK_NO_THROW(FullProducer(40, face, Name("/psync"), Name("/testUser"), nullptr));
 }
 
 BOOST_AUTO_TEST_CASE(OnInterest)
@@ -51,17 +51,17 @@ BOOST_AUTO_TEST_CASE(OnInterest)
   BOOST_REQUIRE_NO_THROW(node.onSyncInterest(syncPrefix, Interest(syncInterestName)));
 }
 
-BOOST_FIXTURE_TEST_CASE(ConstantTimeoutForFirstSegment, tests::UnitTestTimeFixture)
+BOOST_FIXTURE_TEST_CASE(ConstantTimeoutForFirstSegment, tests::IoFixture)
 {
   Name syncPrefix("/psync"), userNode("/testUser");
-  util::DummyClientFace face(io, {true, true});
+  util::DummyClientFace face(m_io, {true, true});
 
-  FullProducer node(40, face, syncPrefix, userNode, nullptr, ndn::time::milliseconds(8000));
-  advanceClocks(ndn::time::milliseconds(10));
+  FullProducer node(40, face, syncPrefix, userNode, nullptr, 8_s);
+  advanceClocks(10_ms);
   face.sentInterests.clear();
 
   // full sync sends the next one in interest lifetime / 2 +- jitter
-  advanceClocks(ndn::time::milliseconds(6000));
+  advanceClocks(6_s);
   BOOST_CHECK_EQUAL(face.sentInterests.size(), 1);
 }
 
@@ -72,17 +72,16 @@ BOOST_AUTO_TEST_CASE(OnSyncDataDecodeFailure)
 
   FullProducer node(40, face, syncPrefix, userNode, nullptr);
 
-  ndn::Name syncInterestName(syncPrefix);
+  Name syncInterestName(syncPrefix);
   node.m_iblt.appendToName(syncInterestName);
-  ndn::Interest syncInterest(syncInterestName);
+  Interest syncInterest(syncInterestName);
 
-  auto badCompress = std::make_shared<const ndn::Buffer>(5);
-
-  BOOST_REQUIRE_NO_THROW(node.onSyncData(syncInterest, badCompress));
+  auto badCompress = std::make_shared<const Buffer>(5);
+  BOOST_CHECK_NO_THROW(node.onSyncData(syncInterest, badCompress));
 
   const uint8_t test[] = {'t', 'e', 's', 't'};
   auto goodCompressBadBlock = compress(node.m_contentCompression, &test[0], sizeof(test));
-  BOOST_REQUIRE_NO_THROW(node.onSyncData(syncInterest, goodCompressBadBlock));
+  BOOST_CHECK_NO_THROW(node.onSyncData(syncInterest, goodCompressBadBlock));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

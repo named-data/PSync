@@ -22,7 +22,7 @@
 #include "PSync/detail/state.hpp"
 
 #include "tests/boost-test.hpp"
-#include "tests/unit-test-time-fixture.hpp"
+#include "tests/io-fixture.hpp"
 
 #include <ndn-cxx/name.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>
@@ -31,14 +31,15 @@ namespace psync {
 
 using namespace ndn;
 
-class FullSyncFixture : public tests::UnitTestTimeFixture
+class FullSyncFixture : public tests::IoFixture
 {
 protected:
   void
   addNode(int id)
   {
     BOOST_ASSERT(id >= 0 && id <= 3);
-    faces[id] = std::make_shared<util::DummyClientFace>(io, util::DummyClientFace::Options{true, true});
+
+    faces[id] = std::make_shared<util::DummyClientFace>(m_io, util::DummyClientFace::Options{true, true});
     userPrefixes[id] = Name("userPrefix" + to_string(id));
     nodes[id] = make_shared<FullProducer>(40, *faces[id], syncPrefix, userPrefixes[id],
                                           [] (const auto&) {});

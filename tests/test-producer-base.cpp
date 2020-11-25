@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(Basic)
   BOOST_CHECK_EQUAL(prefix.getPrefix(-1), userNode);
 
   producerBase.removeUserNode(userNode);
-  BOOST_CHECK(producerBase.getSeqNo(userNode.toUri()) == ndn::nullopt);
+  BOOST_CHECK(producerBase.getSeqNo(userNode.toUri()) == nullopt);
   BOOST_CHECK(producerBase.m_biMap.right.find(prefixWithSeq) == producerBase.m_biMap.right.end());
   BOOST_CHECK(producerBase.m_biMap.left.find(hash) == producerBase.m_biMap.left.end());
 
@@ -72,12 +72,12 @@ BOOST_AUTO_TEST_CASE(ApplicationNack)
   ProducerBase producerBase(40, face, Name("/psync"), Name("/testUser"));
 
   BOOST_CHECK_EQUAL(face.sentData.size(), 0);
-  producerBase.m_syncReplyFreshness = time::milliseconds(1000);
+  producerBase.m_syncReplyFreshness = 1_s;
   producerBase.sendApplicationNack(Name("test"));
-  face.processEvents(time::milliseconds(10));
+  face.processEvents(10_ms);
 
   BOOST_REQUIRE_EQUAL(face.sentData.size(), 1);
-  BOOST_CHECK_EQUAL(face.sentData.front().getContentType(), ndn::tlv::ContentType_Nack);
+  BOOST_CHECK_EQUAL(face.sentData.front().getContentType(), tlv::ContentType_Nack);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

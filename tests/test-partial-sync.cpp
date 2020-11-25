@@ -21,7 +21,7 @@
 #include "PSync/consumer.hpp"
 
 #include "tests/boost-test.hpp"
-#include "tests/unit-test-time-fixture.hpp"
+#include "tests/io-fixture.hpp"
 
 #include <ndn-cxx/name.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>
@@ -30,23 +30,18 @@ namespace psync {
 
 using namespace ndn;
 
-class PartialSyncFixture : public tests::UnitTestTimeFixture
+class PartialSyncFixture : public tests::IoFixture
 {
 public:
   PartialSyncFixture()
-    : face(io, {true, true})
-    , syncPrefix("psync")
-    , userPrefix("testUser-0")
-    , numHelloDataRcvd(0)
-    , numSyncDataRcvd(0)
   {
     producer = make_shared<PartialProducer>(40, face, syncPrefix, userPrefix);
     addUserNodes("testUser", 10);
   }
 
-  ~PartialSyncFixture()
+  ~PartialSyncFixture() override
   {
-    for (auto consumer : consumers) {
+    for (const auto& consumer : consumers) {
       if (consumer) {
         consumer->stop();
       }
@@ -56,15 +51,15 @@ public:
   void
   addConsumer(int id, const std::vector<std::string>& subscribeTo, bool linkToProducer = true)
   {
-    consumerFaces[id] = std::make_shared<util::DummyClientFace>(io, util::DummyClientFace::Options{true, true});
+    consumerFaces[id] =
+        std::make_shared<util::DummyClientFace>(m_io, util::DummyClientFace::Options{true, true});
 
     if (linkToProducer) {
       face.linkTo(*consumerFaces[id]);
     }
 
     consumers[id] = std::make_shared<Consumer>(syncPrefix, *consumerFaces[id],
-                      [&, id] (const auto& availableSubs)
-                      {
+                      [&, id] (const auto& availableSubs) {
                         numHelloDataRcvd++;
                         BOOST_CHECK(checkSubList(availableSubs));
 
@@ -136,17 +131,17 @@ public:
     producer->updateSeqNo(prefix, seq);
   }
 
-  util::DummyClientFace face;
-  Name syncPrefix;
-  Name userPrefix;
+  util::DummyClientFace face{m_io, {true, true}};
+  Name syncPrefix{"psync"};
+  Name userPrefix{"testUser-0"};
 
   shared_ptr<PartialProducer> producer;
-  std::map <ndn::Name, uint64_t> oldSeqMap;
+  std::map<Name, uint64_t> oldSeqMap;
 
   shared_ptr<Consumer> consumers[3];
   shared_ptr<util::DummyClientFace> consumerFaces[3];
-  int numHelloDataRcvd;
-  int numSyncDataRcvd;
+  int numHelloDataRcvd = 0;
+  int numSyncDataRcvd = 0;
 };
 
 BOOST_FIXTURE_TEST_SUITE(TestPartialSync, PartialSyncFixture)
@@ -293,7 +288,7 @@ BOOST_AUTO_TEST_CASE(ReplicatedProducer)
   // Link to first producer goes down
   face.unlink();
 
-  util::DummyClientFace face2(io, {true, true});
+  util::DummyClientFace face2(m_io, {true, true});
   PartialProducer replicatedProducer(40, face2, syncPrefix, userPrefix);
   for (int i = 1; i < 10; i++) {
       replicatedProducer.addUserNode("testUser-" + to_string(i));
@@ -331,7 +326,7 @@ BOOST_AUTO_TEST_CASE(ApplicationNack)
 
   oldSeqMap = producer->m_prefixes;
   for (int i = 0; i < 50; i++) {
-    ndn::Name prefix("testUser-" + to_string(i));
+    Name prefix("testUser-" + to_string(i));
     producer->updateSeqNo(prefix, producer->getSeqNo(prefix).value() + 1);
   }
   // Next sync interest should trigger the nack
@@ -343,7 +338,7 @@ BOOST_AUTO_TEST_CASE(ApplicationNack)
 
   bool nackRcvd = false;
   for (const auto& data : face.sentData) {
-    if (data.getContentType() == ndn::tlv::ContentType_Nack) {
+    if (data.getContentType() == tlv::ContentType_Nack) {
       nackRcvd = true;
       break;
     }
@@ -384,7 +379,7 @@ BOOST_AUTO_TEST_CASE(SegmentedHello)
 
 BOOST_AUTO_TEST_CASE(SegmentedSync)
 {
-  ndn::Name longNameToExceedDataSize;
+  Name longNameToExceedDataSize;
   for (int i = 0; i < 100; i++) {
     longNameToExceedDataSize.append("test-" + std::to_string(i));
   }
@@ -401,7 +396,7 @@ BOOST_AUTO_TEST_CASE(SegmentedSync)
   BOOST_CHECK_EQUAL(numHelloDataRcvd, 1);
 
   // To be used later to simulate sending delayed segmented interest
-  ndn::Name syncInterestName(consumers[0]->m_syncInterestPrefix);
+  Name syncInterestName(consumers[0]->m_syncInterestPrefix);
   consumers[0]->m_bloomFilter.appendToName(syncInterestName);
   syncInterestName.append(consumers[0]->m_iblt);
   syncInterestName.appendVersion();

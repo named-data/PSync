@@ -21,7 +21,7 @@
 #include "PSync/detail/state.hpp"
 
 #include "tests/boost-test.hpp"
-#include "tests/unit-test-time-fixture.hpp"
+#include "tests/io-fixture.hpp"
 
 #include <ndn-cxx/data.hpp>
 #include <ndn-cxx/interest.hpp>
@@ -33,29 +33,24 @@ namespace psync {
 
 using namespace ndn;
 
-class SegmentPublisherFixture : public tests::UnitTestTimeFixture
+class SegmentPublisherFixture : public tests::IoFixture
 {
 public:
   SegmentPublisherFixture()
-    : face(io, util::DummyClientFace::Options{true, true})
+    : face(m_io, util::DummyClientFace::Options{true, true})
     , publisher(face, keyChain)
-    , freshness(1000)
-    , numComplete(0)
-    , numRepliesFromStore(0)
   {
     face.setInterestFilter(InterestFilter("/hello/world"),
                            bind(&SegmentPublisherFixture::onInterest, this, _1, _2),
-                           [] (const ndn::Name& prefix, const std::string& msg) {
-                             BOOST_CHECK(false);
-                           });
-    advanceClocks(ndn::time::milliseconds(10));
+                           [] (auto&&...) { BOOST_CHECK(false); });
+    advanceClocks(10_ms);
 
     for (int i = 0; i < 1000; ++i) {
       state.addContent(Name("/test").appendNumber(i));
     }
   }
 
-  ~SegmentPublisherFixture()
+  ~SegmentPublisherFixture() override
   {
     fetcher->stop();
   }
@@ -63,11 +58,11 @@ public:
   void
   expressInterest(const Interest& interest)
   {
-    fetcher = util::SegmentFetcher::start(face, interest, ndn::security::getAcceptAllValidator());
+    fetcher = util::SegmentFetcher::start(face, interest, security::getAcceptAllValidator());
     fetcher->onComplete.connect([this] (auto&&...) { numComplete++; });
     fetcher->onError.connect([] (auto&&...) { BOOST_CHECK(false); });
 
-    advanceClocks(ndn::time::milliseconds(10));
+    advanceClocks(10_ms);
   }
 
   void
@@ -92,11 +87,11 @@ public:
   SegmentPublisher publisher;
   shared_ptr<util::SegmentFetcher> fetcher;
   Name dataName;
-  time::milliseconds freshness;
+  time::milliseconds freshness = 1_s;
   State state;
 
-  int numComplete;
-  int numRepliesFromStore;
+  int numComplete = 0;
+  int numRepliesFromStore = 0;
 };
 
 BOOST_FIXTURE_TEST_SUITE(TestSegmentPublisher, SegmentPublisherFixture)
@@ -116,7 +111,7 @@ BOOST_AUTO_TEST_CASE(Basic)
   BOOST_CHECK_EQUAL(numComplete, 2);
   BOOST_CHECK_EQUAL(numRepliesFromStore, 3);
 
-  advanceClocks(ndn::time::milliseconds(freshness));
+  advanceClocks(time::milliseconds(freshness));
   BOOST_CHECK_EQUAL(publisher.m_ims.size(), 0);
 
   numRepliesFromStore = 0;
@@ -126,16 +121,10 @@ BOOST_AUTO_TEST_CASE(Basic)
 
   numRepliesFromStore = 0;
   face.expressInterest(Interest("/hello/world/").setCanBePrefix(true),
-                       [this] (const Interest& interest, const Data& data) {
-                         numComplete++;
-                       },
-                       [] (const Interest& interest, const lp::Nack& nack) {
-                         BOOST_CHECK(false);
-                       },
-                       [] (const Interest& interest) {
-                         BOOST_CHECK(false);
-                       });
-  advanceClocks(ndn::time::milliseconds(10));
+                       [this] (auto&&...) { this->numComplete++; },
+                       [] (auto&&...) { BOOST_CHECK(false); },
+                       [] (auto&&...) { BOOST_CHECK(false); });
+  advanceClocks(10_ms);
   BOOST_CHECK_EQUAL(numComplete, 4);
   BOOST_CHECK_EQUAL(numRepliesFromStore, 1);
 }
@@ -152,7 +141,7 @@ BOOST_AUTO_TEST_CASE(LargerDataName)
   BOOST_CHECK_EQUAL(numRepliesFromStore, 2);
   BOOST_CHECK_EQUAL(publisher.m_ims.size(), 3);
 
-  advanceClocks(ndn::time::milliseconds(freshness));
+  advanceClocks(time::milliseconds(freshness));
   BOOST_CHECK_EQUAL(publisher.m_ims.size(), 0);
 }
 

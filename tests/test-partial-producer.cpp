@@ -34,7 +34,7 @@ BOOST_AUTO_TEST_SUITE(TestPartialProducer)
 BOOST_AUTO_TEST_CASE(Constructor)
 {
   util::DummyClientFace face({true, true});
-  BOOST_REQUIRE_NO_THROW(PartialProducer(40, face, Name("/psync"), Name("/testUser")));
+  BOOST_CHECK_NO_THROW(PartialProducer(40, face, Name("/psync"), Name("/testUser")));
 }
 
 BOOST_AUTO_TEST_CASE(RegisterPrefix)
@@ -43,7 +43,7 @@ BOOST_AUTO_TEST_CASE(RegisterPrefix)
   util::DummyClientFace face({true, true});
   PartialProducer producer(40, face, syncPrefix, userNode);
 
-  face.processEvents(time::milliseconds(-1));
+  face.processEvents(-1_ms);
 
   BOOST_REQUIRE_EQUAL(face.sentInterests.size(), 1);
   auto interest = face.sentInterests.front();
@@ -88,24 +88,24 @@ BOOST_AUTO_TEST_CASE(SameSyncInterest)
   producer.m_iblt.appendToName(syncInterestName);
 
   Interest syncInterest(syncInterestName);
-  syncInterest.setInterestLifetime(time::milliseconds(1000));
+  syncInterest.setInterestLifetime(1_s);
   syncInterest.setNonce(1);
-  BOOST_REQUIRE_NO_THROW(producer.onSyncInterest(syncInterestPrefix, syncInterest));
-  face.processEvents(time::milliseconds(10));
+  BOOST_CHECK_NO_THROW(producer.onSyncInterest(syncInterestPrefix, syncInterest));
+  face.processEvents(10_ms);
   BOOST_CHECK_EQUAL(producer.m_pendingEntries.size(), 1);
 
-  face.processEvents(time::milliseconds(500));
+  face.processEvents(500_ms);
 
   // Same interest again - size of pending interest should remain same, but expirationEvent should change
   syncInterest.setNonce(2);
-  BOOST_REQUIRE_NO_THROW(producer.onSyncInterest(syncInterestPrefix, syncInterest));
-  face.processEvents(time::milliseconds(10));
+  BOOST_CHECK_NO_THROW(producer.onSyncInterest(syncInterestPrefix, syncInterest));
+  face.processEvents(10_ms);
   BOOST_CHECK_EQUAL(producer.m_pendingEntries.size(), 1);
 
-  face.processEvents(time::milliseconds(500));
+  face.processEvents(500_ms);
   BOOST_CHECK_EQUAL(producer.m_pendingEntries.size(), 1);
 
-  face.processEvents(time::milliseconds(500));
+  face.processEvents(500_ms);
   BOOST_CHECK_EQUAL(producer.m_pendingEntries.size(), 0);
 }
 
@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE(OnSyncInterest)
   Name syncInterestName(syncPrefix);
   syncInterestName.append("sync");
   producer.m_iblt.appendToName(syncInterestName);
-  BOOST_REQUIRE_NO_THROW(producer.onSyncInterest(syncInterestName, Interest(syncInterestName)));
+  BOOST_CHECK_NO_THROW(producer.onSyncInterest(syncInterestName, Interest(syncInterestName)));
 
   // Sync interest with malicious bloom filter
   syncInterestName = syncPrefix;
@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE(OnSyncInterest)
   syncInterestName.appendNumber(1);  // false positive probability * 1000 of bloom filter
   syncInterestName.append("fake-name");
   producer.m_iblt.appendToName(syncInterestName);
-  BOOST_REQUIRE_NO_THROW(producer.onSyncInterest(syncInterestName, Interest(syncInterestName)));
+  BOOST_CHECK_NO_THROW(producer.onSyncInterest(syncInterestName, Interest(syncInterestName)));
 
   // Sync interest with malicious IBF
   syncInterestName = syncPrefix;
@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(OnSyncInterest)
   BloomFilter bf(20, 0.001);
   bf.appendToName(syncInterestName);
   syncInterestName.append("fake-name");
-  BOOST_REQUIRE_NO_THROW(producer.onSyncInterest(syncInterestName, Interest(syncInterestName)));
+  BOOST_CHECK_NO_THROW(producer.onSyncInterest(syncInterestName, Interest(syncInterestName)));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
