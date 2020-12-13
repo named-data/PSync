@@ -3,7 +3,7 @@
 from waflib import Context, Logs, Utils
 import os, subprocess
 
-VERSION = '0.2.0'
+VERSION = '0.3.0'
 APPNAME = 'PSync'
 GIT_TAG_PREFIX = ''
 

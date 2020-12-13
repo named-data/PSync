@@ -1,1 +1,1 @@
-release-notes/release-notes-0.2.0.rst
+release-notes/release-notes-0.3.0.rst
