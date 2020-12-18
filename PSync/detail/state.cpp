@@ -19,6 +19,7 @@
 
 #include "PSync/detail/state.hpp"
 
+#include <ndn-cxx/util/exception.hpp>
 #include <ndn-cxx/util/ostream-joiner.hpp>
 
 namespace psync {
@@ -73,10 +74,9 @@ NDN_CXX_DEFINE_WIRE_ENCODE_INSTANTIATIONS(State);
 void
 State::wireDecode(const ndn::Block& wire)
 {
-  auto blockType = wire.type();
-  if (blockType != tlv::PSyncContent) {
-    BOOST_THROW_EXCEPTION(ndn::tlv::Error("Expected PSyncContent Block, but Block is of type: #" +
-                                          ndn::to_string(blockType)));
+  if (wire.type() != tlv::PSyncContent) {
+    NDN_THROW(ndn::tlv::Error("Expected PSyncContent element, but TLV has type " +
+                              ndn::to_string(wire.type())));
   }
 
   m_content.clear();
@@ -89,8 +89,8 @@ State::wireDecode(const ndn::Block& wire)
       m_content.emplace_back(*it);
     }
     else {
-      BOOST_THROW_EXCEPTION(ndn::tlv::Error("Expected Name Block, but Block is of type: #" +
-                                            ndn::to_string(it->type())));
+      NDN_THROW(ndn::tlv::Error("Expected Name element, but TLV has type " +
+                                ndn::to_string(it->type())));
     }
   }
 }

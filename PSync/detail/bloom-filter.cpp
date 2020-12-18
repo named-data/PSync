@@ -46,6 +46,7 @@
 #include "PSync/detail/bloom-filter.hpp"
 #include "PSync/detail/util.hpp"
 
+#include <ndn-cxx/util/exception.hpp>
 #include <ndn-cxx/util/logger.hpp>
 
 #include <algorithm>
@@ -162,12 +163,12 @@ BloomFilter::BloomFilter(unsigned int projected_element_count,
 BloomFilter::BloomFilter(unsigned int projected_element_count,
                          double false_positive_probability,
                          const ndn::name::Component& bfName)
- : BloomFilter(projected_element_count, false_positive_probability)
+  : BloomFilter(projected_element_count, false_positive_probability)
 {
   std::vector<BloomFilter::cell_type> table(bfName.value_begin(), bfName.value_end());
 
   if (table.size() != raw_table_size_) {
-    BOOST_THROW_EXCEPTION(Error("Received BloomFilter cannot be decoded!"));
+    NDN_THROW(Error("Received BloomFilter cannot be decoded!"));
   }
   bit_table_ = table;
 }

@@ -19,12 +19,14 @@
 
 #include "PSync/producer-base.hpp"
 
+#include <ndn-cxx/util/exception.hpp>
 #include <ndn-cxx/util/logger.hpp>
+
 #include <boost/algorithm/string.hpp>
 
 #include <cstring>
-#include <limits>
 #include <functional>
+#include <limits>
 
 namespace psync {
 
@@ -39,7 +41,7 @@ ProducerBase::ProducerBase(size_t expectedNumEntries,
                            CompressionScheme contentCompression)
   : m_iblt(expectedNumEntries, ibltCompression)
   , m_expectedNumEntries(expectedNumEntries)
-  , m_threshold(expectedNumEntries/2)
+  , m_threshold(expectedNumEntries / 2)
   , m_face(face)
   , m_scheduler(m_face.getIoService())
   , m_syncPrefix(syncPrefix)
@@ -140,8 +142,8 @@ ProducerBase::sendApplicationNack(const ndn::Name& name)
 void
 ProducerBase::onRegisterFailed(const ndn::Name& prefix, const std::string& msg) const
 {
-  NDN_LOG_ERROR("ProduerBase::onRegisterFailed " << prefix << " " << msg);
-  BOOST_THROW_EXCEPTION(Error(msg));
+  NDN_LOG_ERROR("ProducerBase::onRegisterFailed(" << prefix << "): " << msg);
+  NDN_THROW(Error(msg));
 }
 
 } // namespace psync

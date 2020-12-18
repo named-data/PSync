@@ -43,8 +43,8 @@
  * SOFTWARE.
 */
 
-#ifndef PSYNC_IBLT_HPP
-#define PSYNC_IBLT_HPP
+#ifndef PSYNC_DETAIL_IBLT_HPP
+#define PSYNC_DETAIL_IBLT_HPP
 
 #include "PSync/detail/util.hpp"
 
@@ -52,8 +52,8 @@
 
 #include <inttypes.h>
 #include <set>
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace psync {
 
@@ -179,4 +179,4 @@ operator<<(std::ostream& out, const IBLT& iblt);
 
 } // namespace psync
 
-#endif // PSYNC_IBLT_HPP
+#endif // PSYNC_DETAIL_IBLT_HPP

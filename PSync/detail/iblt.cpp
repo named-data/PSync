@@ -45,6 +45,8 @@
 
 #include "PSync/detail/iblt.hpp"
 
+#include <ndn-cxx/util/exception.hpp>
+
 namespace psync {
 
 namespace be = boost::endian;

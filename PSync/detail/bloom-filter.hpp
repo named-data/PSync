@@ -43,8 +43,8 @@
  * SOFTWARE.
 */
 
-#ifndef PSYNC_BLOOM_FILTER_HPP
-#define PSYNC_BLOOM_FILTER_HPP
+#ifndef PSYNC_DETAIL_BLOOM_FILTER_HPP
+#define PSYNC_DETAIL_BLOOM_FILTER_HPP
 
 #include <ndn-cxx/name.hpp>
 
@@ -177,4 +177,4 @@ operator<<(std::ostream& out, const BloomFilter& bf);
 
 } // namespace psync
 
-#endif // PSYNC_BLOOM_FILTER_HPP
+#endif // PSYNC_DETAIL_BLOOM_FILTER_HPP

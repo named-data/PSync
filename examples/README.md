@@ -1,24 +1,25 @@
-PSync examples
-==============
+# PSync examples
 
-By default, examples in `examples/` folder are not built.  To enable them, use
+By default, the examples in this folder are not built.  To enable them, use the
 `--with-examples` configure option. For example:
 
-    ./waf configure --with-examples
-    ./waf
+```bash
+./waf configure --with-examples
+./waf
+```
 
-Example binary can be found under `build/examples`:
+The example binaries can be found in `build/examples`:
 
-- Full sync : `psync-full-sync`
-- Partial sync : `psync-producer` and `psync-consumer`
+- Full sync: `psync-full-sync`
+- Partial sync: `psync-producer` and `psync-consumer`
 
 If the library is installed to the system using `./waf install` then the examples
 are also installed and can be executed directly.
 
-## Partial Sync Example
+## Partial Sync example
 
 Partial sync example of PSync has two parts: producer and consumer.
-These can be run on a machine after starting NFD:
+These can be run on a machine after starting NFD.
 
 ### Producer
 
@@ -28,7 +29,8 @@ These can be run on a machine after starting NFD:
 export NDN_LOG=examples.PartialSyncProducerApp=INFO
 ```
 
-- Start the producer that will listen on /sync and publish 1 update for /a-0 ... /a-9 each.
+- Start the producer that will listen on `/sync` and publish 1 update for
+`/a-0` ... `/a-9` each.
 
 ```bash
 psync-producer /sync /a 10 1
@@ -57,7 +59,7 @@ psync-producer /sync /a 10 1
 export NDN_LOG=examples.PartialSyncConsumerApp=INFO
 ```
 
-- Run the consumer to subscribe to 5 random prefixes from the publisher on /sync
+- Run the consumer to subscribe to 5 random prefixes from the publisher on `/sync`
 
 ```bash
 psync-consumer /sync 5
@@ -79,9 +81,9 @@ for the subscribed prefixes:
 1546280489.349793 INFO: [examples.PartialSyncConsumerApp] Update: /a-9/1
 ```
 
-## Full Sync Example
+## Full Sync example
 
-To demonstrate full sync mode of PSync, ``psync-full-sync``
+To demonstrate full sync mode of PSync, `psync-full-sync`
 can be run on a machine after starting NFD:
 
 - Enable the logs for full sync:
@@ -90,8 +92,8 @@ can be run on a machine after starting NFD:
 export NDN_LOG=examples.FullSyncApp=INFO
 ```
 
-- Run the full sync example with sync prefix /sync, user prefix /a,
-and publish three updates for each user prefix: /a-0 and /a-1. This will simulate node a.
+- Run the full sync example with sync prefix `/sync`, user prefix `/a`,
+and publish three updates for each user prefix: `/a-0` and `/a-1`. This will simulate node a.
 
 ```bash
 psync-full-sync /sync /a 2 3

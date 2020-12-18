@@ -17,8 +17,8 @@
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PSYNC_STATE_HPP
-#define PSYNC_STATE_HPP
+#ifndef PSYNC_DETAIL_STATE_HPP
+#define PSYNC_DETAIL_STATE_HPP
 
 #include <ndn-cxx/name.hpp>
 
@@ -82,4 +82,4 @@ operator<<(std::ostream& os, const State& State);
 
 } // namespace psync
 
-#endif // PSYNC_STATE_HPP
+#endif // PSYNC_DETAIL_STATE_HPP

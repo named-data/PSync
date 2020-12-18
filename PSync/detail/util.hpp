@@ -21,8 +21,8 @@
  * https://github.com/aappleby/smhasher/blob/master/src/murmurHash3.cpp
  */
 
-#ifndef PSYNC_UTIL_HPP
-#define PSYNC_UTIL_HPP
+#ifndef PSYNC_DETAIL_UTIL_HPP
+#define PSYNC_DETAIL_UTIL_HPP
 
 #include "PSync/detail/config.hpp"
 
@@ -84,4 +84,4 @@ public:
 
 } // namespace psync
 
-#endif // PSYNC_UTIL_HPP
+#endif // PSYNC_DETAIL_UTIL_HPP
