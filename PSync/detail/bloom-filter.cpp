@@ -47,22 +47,19 @@
 #include "PSync/detail/util.hpp"
 
 #include <ndn-cxx/util/exception.hpp>
-#include <ndn-cxx/util/logger.hpp>
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
-#include <iterator>
-#include <limits>
 #include <cstdlib>
-
-// https://github.com/ArashPartow/bloom
-
-NDN_LOG_INIT(psync.BloomFilter);
+#include <limits>
 
 namespace psync {
 
-static const std::size_t bits_per_char = 0x08;
+// https://github.com/ArashPartow/bloom
+
+static const std::size_t bits_per_char = 0x08;    // 8 bits in 1 char(unsigned)
+
 static const unsigned char bit_mask[bits_per_char] = {
   0x01,  //00000001
   0x02,  //00000010
@@ -74,89 +71,154 @@ static const unsigned char bit_mask[bits_per_char] = {
   0x80   //10000000
 };
 
-BloomParameters::BloomParameters()
-: minimum_size(1)
-, maximum_size(std::numeric_limits<unsigned int>::max())
-, minimum_number_of_hashes(1)
-, maximum_number_of_hashes(std::numeric_limits<unsigned int>::max())
-, projected_element_count(200)
-, false_positive_probability(1.0 / projected_element_count)
-, random_seed(0xA5A5A5A55A5A5A5AULL)
-{}
-
-bool
-BloomParameters::compute_optimal_parameters()
+class bloom_parameters
 {
-  if (!(*this)) {
-    return false;
-  }
+public:
 
-  double min_m = std::numeric_limits<double>::infinity();
-  double min_k = 0.0;
-  double curr_m = 0.0;
-  double k = 1.0;
+   bloom_parameters()
+   : minimum_size(1),
+     maximum_size(std::numeric_limits<unsigned int>::max()),
+     minimum_number_of_hashes(1),
+     maximum_number_of_hashes(std::numeric_limits<unsigned int>::max()),
+     projected_element_count(200),
+     false_positive_probability(1.0 / projected_element_count),
+     random_seed(0xA5A5A5A55A5A5A5AULL)
+   {}
 
-  while (k < 1000.0)
-  {
-    double numerator   = (- k * projected_element_count);
-    double denominator = std::log(1.0 - std::pow(false_positive_probability, 1.0 / k));
-    curr_m = numerator / denominator;
-    if (curr_m < min_m)
-    {
-      min_m = curr_m;
-      min_k = k;
-    }
-    k += 1.0;
-  }
+   inline bool operator!()
+   {
+      return (minimum_size > maximum_size)      ||
+             (minimum_number_of_hashes > maximum_number_of_hashes) ||
+             (minimum_number_of_hashes < 1)     ||
+             (0 == maximum_number_of_hashes)    ||
+             (0 == projected_element_count)     ||
+             (false_positive_probability < 0.0) ||
+             (std::numeric_limits<double>::infinity() == std::abs(false_positive_probability)) ||
+             (0 == random_seed)                 ||
+             (0xFFFFFFFFFFFFFFFFULL == random_seed);
+   }
 
-  optimal_parameters_t& optp = optimal_parameters;
+   // Allowable min/max size of the bloom filter in bits
+   unsigned int minimum_size;
+   unsigned int maximum_size;
 
-  optp.number_of_hashes = static_cast<unsigned int>(min_k);
-  optp.table_size = static_cast<unsigned int>(min_m);
-  optp.table_size += (((optp.table_size % bits_per_char) != 0) ? (bits_per_char - (optp.table_size % bits_per_char)) : 0);
+   // Allowable min/max number of hash functions
+   unsigned int minimum_number_of_hashes;
+   unsigned int maximum_number_of_hashes;
 
-  if (optp.number_of_hashes < minimum_number_of_hashes)
-     optp.number_of_hashes = minimum_number_of_hashes;
-  else if (optp.number_of_hashes > maximum_number_of_hashes)
-     optp.number_of_hashes = maximum_number_of_hashes;
+   // The approximate number of elements to be inserted
+   // into the bloom filter, should be within one order
+   // of magnitude. The default is 200.
+   unsigned int projected_element_count;
 
-  if (optp.table_size < minimum_size)
-     optp.table_size = minimum_size;
-  else if (optp.table_size > maximum_size)
-     optp.table_size = maximum_size;
+   // The approximate false positive probability expected
+   // from the bloom filter. The default is assumed to be
+   // the reciprocal of the projected_element_count.
+   double false_positive_probability;
 
-  return true;
-}
+   unsigned long long int random_seed;
 
-BloomFilter::BloomFilter()
- : bit_table_(0)
- , salt_count_(0)
- , table_size_(0)
- , raw_table_size_(0)
- , projected_element_count_(0)
- , inserted_element_count_(0)
- , random_seed_(0)
- , desired_false_positive_probability_(0.0)
-{}
+   struct optimal_parameters_t
+   {
+      optimal_parameters_t()
+      : number_of_hashes(0),
+        table_size(0)
+      {}
 
-BloomFilter::BloomFilter(const BloomParameters& p)
- : bit_table_(0)
- , projected_element_count_(p.projected_element_count)
- , inserted_element_count_(0)
- , random_seed_((p.random_seed * 0xA5A5A5A5) + 1)
- , desired_false_positive_probability_(p.false_positive_probability)
+      unsigned int number_of_hashes;
+      unsigned int table_size;
+   };
+
+   optimal_parameters_t optimal_parameters;
+
+   bool compute_optimal_parameters()
+   {
+      /*
+        Note:
+        The following will attempt to find the number of hash functions
+        and minimum amount of storage bits required to construct a bloom
+        filter consistent with the user defined false positive probability
+        and estimated element insertion count.
+      */
+
+      if (!(*this))
+         return false;
+
+      double min_m  = std::numeric_limits<double>::infinity();
+      double min_k  = 0.0;
+      double k      = 1.0;
+
+      while (k < 1000.0)
+      {
+         const double numerator   = (- k * projected_element_count);
+         const double denominator = std::log(1.0 - std::pow(false_positive_probability, 1.0 / k));
+
+         const double curr_m = numerator / denominator;
+
+         if (curr_m < min_m)
+         {
+            min_m = curr_m;
+            min_k = k;
+         }
+
+         k += 1.0;
+      }
+
+      optimal_parameters_t& optp = optimal_parameters;
+
+      optp.number_of_hashes = static_cast<unsigned int>(min_k);
+
+      optp.table_size = static_cast<unsigned int>(min_m);
+
+      optp.table_size += (((optp.table_size % bits_per_char) != 0) ? (bits_per_char - (optp.table_size % bits_per_char)) : 0);
+
+      if (optp.number_of_hashes < minimum_number_of_hashes)
+         optp.number_of_hashes = minimum_number_of_hashes;
+      else if (optp.number_of_hashes > maximum_number_of_hashes)
+         optp.number_of_hashes = maximum_number_of_hashes;
+
+      if (optp.table_size < minimum_size)
+         optp.table_size = minimum_size;
+      else if (optp.table_size > maximum_size)
+         optp.table_size = maximum_size;
+
+      return true;
+   }
+
+};
+
+
+BloomFilter::BloomFilter(const bloom_parameters& p)
+: projected_element_count_(p.projected_element_count),
+  inserted_element_count_(0),
+  random_seed_((p.random_seed * 0xA5A5A5A5) + 1),
+  desired_false_positive_probability_(p.false_positive_probability)
 {
   salt_count_ = p.optimal_parameters.number_of_hashes;
   table_size_ = p.optimal_parameters.table_size;
+
   generate_unique_salt();
-  raw_table_size_ = table_size_ / bits_per_char;
-  //bit_table_ = new cell_type[static_cast<std::size_t>(raw_table_size_)];
-  bit_table_.resize(static_cast<std::size_t>(raw_table_size_), 0x00);
+
+  bit_table_.resize(table_size_ / bits_per_char, static_cast<cell_type>(0x00));
+}
+
+static bloom_parameters
+makeParameters(unsigned int projected_element_count,
+               double false_positive_probability)
+{
+  bloom_parameters p;
+  p.projected_element_count = projected_element_count;
+  p.false_positive_probability = false_positive_probability;
+
+  if (!p.compute_optimal_parameters()) {
+    NDN_THROW(BloomFilter::Error("Bloom filter parameters are not correct!"));
+  }
+  return p;
 }
 
 BloomFilter::BloomFilter(unsigned int projected_element_count,
                          double false_positive_probability)
- : BloomFilter(getParameters(projected_element_count, false_positive_probability))
+  : BloomFilter(makeParameters(projected_element_count, false_positive_probability))
 {
 }
 
@@ -165,42 +227,25 @@ BloomFilter::BloomFilter(unsigned int projected_element_count,
                          const ndn::name::Component& bfName)
   : BloomFilter(projected_element_count, false_positive_probability)
 {
-  std::vector<BloomFilter::cell_type> table(bfName.value_begin(), bfName.value_end());
-
-  if (table.size() != raw_table_size_) {
-    NDN_THROW(Error("Received BloomFilter cannot be decoded!"));
+  std::vector<cell_type> table(bfName.value_begin(), bfName.value_end());
+  if (table.size() != table_size_ / bits_per_char) {
+    NDN_THROW(Error("Bloom filter cannot be decoded!"));
   }
-  bit_table_ = table;
-}
-
-BloomParameters
-BloomFilter::getParameters(unsigned int projected_element_count,
-                           double false_positive_probability)
-{
-  BloomParameters opt;
-  opt.false_positive_probability = false_positive_probability;
-  opt.projected_element_count = projected_element_count;
-
-  if (!opt) {
-    NDN_LOG_WARN("Bloom parameters are not correct!");
-  }
-
-  opt.compute_optimal_parameters();
-  return opt;
+  bit_table_ = std::move(table);
 }
 
 void
 BloomFilter::appendToName(ndn::Name& name) const
 {
   name.appendNumber(projected_element_count_);
-  name.appendNumber((int)(desired_false_positive_probability_ * 1000));
+  name.appendNumber(static_cast<uint64_t>(desired_false_positive_probability_ * 1000));
   name.append(bit_table_.begin(), bit_table_.end());
 }
 
 void
 BloomFilter::clear()
 {
-  bit_table_.resize(static_cast<std::size_t>(raw_table_size_), 0x00);
+  std::fill(bit_table_.begin(), bit_table_.end(), static_cast<cell_type>(0x00));
   inserted_element_count_ = 0;
 }
 
@@ -208,12 +253,15 @@ void
 BloomFilter::insert(const std::string& key)
 {
   std::size_t bit_index = 0;
-  std::size_t bit = 0;
+  std::size_t bit       = 0;
+
   for (std::size_t i = 0; i < salt_.size(); ++i)
   {
-     compute_indices(murmurHash3(salt_[i], key), bit_index, bit);
-     bit_table_[bit_index/bits_per_char] |= bit_mask[bit];
+    compute_indices(murmurHash3(salt_[i], key), bit_index, bit);
+
+    bit_table_[bit_index / bits_per_char] |= bit_mask[bit];
   }
+
   ++inserted_element_count_;
 }
 
@@ -221,12 +269,14 @@ bool
 BloomFilter::contains(const std::string& key) const
 {
   std::size_t bit_index = 0;
-  std::size_t bit = 0;
+  std::size_t bit       = 0;
 
   for (std::size_t i = 0; i < salt_.size(); ++i)
   {
     compute_indices(murmurHash3(salt_[i], key), bit_index, bit);
-    if ((bit_table_[bit_index/bits_per_char] & bit_mask[bit]) != bit_mask[bit]) {
+
+    if ((bit_table_[bit_index / bits_per_char] & bit_mask[bit]) != bit_mask[bit])
+    {
       return false;
     }
   }
@@ -234,10 +284,11 @@ BloomFilter::contains(const std::string& key) const
   return true;
 }
 
-std::vector <BloomFilter::cell_type>
-BloomFilter::table() const
+void
+BloomFilter::compute_indices(const bloom_type& hash, std::size_t& bit_index, std::size_t& bit) const
 {
-  return bit_table_;
+  bit_index = hash % table_size_;
+  bit       = bit_index % bits_per_char;
 }
 
 void
@@ -250,6 +301,7 @@ BloomFilter::generate_unique_salt()
     hash function with different values seems to be adequate.
   */
   const unsigned int predef_salt_count = 128;
+
   static const bloom_type predef_salt[predef_salt_count] =
                              {
                                 0xAAAAAAAA, 0x55555555, 0x33333333, 0xCCCCCCCC,
@@ -291,60 +343,37 @@ BloomFilter::generate_unique_salt()
     std::copy(predef_salt,
               predef_salt + salt_count_,
               std::back_inserter(salt_));
-    for (unsigned int i = 0; i < salt_.size(); ++i)
+
+    for (std::size_t i = 0; i < salt_.size(); ++i)
     {
+      /*
+         Note:
+         This is done to integrate the user defined random seed,
+         so as to allow for the generation of unique bloom filter
+         instances.
+      */
       salt_[i] = salt_[i] * salt_[(i + 3) % salt_.size()] + static_cast<bloom_type>(random_seed_);
     }
   }
   else
   {
-    std::copy(predef_salt,predef_salt + predef_salt_count,std::back_inserter(salt_));
+    std::copy(predef_salt, predef_salt + predef_salt_count, std::back_inserter(salt_));
+
     srand(static_cast<unsigned int>(random_seed_));
+
     while (salt_.size() < salt_count_)
     {
       bloom_type current_salt = static_cast<bloom_type>(rand()) * static_cast<bloom_type>(rand());
-      if (0 == current_salt) continue;
+
+      if (0 == current_salt)
+        continue;
+
       if (salt_.end() == std::find(salt_.begin(), salt_.end(), current_salt))
       {
         salt_.push_back(current_salt);
       }
     }
   }
-}
-
-void
-BloomFilter::compute_indices(const bloom_type& hash,
-                             std::size_t& bit_index, std::size_t& bit) const
-{
-  bit_index = hash % table_size_;
-  bit = bit_index % bits_per_char;
-}
-
-bool
-operator==(const BloomFilter& bf1, const BloomFilter& bf2)
-{
-  auto table1 = bf1.table();
-  auto table2 = bf2.table();
-
-  if (table1.size() != table2.size()) {
-    return false;
-  }
-
-  for (size_t i = 0; i < table1.size(); i++) {
-    if (table1[i] != table2[i]) {
-      return false;
-    }
-  }
-  return true;
-}
-
-std::ostream&
-operator<<(std::ostream& out, const BloomFilter& bf)
-{
-  for (const auto& element : bf.table()) {
-    out << unsigned(element);
-  }
-  return out;
 }
 
 } // namespace psync

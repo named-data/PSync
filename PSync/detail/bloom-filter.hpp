@@ -47,63 +47,17 @@
 #define PSYNC_DETAIL_BLOOM_FILTER_HPP
 
 #include <ndn-cxx/name.hpp>
+#include <ndn-cxx/util/string-helper.hpp>
 
 #include <string>
 #include <vector>
-#include <cmath>
-#include <cstdlib>
 
 namespace psync {
 
-struct optimal_parameters_t
-{
-  optimal_parameters_t()
-  : number_of_hashes(0),
-    table_size(0)
-  {}
-
-  unsigned int number_of_hashes;
-  unsigned int table_size;
-};
-
-class BloomParameters
-{
-public:
-  BloomParameters();
-
-  bool
-  compute_optimal_parameters();
-
-  bool operator!() const
-  {
-    return (minimum_size > maximum_size)      ||
-           (minimum_number_of_hashes > maximum_number_of_hashes) ||
-           (minimum_number_of_hashes < 1)     ||
-           (0 == maximum_number_of_hashes)    ||
-           (0 == projected_element_count)     ||
-           (false_positive_probability < 0.0) ||
-           (std::numeric_limits<double>::infinity() == std::abs(false_positive_probability)) ||
-           (0 == random_seed)                 ||
-           (0xFFFFFFFFFFFFFFFFULL == random_seed);
-  }
-
-  unsigned int           minimum_size;
-  unsigned int           maximum_size;
-  unsigned int           minimum_number_of_hashes;
-  unsigned int           maximum_number_of_hashes;
-  unsigned int           projected_element_count;
-  double                 false_positive_probability;
-  unsigned long long int random_seed;
-  optimal_parameters_t   optimal_parameters;
-};
+class bloom_parameters;
 
 class BloomFilter
 {
-protected:
-  typedef uint32_t bloom_type;
-  typedef uint8_t cell_type;
-  typedef std::vector <cell_type>::iterator Iterator;
-
 public:
   class Error : public std::runtime_error
   {
@@ -111,9 +65,7 @@ public:
     using std::runtime_error::runtime_error;
   };
 
-  BloomFilter();
-
-  explicit BloomFilter(const BloomParameters& p);
+  BloomFilter() = default;
 
   BloomFilter(unsigned int projected_element_count,
               double false_positive_probability);
@@ -121,10 +73,6 @@ public:
   BloomFilter(unsigned int projected_element_count,
               double false_positive_probability,
               const ndn::name::Component& bfName);
-
-  BloomParameters
-  getParameters(unsigned int projected_element_count,
-                double false_positive_probability);
 
   /**
    * @brief Append our bloom filter to the given name
@@ -146,34 +94,52 @@ public:
   bool
   contains(const std::string& key) const;
 
-  std::vector<cell_type>
-  table() const;
-
 private:
+  typedef uint32_t bloom_type;
+  typedef uint8_t cell_type;
+
+  explicit
+  BloomFilter(const bloom_parameters& p);
+
+  void
+  compute_indices(const bloom_type& hash, std::size_t& bit_index, std::size_t& bit) const;
+
   void
   generate_unique_salt();
 
-  void
-  compute_indices(const bloom_type& hash,
-                  std::size_t& bit_index, std::size_t& bit) const;
+private: // non-member operators
+  // NOTE: the following "hidden friend" operators are available via
+  //       argument-dependent lookup only and must be defined inline.
+
+  friend bool
+  operator==(const BloomFilter& lhs, const BloomFilter& rhs)
+  {
+    return lhs.bit_table_ == rhs.bit_table_;
+  }
+
+  friend bool
+  operator!=(const BloomFilter& lhs, const BloomFilter& rhs)
+  {
+    return lhs.bit_table_ != rhs.bit_table_;
+  }
+
+  friend std::ostream&
+  operator<<(std::ostream& os, const BloomFilter& bf)
+  {
+    ndn::printHex(os, bf.bit_table_.data(), bf.bit_table_.size(), false);
+    return os;
+  }
 
 private:
-  std::vector <bloom_type> salt_;
-  std::vector <cell_type>  bit_table_;
-  unsigned int             salt_count_;
-  unsigned int             table_size_; // 8 * raw_table_size;
-  unsigned int             raw_table_size_;
-  unsigned int             projected_element_count_;
-  unsigned int             inserted_element_count_;
-  unsigned long long int   random_seed_;
-  double                   desired_false_positive_probability_;
+  std::vector<bloom_type> salt_;
+  std::vector<cell_type>  bit_table_;
+  unsigned int            salt_count_ = 0;
+  unsigned int            table_size_ = 0;
+  unsigned int            projected_element_count_ = 0;
+  unsigned int            inserted_element_count_ = 0;
+  unsigned long long int  random_seed_ = 0;
+  double                  desired_false_positive_probability_ = 0.0;
 };
-
-bool
-operator==(const BloomFilter& bf1, const BloomFilter& bf2);
-
-std::ostream&
-operator<<(std::ostream& out, const BloomFilter& bf);
 
 } // namespace psync
 
