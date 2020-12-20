@@ -18,11 +18,11 @@
  **/
 
 #include "PSync/full-producer.hpp"
+#include "PSync/detail/util.hpp"
 
 #include "tests/boost-test.hpp"
 #include "tests/io-fixture.hpp"
 
-#include <ndn-cxx/name.hpp>
 #include <ndn-cxx/mgmt/nfd/control-parameters.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE(OnSyncDataDecodeFailure)
   BOOST_CHECK_NO_THROW(node.onSyncData(syncInterest, badCompress));
 
   const uint8_t test[] = {'t', 'e', 's', 't'};
-  auto goodCompressBadBlock = compress(node.m_contentCompression, &test[0], sizeof(test));
+  auto goodCompressBadBlock = detail::compress(node.m_contentCompression, test, sizeof(test));
   BOOST_CHECK_NO_THROW(node.onSyncData(syncInterest, goodCompressBadBlock));
 }
 

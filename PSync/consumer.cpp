@@ -20,10 +20,8 @@
 #include "PSync/consumer.hpp"
 #include "PSync/detail/state.hpp"
 
-#include <ndn-cxx/util/logger.hpp>
 #include <ndn-cxx/security/validator-null.hpp>
-
-#include <boost/algorithm/string.hpp>
+#include <ndn-cxx/util/logger.hpp>
 
 namespace psync {
 
@@ -37,19 +35,19 @@ Consumer::Consumer(const ndn::Name& syncPrefix,
                    double false_positive = 0.001,
                    ndn::time::milliseconds helloInterestLifetime,
                    ndn::time::milliseconds syncInterestLifetime)
- : m_face(face)
- , m_scheduler(m_face.getIoService())
- , m_syncPrefix(syncPrefix)
- , m_helloInterestPrefix(ndn::Name(m_syncPrefix).append("hello"))
- , m_syncInterestPrefix(ndn::Name(m_syncPrefix).append("sync"))
- , m_syncDataContentType(ndn::tlv::ContentType_Blob)
- , m_onReceiveHelloData(onReceiveHelloData)
- , m_onUpdate(onUpdate)
- , m_bloomFilter(count, false_positive)
- , m_helloInterestLifetime(helloInterestLifetime)
- , m_syncInterestLifetime(syncInterestLifetime)
- , m_rng(ndn::random::getRandomNumberEngine())
- , m_rangeUniformRandom(100, 500)
+  : m_face(face)
+  , m_scheduler(m_face.getIoService())
+  , m_syncPrefix(syncPrefix)
+  , m_helloInterestPrefix(ndn::Name(m_syncPrefix).append("hello"))
+  , m_syncInterestPrefix(ndn::Name(m_syncPrefix).append("sync"))
+  , m_syncDataContentType(ndn::tlv::ContentType_Blob)
+  , m_onReceiveHelloData(onReceiveHelloData)
+  , m_onUpdate(onUpdate)
+  , m_bloomFilter(count, false_positive)
+  , m_helloInterestLifetime(helloInterestLifetime)
+  , m_syncInterestLifetime(syncInterestLifetime)
+  , m_rng(ndn::random::getRandomNumberEngine())
+  , m_rangeUniformRandom(100, 500)
 {
 }
 
@@ -65,7 +63,7 @@ Consumer::addSubscription(const ndn::Name& prefix, uint64_t seqNo, bool callSync
   m_bloomFilter.insert(prefix.toUri());
 
   if (callSyncDataCb && seqNo != 0) {
-    m_onUpdate({MissingDataInfo(prefix, seqNo, seqNo)});
+    m_onUpdate({{prefix, seqNo, seqNo}});
   }
 
   return true;
@@ -134,8 +132,7 @@ Consumer::onHelloData(const ndn::ConstBufferPtr& bufferPtr)
 
   NDN_LOG_TRACE("m_iblt: " << std::hash<std::string>{}(m_iblt.toUri()));
 
-  State state{ndn::Block{bufferPtr}};
-
+  detail::State state{ndn::Block(bufferPtr)};
   std::vector<MissingDataInfo> updates;
   std::map<ndn::Name, uint64_t> availableSubscriptions;
 
@@ -148,7 +145,7 @@ Consumer::onHelloData(const ndn::ConstBufferPtr& bufferPtr)
     // m_prefixes (see addSubscription). So [] operator is safe to use.
     if (isSubscribed(prefix) && seq > m_prefixes[prefix]) {
       // In case we are behind on this prefix and consumer is subscribed to it
-      updates.emplace_back(prefix, m_prefixes[prefix] + 1, seq);
+      updates.push_back({prefix, m_prefixes[prefix] + 1, seq});
       m_prefixes[prefix] = seq;
     }
     availableSubscriptions.emplace(prefix, seq);
@@ -233,8 +230,7 @@ Consumer::onSyncData(const ndn::ConstBufferPtr& bufferPtr)
   // Extract IBF from sync data name which is the last component
   m_iblt = m_syncDataName.getSubName(m_syncDataName.size() - 1, 1);
 
-  State state{ndn::Block{bufferPtr}};
-
+  detail::State state{ndn::Block(bufferPtr)};
   std::vector<MissingDataInfo> updates;
 
   for (const auto& content : state) {
@@ -244,7 +240,7 @@ Consumer::onSyncData(const ndn::ConstBufferPtr& bufferPtr)
     if (m_prefixes.find(prefix) == m_prefixes.end() || seq > m_prefixes[prefix]) {
       // If this is just the next seq number then we had already informed the consumer about
       // the previous sequence number and hence seq low and seq high should be equal to current seq
-      updates.emplace_back(prefix, m_prefixes[prefix] + 1, seq);
+      updates.push_back({prefix, m_prefixes[prefix] + 1, seq});
       m_prefixes[prefix] = seq;
     }
     // Else updates will be empty and consumer will not be notified.

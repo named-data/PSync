@@ -23,6 +23,7 @@
 #include <ndn-cxx/util/ostream-joiner.hpp>
 
 namespace psync {
+namespace detail {
 
 State::State(const ndn::Block& block)
 {
@@ -107,4 +108,5 @@ operator<<(std::ostream& os, const State& state)
   return os;
 }
 
+} // namespace detail
 } // namespace psync

@@ -20,9 +20,9 @@
 #ifndef PSYNC_CONSUMER_HPP
 #define PSYNC_CONSUMER_HPP
 
+#include "PSync/common.hpp"
 #include "PSync/detail/access-specifiers.hpp"
 #include "PSync/detail/bloom-filter.hpp"
-#include "PSync/detail/util.hpp"
 
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/util/random.hpp>
@@ -31,14 +31,12 @@
 #include <ndn-cxx/util/time.hpp>
 
 #include <map>
-#include <vector>
 
 namespace psync {
 
-using namespace ndn::literals::time_literals;
+using namespace ndn::time_literals;
 
-typedef std::function<void(const std::map<ndn::Name, uint64_t>&)> ReceiveHelloCallback;
-typedef std::function<void(const std::vector<MissingDataInfo>&)> UpdateCallback;
+using ReceiveHelloCallback = std::function<void(const std::map<ndn::Name, uint64_t>&)>;
 
 const ndn::time::milliseconds HELLO_INTEREST_LIFETIME = 1_s;
 const ndn::time::milliseconds SYNC_INTEREST_LIFETIME = 1_s;
@@ -190,7 +188,7 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   UpdateCallback m_onUpdate;
 
   // Bloom filter is used to store application/user's subscription list.
-  BloomFilter m_bloomFilter;
+  detail::BloomFilter m_bloomFilter;
 
   ndn::time::milliseconds m_helloInterestLifetime;
   ndn::time::milliseconds m_syncInterestLifetime;

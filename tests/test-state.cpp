@@ -24,8 +24,7 @@
 #include <ndn-cxx/data.hpp>
 
 namespace psync {
-
-using namespace ndn;
+namespace detail {
 
 BOOST_AUTO_TEST_SUITE(TestState)
 
@@ -36,17 +35,14 @@ BOOST_AUTO_TEST_CASE(EncodeDecode)
   state.addContent(ndn::Name("test2"));
 
   // Simulate getting buffer content from segment fetcher
-  Data data;
+  ndn::Data data;
   data.setContent(state.wireEncode());
   ndn::Buffer buffer(data.getContent().value_size());
   std::copy(data.getContent().value_begin(),
             data.getContent().value_end(),
             buffer.begin());
 
-  ndn::ConstBufferPtr bufferPtr = make_shared<ndn::Buffer>(buffer);
-
-  ndn::Block block(std::move(bufferPtr));
-
+  ndn::Block block(std::make_shared<ndn::Buffer>(buffer));
   State rcvdState;
   rcvdState.wireDecode(block);
 
@@ -58,16 +54,14 @@ BOOST_AUTO_TEST_CASE(EmptyContent)
   State state;
 
   // Simulate getting buffer content from segment fetcher
-  Data data;
+  ndn::Data data;
   data.setContent(state.wireEncode());
   ndn::Buffer buffer(data.getContent().value_size());
   std::copy(data.getContent().value_begin(),
             data.getContent().value_end(),
             buffer.begin());
-  ndn::ConstBufferPtr bufferPtr = make_shared<ndn::Buffer>(buffer);
 
-  ndn::Block block(std::move(bufferPtr));
-
+  ndn::Block block(std::make_shared<ndn::Buffer>(buffer));
   BOOST_CHECK_NO_THROW(State state2(block));
 
   State state2(block);
@@ -90,4 +84,5 @@ BOOST_AUTO_TEST_CASE(ReEncode)
 
 BOOST_AUTO_TEST_SUITE_END()
 
+} // namespace detail
 } // namespace psync

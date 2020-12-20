@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(SameSyncInterest)
   syncInterestName.append("sync");
   Name syncInterestPrefix = syncInterestName;
 
-  BloomFilter bf(20, 0.001);
+  detail::BloomFilter bf(20, 0.001);
   bf.appendToName(syncInterestName);
 
   producer.m_iblt.appendToName(syncInterestName);
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(OnSyncInterest)
   // Sync interest with malicious IBF
   syncInterestName = syncPrefix;
   syncInterestName.append("sync");
-  BloomFilter bf(20, 0.001);
+  detail::BloomFilter bf(20, 0.001);
   bf.appendToName(syncInterestName);
   syncInterestName.append("fake-name");
   BOOST_CHECK_NO_THROW(producer.onSyncInterest(syncInterestName, Interest(syncInterestName)));

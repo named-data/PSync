@@ -31,17 +31,14 @@
 
 namespace psync {
 
-const int MAX_SEGMENTS_STORED = 100;
-
 /**
  * @brief Segment Publisher to publish segmented data
- *
  */
 class SegmentPublisher
 {
 public:
   SegmentPublisher(ndn::Face& face, ndn::KeyChain& keyChain,
-                   size_t imsLimit = MAX_SEGMENTS_STORED);
+                   size_t imsLimit = 100);
 
   /**
    * @brief Put all the segments in memory.
@@ -68,7 +65,7 @@ public:
    */
   void
   publish(const ndn::Name& interestName, const ndn::Name& dataName,
-          const std::shared_ptr<const ndn::Buffer>& buffer, ndn::time::milliseconds freshness,
+          const ndn::ConstBufferPtr& buffer, ndn::time::milliseconds freshness,
           const ndn::security::SigningInfo& signingInfo = ndn::security::SigningInfo());
 
   /**

@@ -32,13 +32,6 @@
 
 namespace psync {
 
-struct PendingEntryInfo
-{
-  BloomFilter bf;
-  IBLT iblt;
-  ndn::scheduler::ScopedEventId expirationEvent;
-};
-
 const ndn::time::milliseconds HELLO_REPLY_FRESHNESS = 1_s;
 
 /**
@@ -122,6 +115,13 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   onSyncInterest(const ndn::Name& prefix, const ndn::Interest& interest);
 
 PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+  struct PendingEntryInfo
+  {
+    detail::BloomFilter bf;
+    detail::IBLT iblt;
+    ndn::scheduler::ScopedEventId expirationEvent;
+  };
+
   std::map<ndn::Name, PendingEntryInfo> m_pendingEntries;
   ndn::ScopedRegisteredPrefixHandle m_registeredPrefix;
   ndn::time::milliseconds m_helloReplyFreshness;

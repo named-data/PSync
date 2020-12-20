@@ -22,10 +22,11 @@
 #include "tests/boost-test.hpp"
 
 namespace psync {
+namespace detail {
 
 BOOST_AUTO_TEST_SUITE(TestUtil)
 
-BOOST_AUTO_TEST_CASE(Basic)
+BOOST_AUTO_TEST_CASE(Compression)
 {
   std::vector<CompressionScheme> available = {CompressionScheme::ZLIB, CompressionScheme::GZIP,
                                               CompressionScheme::BZIP2, CompressionScheme::LZMA,
@@ -49,6 +50,9 @@ BOOST_AUTO_TEST_CASE(Basic)
   supported.push_back(CompressionScheme::ZSTD);
 #endif
 
+  std::set_difference(available.begin(), available.end(), supported.begin(), supported.end(),
+                      std::inserter(notSupported, notSupported.begin()));
+
   const uint8_t uncompressed[] = {'t', 'e', 's', 't'};
 
   for (const auto& s : supported) {
@@ -57,17 +61,13 @@ BOOST_AUTO_TEST_CASE(Basic)
     BOOST_CHECK_NO_THROW(decompress(s, compressed->data(), compressed->size()));
   }
 
-  std::set_difference(available.begin(), available.end(), supported.begin(), supported.end(),
-                      std::inserter(notSupported, notSupported.begin()));
-
   for (const auto& s : notSupported) {
-    BOOST_CHECK_THROW(compress(s, uncompressed, sizeof(uncompressed)),
-                      std::runtime_error);
-    BOOST_CHECK_THROW(decompress(s, uncompressed, sizeof(uncompressed)),
-                      std::runtime_error);
+    BOOST_CHECK_THROW(compress(s, uncompressed, sizeof(uncompressed)), CompressionError);
+    BOOST_CHECK_THROW(decompress(s, uncompressed, sizeof(uncompressed)), CompressionError);
   }
 }
 
 BOOST_AUTO_TEST_SUITE_END()
 
+} // namespace detail
 } // namespace psync

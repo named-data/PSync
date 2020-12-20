@@ -46,16 +46,15 @@
 #ifndef PSYNC_DETAIL_IBLT_HPP
 #define PSYNC_DETAIL_IBLT_HPP
 
-#include "PSync/detail/util.hpp"
+#include "PSync/common.hpp"
 
 #include <ndn-cxx/name.hpp>
 
-#include <inttypes.h>
 #include <set>
 #include <string>
-#include <vector>
 
 namespace psync {
+namespace detail {
 
 class HashTableEntry
 {
@@ -175,8 +174,9 @@ bool
 operator!=(const IBLT& iblt1, const IBLT& iblt2);
 
 std::ostream&
-operator<<(std::ostream& out, const IBLT& iblt);
+operator<<(std::ostream& os, const IBLT& iblt);
 
+} // namespace detail
 } // namespace psync
 
 #endif // PSYNC_DETAIL_IBLT_HPP

@@ -15,60 +15,34 @@
  *
  * You should have received a copy of the GNU Lesser General Public License along with
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
- *
- * murmurHash3 was written by Austin Appleby, and is placed in the public
- * domain. The author hereby disclaims copyright to this source code.
- * https://github.com/aappleby/smhasher/blob/master/src/murmurHash3.cpp
  */
 
 #ifndef PSYNC_DETAIL_UTIL_HPP
 #define PSYNC_DETAIL_UTIL_HPP
 
-#include "PSync/detail/config.hpp"
+#include "PSync/common.hpp"
 
-#include <ndn-cxx/name.hpp>
+#include <ndn-cxx/encoding/buffer.hpp>
 
-#include <inttypes.h>
-#include <vector>
 #include <string>
 
 namespace psync {
+namespace detail {
 
 uint32_t
-murmurHash3(uint32_t nHashSeed, const std::vector<unsigned char>& vDataToHash);
+murmurHash3(const void* key, size_t len, uint32_t seed);
 
-uint32_t
-murmurHash3(uint32_t nHashSeed, const std::string& str);
-
-uint32_t
-murmurHash3(uint32_t nHashSeed, uint32_t value);
-
-struct MissingDataInfo
+inline uint32_t
+murmurHash3(uint32_t seed, const std::string& str)
 {
-  MissingDataInfo(const ndn::Name& prefix, uint64_t lowSeq, uint64_t highSeq)
-    : prefix(prefix)
-    , lowSeq(lowSeq)
-    , highSeq(highSeq)
-  {}
+  return murmurHash3(str.data(), str.size(), seed);
+}
 
-  ndn::Name prefix;
-  uint64_t lowSeq;
-  uint64_t highSeq;
-};
-
-enum class CompressionScheme {
-  NONE,
-  ZLIB,
-  GZIP,
-  BZIP2,
-  LZMA,
-  ZSTD,
-#ifdef PSYNC_HAVE_ZLIB
-  DEFAULT = ZLIB
-#else
-  DEFAULT = NONE
-#endif
-};
+inline uint32_t
+murmurHash3(uint32_t seed, uint32_t value)
+{
+  return murmurHash3(&value, sizeof(value), seed);
+}
 
 std::shared_ptr<ndn::Buffer>
 compress(CompressionScheme scheme, const uint8_t* buffer, size_t bufferSize);
@@ -76,12 +50,7 @@ compress(CompressionScheme scheme, const uint8_t* buffer, size_t bufferSize);
 std::shared_ptr<ndn::Buffer>
 decompress(CompressionScheme scheme, const uint8_t* buffer, size_t bufferSize);
 
-class Error : public std::runtime_error
-{
-public:
-  using std::runtime_error::runtime_error;
-};
-
+} // namespace detail
 } // namespace psync
 
 #endif // PSYNC_DETAIL_UTIL_HPP

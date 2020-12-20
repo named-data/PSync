@@ -20,11 +20,11 @@
 #include "PSync/full-producer.hpp"
 #include "PSync/consumer.hpp"
 #include "PSync/detail/state.hpp"
+#include "PSync/detail/util.hpp"
 
 #include "tests/boost-test.hpp"
 #include "tests/io-fixture.hpp"
 
-#include <ndn-cxx/name.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace psync {
@@ -390,7 +390,7 @@ BOOST_AUTO_TEST_CASE(DelayedSecondSegment)
   addNode(0);
 
   int i = 0;
-  State state;
+  detail::State state;
   std::shared_ptr<Buffer> compressed;
   do {
     Name prefixToPublish("userNode0-" + to_string(i++));
@@ -400,13 +400,13 @@ BOOST_AUTO_TEST_CASE(DelayedSecondSegment)
     state.addContent(Name(prefixToPublish).appendNumber(nodes[0]->m_prefixes[prefixToPublish]));
 
     auto block = state.wireEncode();
-    compressed = compress(nodes[0]->m_contentCompression, block.wire(), block.size());
+    compressed = detail::compress(nodes[0]->m_contentCompression, block.wire(), block.size());
   } while (compressed->size() < (MAX_NDN_PACKET_SIZE >> 1));
 
   advanceClocks(ndn::time::milliseconds(10), 100);
 
   Name syncInterestName(syncPrefix);
-  IBLT iblt(40, nodes[0]->m_ibltCompression);
+  detail::IBLT iblt(40, nodes[0]->m_ibltCompression);
   iblt.appendToName(syncInterestName);
 
   nodes[0]->onSyncInterest(syncPrefix, Interest(syncInterestName));

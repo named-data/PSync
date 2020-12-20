@@ -17,72 +17,50 @@
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PSYNC_DETAIL_STATE_HPP
-#define PSYNC_DETAIL_STATE_HPP
+#ifndef PSYNC_COMMON_HPP
+#define PSYNC_COMMON_HPP
+
+#include "PSync/detail/config.hpp"
 
 #include <ndn-cxx/name.hpp>
 
-namespace psync {
-namespace tlv {
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <stdexcept>
+#include <vector>
 
-enum {
-  PSyncContent = 128
+namespace psync {
+
+enum class CompressionScheme {
+  NONE,
+  ZLIB,
+  GZIP,
+  BZIP2,
+  LZMA,
+  ZSTD,
+#ifdef PSYNC_HAVE_ZLIB
+  DEFAULT = ZLIB
+#else
+  DEFAULT = NONE
+#endif
 };
 
-} // namespace tlv
-
-namespace detail {
-
-class State
+class CompressionError : public std::runtime_error
 {
 public:
-  State() = default;
-
-  explicit
-  State(const ndn::Block& block);
-
-  void
-  addContent(const ndn::Name& prefix);
-
-  const std::vector<ndn::Name>&
-  getContent() const
-  {
-    return m_content;
-  }
-
-  const ndn::Block&
-  wireEncode() const;
-
-  template<ndn::encoding::Tag TAG>
-  size_t
-  wireEncode(ndn::EncodingImpl<TAG>& block) const;
-
-  void
-  wireDecode(const ndn::Block& wire);
-
-  std::vector<ndn::Name>::const_iterator
-  begin() const
-  {
-    return m_content.cbegin();
-  }
-
-  std::vector<ndn::Name>::const_iterator
-  end() const
-  {
-    return m_content.cend();
-  }
-
-private:
-  std::vector<ndn::Name> m_content;
-  mutable ndn::Block m_wire;
+  using std::runtime_error::runtime_error;
 };
 
-NDN_CXX_DECLARE_WIRE_ENCODE_INSTANTIATIONS(State);
+struct MissingDataInfo
+{
+  ndn::Name prefix;
+  uint64_t lowSeq;
+  uint64_t highSeq;
+};
 
-std::ostream&
-operator<<(std::ostream& os, const State& State);
+using UpdateCallback = std::function<void(const std::vector<MissingDataInfo>&)>;
 
-} // namespace detail
 } // namespace psync
 
-#endif // PSYNC_DETAIL_STATE_HPP
+#endif // PSYNC_COMMON_HPP

@@ -24,8 +24,7 @@
 #include <ndn-cxx/name.hpp>
 
 namespace psync {
-
-using namespace ndn;
+namespace detail {
 
 BOOST_AUTO_TEST_SUITE(TestBloomFilter)
 
@@ -40,7 +39,7 @@ BOOST_AUTO_TEST_CASE(Basic)
 
 BOOST_AUTO_TEST_CASE(NameAppendAndExtract)
 {
-  Name bfName("/test");
+  ndn::Name bfName("/test");
   BloomFilter bf(100, 0.001);
   bf.insert("/memphis");
   bf.appendToName(bfName);
@@ -56,4 +55,5 @@ BOOST_AUTO_TEST_CASE(NameAppendAndExtract)
 
 BOOST_AUTO_TEST_SUITE_END()
 
+} // namespace detail
 } // namespace psync

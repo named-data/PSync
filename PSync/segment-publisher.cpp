@@ -42,7 +42,7 @@ SegmentPublisher::publish(const ndn::Name& interestName, const ndn::Name& dataNa
 
 void
 SegmentPublisher::publish(const ndn::Name& interestName, const ndn::Name& dataName,
-                          const std::shared_ptr<const ndn::Buffer>& buffer,
+                          const ndn::ConstBufferPtr& buffer,
                           ndn::time::milliseconds freshness,
                           const ndn::security::SigningInfo& signingInfo)
 {

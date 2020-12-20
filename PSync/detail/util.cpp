@@ -18,8 +18,8 @@
  *
  * murmurHash3 was written by Austin Appleby, and is placed in the public
  * domain. The author hereby disclaims copyright to this source code.
- * https://github.com/aappleby/smhasher/blob/master/src/murmurHash3.cpp
- **/
+ * https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.cpp
+ */
 
 #include "PSync/detail/util.hpp"
 
@@ -27,6 +27,7 @@
 #include <ndn-cxx/util/backports.hpp>
 #include <ndn-cxx/util/exception.hpp>
 
+#include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/device/array.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #ifdef PSYNC_HAVE_ZLIB
@@ -44,32 +45,36 @@
 #ifdef PSYNC_HAVE_ZSTD
   #include <boost/iostreams/filter/zstd.hpp>
 #endif
-#include <boost/iostreams/copy.hpp>
 
 namespace psync {
+namespace detail {
 
 namespace bio = boost::iostreams;
 
-static uint32_t
-ROTL32 ( uint32_t x, int8_t r )
+static inline uint32_t
+ROTL32(uint32_t x, int8_t r)
 {
   return (x << r) | (x >> (32 - r));
 }
 
 uint32_t
-murmurHash3(uint32_t nHashSeed, const std::vector<unsigned char>& vDataToHash)
+murmurHash3(const void* key, size_t len, uint32_t seed)
 {
-  uint32_t h1 = nHashSeed;
+  const uint8_t * data = (const uint8_t*)key;
+  const int nblocks = len / 4;
+
+  uint32_t h1 = seed;
+
   const uint32_t c1 = 0xcc9e2d51;
   const uint32_t c2 = 0x1b873593;
 
-  const size_t nblocks = vDataToHash.size() / 4;
-
   //----------
   // body
-  const uint32_t * blocks = (const uint32_t *)(&vDataToHash[0] + nblocks*4);
 
-  for (size_t i = -nblocks; i; i++) {
+  const uint32_t * blocks = (const uint32_t *)(data + nblocks*4);
+
+  for (int i = -nblocks; i; i++)
+  {
     uint32_t k1 = blocks[i];
 
     k1 *= c1;
@@ -83,27 +88,25 @@ murmurHash3(uint32_t nHashSeed, const std::vector<unsigned char>& vDataToHash)
 
   //----------
   // tail
-  const uint8_t * tail = (const uint8_t*)(&vDataToHash[0] + nblocks*4);
+
+  const uint8_t * tail = (const uint8_t*)(data + nblocks*4);
 
   uint32_t k1 = 0;
 
-  switch (vDataToHash.size() & 3) {
-    case 3:
-      k1 ^= tail[2] << 16;
-      NDN_CXX_FALLTHROUGH;
-
-    case 2:
-      k1 ^= tail[1] << 8;
-      NDN_CXX_FALLTHROUGH;
-
-    case 1:
-      k1 ^= tail[0];
-      k1 *= c1; k1 = ROTL32(k1,15); k1 *= c2; h1 ^= k1;
+  switch (len & 3)
+  {
+    case 3: k1 ^= tail[2] << 16;
+            NDN_CXX_FALLTHROUGH;
+    case 2: k1 ^= tail[1] << 8;
+            NDN_CXX_FALLTHROUGH;
+    case 1: k1 ^= tail[0];
+            k1 *= c1; k1 = ROTL32(k1,15); k1 *= c2; h1 ^= k1;
   }
 
   //----------
   // finalization
-  h1 ^= vDataToHash.size();
+
+  h1 ^= len;
   h1 ^= h1 >> 16;
   h1 *= 0x85ebca6b;
   h1 ^= h1 >> 13;
@@ -113,65 +116,52 @@ murmurHash3(uint32_t nHashSeed, const std::vector<unsigned char>& vDataToHash)
   return h1;
 }
 
-uint32_t
-murmurHash3(uint32_t nHashSeed, const std::string& str)
-{
-  return murmurHash3(nHashSeed, std::vector<unsigned char>(str.begin(), str.end()));
-}
-
-uint32_t
-murmurHash3(uint32_t nHashSeed, uint32_t value)
-{
-  return murmurHash3(nHashSeed,
-                     std::vector<unsigned char>((unsigned char*)&value,
-                                                (unsigned char*)&value + sizeof(uint32_t)));
-}
-
 std::shared_ptr<ndn::Buffer>
 compress(CompressionScheme scheme, const uint8_t* buffer, size_t bufferSize)
 {
   ndn::OBufferStream out;
   bio::filtering_streambuf<bio::input> in;
+
   switch (scheme) {
     case CompressionScheme::ZLIB:
 #ifdef PSYNC_HAVE_ZLIB
       in.push(bio::zlib_compressor(bio::zlib::best_compression));
-#else
-      NDN_THROW(Error("ZLIB compression not supported!"));
-#endif
       break;
+#else
+      NDN_THROW(CompressionError("ZLIB compression not supported!"));
+#endif
 
     case CompressionScheme::GZIP:
 #ifdef PSYNC_HAVE_GZIP
       in.push(bio::gzip_compressor(bio::gzip::best_compression));
-#else
-      NDN_THROW(Error("GZIP compression not supported!"));
-#endif
       break;
+#else
+      NDN_THROW(CompressionError("GZIP compression not supported!"));
+#endif
 
     case CompressionScheme::BZIP2:
 #ifdef PSYNC_HAVE_BZIP2
       in.push(bio::bzip2_compressor());
-#else
-      NDN_THROW(Error("BZIP2 compression not supported!"));
-#endif
       break;
+#else
+      NDN_THROW(CompressionError("BZIP2 compression not supported!"));
+#endif
 
     case CompressionScheme::LZMA:
 #ifdef PSYNC_HAVE_LZMA
       in.push(bio::lzma_compressor(bio::lzma::best_compression));
-#else
-      NDN_THROW(Error("LZMA compression not supported!"));
-#endif
       break;
+#else
+      NDN_THROW(CompressionError("LZMA compression not supported!"));
+#endif
 
     case CompressionScheme::ZSTD:
 #ifdef PSYNC_HAVE_ZSTD
       in.push(bio::zstd_compressor(bio::zstd::best_compression));
-#else
-      NDN_THROW(Error("ZSTD compression not supported!"));
-#endif
       break;
+#else
+      NDN_THROW(CompressionError("ZSTD compression not supported!"));
+#endif
 
     case CompressionScheme::NONE:
       break;
@@ -187,46 +177,47 @@ decompress(CompressionScheme scheme, const uint8_t* buffer, size_t bufferSize)
 {
   ndn::OBufferStream out;
   bio::filtering_streambuf<bio::input> in;
+
   switch (scheme) {
     case CompressionScheme::ZLIB:
 #ifdef PSYNC_HAVE_ZLIB
       in.push(bio::zlib_decompressor());
-#else
-      NDN_THROW(Error("ZLIB decompression not supported!"));
-#endif
       break;
+#else
+      NDN_THROW(CompressionError("ZLIB decompression not supported!"));
+#endif
 
     case CompressionScheme::GZIP:
 #ifdef PSYNC_HAVE_GZIP
       in.push(bio::gzip_decompressor());
-#else
-      NDN_THROW(Error("GZIP compression not supported!"));
-#endif
       break;
+#else
+      NDN_THROW(CompressionError("GZIP compression not supported!"));
+#endif
 
     case CompressionScheme::BZIP2:
 #ifdef PSYNC_HAVE_BZIP2
       in.push(bio::bzip2_decompressor());
-#else
-      NDN_THROW(Error("BZIP2 compression not supported!"));
-#endif
       break;
+#else
+      NDN_THROW(CompressionError("BZIP2 compression not supported!"));
+#endif
 
     case CompressionScheme::LZMA:
 #ifdef PSYNC_HAVE_LZMA
       in.push(bio::lzma_decompressor());
-#else
-      NDN_THROW(Error("LZMA compression not supported!"));
-#endif
       break;
+#else
+      NDN_THROW(CompressionError("LZMA compression not supported!"));
+#endif
 
     case CompressionScheme::ZSTD:
 #ifdef PSYNC_HAVE_ZSTD
       in.push(bio::zstd_decompressor());
-#else
-      NDN_THROW(Error("ZSTD compression not supported!"));
-#endif
       break;
+#else
+      NDN_THROW(CompressionError("ZSTD compression not supported!"));
+#endif
 
     case CompressionScheme::NONE:
       break;
@@ -237,4 +228,5 @@ decompress(CompressionScheme scheme, const uint8_t* buffer, size_t bufferSize)
   return out.buf();
 }
 
+} // namespace detail
 } // namespace psync

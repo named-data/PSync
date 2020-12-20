@@ -50,11 +50,11 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstddef>
 #include <cstdlib>
 #include <limits>
 
 namespace psync {
+namespace detail {
 
 // https://github.com/ArashPartow/bloom
 
@@ -376,4 +376,5 @@ BloomFilter::generate_unique_salt()
   }
 }
 
+} // namespace detail
 } // namespace psync

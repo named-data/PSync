@@ -21,30 +21,13 @@
 #define PSYNC_FULL_PRODUCER_HPP
 
 #include "PSync/producer-base.hpp"
-#include "PSync/detail/state.hpp"
 
-#include <map>
 #include <random>
 #include <set>
 
-#include <ndn-cxx/face.hpp>
-#include <ndn-cxx/security/key-chain.hpp>
-#include <ndn-cxx/util/scheduler.hpp>
 #include <ndn-cxx/util/segment-fetcher.hpp>
-#include <ndn-cxx/util/time.hpp>
 
 namespace psync {
-
-// Name has to be different than PendingEntryInfo
-// used in partial-producer otherwise get strange segmentation-faults
-// when partial producer is destructed
-struct PendingEntryInfoFull
-{
-  IBLT iblt;
-  ndn::scheduler::ScopedEventId expirationEvent;
-};
-
-typedef std::function<void(const std::vector<MissingDataInfo>&)> UpdateCallback;
 
 const ndn::time::milliseconds SYNC_INTEREST_LIFTIME = 1_s;
 
@@ -187,7 +170,13 @@ private:
   isFutureHash(const ndn::Name& prefix, const std::set<uint32_t>& negative);
 
 private:
-  std::map<ndn::Name, PendingEntryInfoFull> m_pendingEntries;
+  struct PendingEntryInfo
+  {
+    detail::IBLT iblt;
+    ndn::scheduler::ScopedEventId expirationEvent;
+  };
+
+  std::map<ndn::Name, PendingEntryInfo> m_pendingEntries;
   ndn::time::milliseconds m_syncInterestLifetime;
   UpdateCallback m_onUpdate;
   ndn::scheduler::ScopedEventId m_scheduledSyncInterestId;

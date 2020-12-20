@@ -44,10 +44,12 @@
 */
 
 #include "PSync/detail/iblt.hpp"
+#include "PSync/detail/util.hpp"
 
 #include <ndn-cxx/util/exception.hpp>
 
 namespace psync {
+namespace detail {
 
 namespace be = boost::endian;
 
@@ -181,47 +183,6 @@ IBLT::operator-(const IBLT& other) const
   return result;
 }
 
-bool
-operator==(const IBLT& iblt1, const IBLT& iblt2)
-{
-  auto iblt1HashTable = iblt1.getHashTable();
-  auto iblt2HashTable = iblt2.getHashTable();
-  if (iblt1HashTable.size() != iblt2HashTable.size()) {
-    return false;
-  }
-
-  size_t N = iblt1HashTable.size();
-
-  for (size_t i = 0; i < N; i++) {
-    if (iblt1HashTable[i].count != iblt2HashTable[i].count ||
-        iblt1HashTable[i].keySum != iblt2HashTable[i].keySum ||
-        iblt1HashTable[i].keyCheck != iblt2HashTable[i].keyCheck)
-      return false;
-  }
-
-  return true;
-}
-
-bool
-operator!=(const IBLT& iblt1, const IBLT& iblt2)
-{
-  return !(iblt1 == iblt2);
-}
-
-std::ostream&
-operator<<(std::ostream& out, const IBLT& iblt)
-{
-  out << "count keySum keyCheckMatch\n";
-  for (const auto& entry : iblt.getHashTable()) {
-    out << entry.count << " " << entry.keySum << " ";
-    out << ((murmurHash3(N_HASHCHECK, entry.keySum) == entry.keyCheck) ||
-           (entry.isEmpty())? "true" : "false");
-    out << "\n";
-  }
-
-  return out;
-}
-
 void
 IBLT::appendToName(ndn::Name& name) const
 {
@@ -256,7 +217,6 @@ IBLT::extractValueFromName(const ndn::name::Component& ibltName) const
   }
 
   size_t n = decompressedBuf->size() / 4;
-
   std::vector<uint32_t> values(n, 0);
 
   for (size_t i = 0; i < n; i++) {
@@ -268,4 +228,44 @@ IBLT::extractValueFromName(const ndn::name::Component& ibltName) const
   return values;
 }
 
+bool
+operator==(const IBLT& iblt1, const IBLT& iblt2)
+{
+  auto iblt1HashTable = iblt1.getHashTable();
+  auto iblt2HashTable = iblt2.getHashTable();
+  if (iblt1HashTable.size() != iblt2HashTable.size()) {
+    return false;
+  }
+
+  size_t N = iblt1HashTable.size();
+
+  for (size_t i = 0; i < N; i++) {
+    if (iblt1HashTable[i].count != iblt2HashTable[i].count ||
+        iblt1HashTable[i].keySum != iblt2HashTable[i].keySum ||
+        iblt1HashTable[i].keyCheck != iblt2HashTable[i].keyCheck)
+      return false;
+  }
+
+  return true;
+}
+
+bool
+operator!=(const IBLT& iblt1, const IBLT& iblt2)
+{
+  return !(iblt1 == iblt2);
+}
+
+std::ostream&
+operator<<(std::ostream& os, const IBLT& iblt)
+{
+  os << "count keySum keyCheckMatch\n";
+  for (const auto& entry : iblt.getHashTable()) {
+    os << entry.count << " " << entry.keySum << " "
+       << ((entry.isEmpty() || murmurHash3(N_HASHCHECK, entry.keySum) == entry.keyCheck) ? "true" : "false")
+       << "\n";
+  }
+  return os;
+}
+
+} // namespace detail
 } // namespace psync

@@ -18,7 +18,6 @@
  **/
 
 #include "PSync/producer-base.hpp"
-#include "PSync/detail/util.hpp"
 
 #include "tests/boost-test.hpp"
 
@@ -32,7 +31,7 @@ using namespace ndn;
 
 BOOST_AUTO_TEST_SUITE(TestProducerBase)
 
-BOOST_AUTO_TEST_CASE(Ctor)
+BOOST_AUTO_TEST_CASE(Constructor)
 {
   util::DummyClientFace face;
   BOOST_REQUIRE_NO_THROW(ProducerBase(40, face, Name("/psync"), Name("/testUser")));

@@ -20,20 +20,19 @@
 #ifndef PSYNC_PRODUCER_BASE_HPP
 #define PSYNC_PRODUCER_BASE_HPP
 
+#include "PSync/common.hpp"
 #include "PSync/detail/access-specifiers.hpp"
-#include "PSync/detail/bloom-filter.hpp"
 #include "PSync/detail/iblt.hpp"
-#include "PSync/detail/util.hpp"
 #include "PSync/segment-publisher.hpp"
 
 #include <ndn-cxx/face.hpp>
+#include <ndn-cxx/security/key-chain.hpp>
+#include <ndn-cxx/security/validator-config.hpp>
 #include <ndn-cxx/util/random.hpp>
 #include <ndn-cxx/util/scheduler.hpp>
 #include <ndn-cxx/util/time.hpp>
-#include <ndn-cxx/security/key-chain.hpp>
-#include <ndn-cxx/security/validator-config.hpp>
 
-#include <boost/bimap.hpp>
+#include <boost/bimap/bimap.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
 
 #include <map>
@@ -52,6 +51,7 @@ const ndn::time::milliseconds SYNC_REPLY_FRESHNESS = 1_s;
  */
 class ProducerBase
 {
+public:
   class Error : public std::runtime_error
   {
   public:
@@ -155,11 +155,8 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   void
   onRegisterFailed(const ndn::Name& prefix, const std::string& msg) const;
 
-  using HashNameBiMap = bm::bimap<bm::unordered_set_of<uint32_t>,
-                                  bm::unordered_set_of<ndn::Name, std::hash<ndn::Name>>>;
-
 PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
-  IBLT m_iblt;
+  detail::IBLT m_iblt;
   uint32_t m_expectedNumEntries;
   // Threshold is used check if the differences are greater
   // than it and whether we need to update the other side.
@@ -167,6 +164,9 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
 
   // prefix and sequence number
   std::map<ndn::Name, uint64_t> m_prefixes;
+
+  using HashNameBiMap = bm::bimap<bm::unordered_set_of<uint32_t>,
+                                  bm::unordered_set_of<ndn::Name, std::hash<ndn::Name>>>;
   HashNameBiMap m_biMap;
 
   ndn::Face& m_face;

@@ -18,14 +18,14 @@
  */
 
 #include "PSync/full-producer.hpp"
+#include "PSync/detail/state.hpp"
+#include "PSync/detail/util.hpp"
 
+#include <ndn-cxx/security/validator-null.hpp>
 #include <ndn-cxx/util/logger.hpp>
 #include <ndn-cxx/util/segment-fetcher.hpp>
-#include <ndn-cxx/security/validator-null.hpp>
 
 #include <cstring>
-#include <limits>
-#include <functional>
 
 namespace psync {
 
@@ -73,7 +73,7 @@ FullProducer::publishName(const ndn::Name& prefix, ndn::optional<uint64_t> seq)
 
   uint64_t newSeq = seq.value_or(m_prefixes[prefix] + 1);
 
-  NDN_LOG_INFO("Publish: "<< prefix << "/" << newSeq);
+  NDN_LOG_INFO("Publish: " << prefix << "/" << newSeq);
 
   updateSeqNo(prefix, newSeq);
 
@@ -118,7 +118,7 @@ FullProducer::sendSyncInterest()
   });
 
   m_fetcher->onError.connect([this] (uint32_t errorCode, const std::string& msg) {
-    NDN_LOG_ERROR("Cannot fetch sync data, error: " << errorCode << " message: " << msg);
+    NDN_LOG_ERROR("Cannot fetch sync data, error: " << errorCode << ", message: " << msg);
     // We would like to recover from errors like NoRoute NACK quicker than sync Interest timeout.
     // We don't react to Interest timeout here as we have scheduled the next sync Interest
     // to be sent in half the sync Interest lifetime + jitter above. So we would react to
@@ -157,12 +157,12 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
     return;
   }
 
-  ndn::name::Component ibltName = interestName.get(interestName.size()-1);
+  ndn::name::Component ibltName = interestName.get(interestName.size() - 1);
 
-  NDN_LOG_DEBUG("Full Sync Interest Received, nonce: " << interest.getNonce() <<
+  NDN_LOG_DEBUG("Full sync Interest received, nonce: " << interest.getNonce() <<
                 ", hash: " << std::hash<ndn::Name>{}(interestName));
 
-  IBLT iblt(m_expectedNumEntries, m_ibltCompression);
+  detail::IBLT iblt(m_expectedNumEntries, m_ibltCompression);
   try {
     iblt.initialize(ibltName);
   }
@@ -171,7 +171,7 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
     return;
   }
 
-  IBLT diff = m_iblt - iblt;
+  auto diff = m_iblt - iblt;
 
   std::set<uint32_t> positive;
   std::set<uint32_t> negative;
@@ -185,7 +185,7 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
     // Or send if we can't get neither positive nor negative differences
     if (positive.size() + negative.size() >= m_threshold ||
         (positive.size() == 0 && negative.size() == 0)) {
-      State state;
+      detail::State state;
       for (const auto& content : m_prefixes) {
         if (content.second != 0) {
           state.addContent(ndn::Name(content.first).appendNumber(content.second));
@@ -200,7 +200,7 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
     }
   }
 
-  State state;
+  detail::State state;
   for (const auto& hash : positive) {
     auto nameIt = m_biMap.left.find(hash);
     if (nameIt != m_biMap.left.end()) {
@@ -219,10 +219,10 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
     return;
   }
 
-  auto& entry = m_pendingEntries.emplace(interestName, PendingEntryInfoFull{iblt, {}}).first->second;
+  auto& entry = m_pendingEntries.emplace(interestName, PendingEntryInfo{iblt, {}}).first->second;
   entry.expirationEvent = m_scheduler.schedule(interest.getInterestLifetime(),
                           [this, interest] {
-                            NDN_LOG_TRACE("Erase Pending Interest " << interest.getNonce());
+                            NDN_LOG_TRACE("Erase pending Interest " << interest.getNonce());
                             m_pendingEntries.erase(interest.getName());
                           });
 }
@@ -238,7 +238,7 @@ FullProducer::sendSyncData(const ndn::Name& name, const ndn::Block& block)
   // TODO: Remove appending of hash - serves no purpose to the receiver
   ndn::Name dataName(ndn::Name(name).appendNumber(std::hash<ndn::Name>{}(nameWithIblt)));
 
-  auto content = compress(m_contentCompression, block.wire(), block.size());
+  auto content = detail::compress(m_contentCompression, block.wire(), block.size());
 
   // checking if our own interest got satisfied
   if (m_outstandingInterestName == name) {
@@ -250,7 +250,7 @@ FullProducer::sendSyncData(const ndn::Name& name, const ndn::Block& block)
       m_outstandingInterestName = ndn::Name("");
     }
 
-    NDN_LOG_DEBUG("Sending Sync Data");
+    NDN_LOG_DEBUG("Sending sync Data");
 
     // Send data after removing pending sync interest on face
     m_segmentPublisher.publish(name, dataName, content, m_syncReplyFreshness);
@@ -259,7 +259,7 @@ FullProducer::sendSyncData(const ndn::Name& name, const ndn::Block& block)
     sendSyncInterest();
   }
   else {
-    NDN_LOG_DEBUG("Sending Sync Data");
+    NDN_LOG_DEBUG("Sending sync Data");
     m_segmentPublisher.publish(name, dataName, content, m_syncReplyFreshness);
   }
 }
@@ -269,26 +269,26 @@ FullProducer::onSyncData(const ndn::Interest& interest, const ndn::ConstBufferPt
 {
   deletePendingInterests(interest.getName());
 
-  State state;
+  detail::State state;
   try {
-    auto decompressed = decompress(m_contentCompression, bufferPtr->data(), bufferPtr->size());
+    auto decompressed = detail::decompress(m_contentCompression, bufferPtr->data(), bufferPtr->size());
     state.wireDecode(ndn::Block(std::move(decompressed)));
   }
   catch (const std::exception& e) {
-    NDN_LOG_ERROR("Cannot parse received Sync Data: " << e.what());
+    NDN_LOG_ERROR("Cannot parse received sync Data: " << e.what());
     return;
   }
 
-  std::vector<MissingDataInfo> updates;
+  NDN_LOG_DEBUG("Sync Data received: " << state);
 
-  NDN_LOG_DEBUG("Sync Data Received: " << state);
+  std::vector<MissingDataInfo> updates;
 
   for (const auto& content : state) {
     ndn::Name prefix = content.getPrefix(-1);
     uint64_t seq = content.get(content.size() - 1).toNumber();
 
     if (m_prefixes.find(prefix) == m_prefixes.end() || m_prefixes[prefix] < seq) {
-      updates.push_back(MissingDataInfo{prefix, m_prefixes[prefix] + 1, seq});
+      updates.push_back({prefix, m_prefixes[prefix] + 1, seq});
       updateSeqNo(prefix, seq);
       // We should not call satisfyPendingSyncInterests here because we just
       // got data and deleted pending interest by calling deletePendingFullSyncInterests
@@ -315,8 +315,8 @@ FullProducer::satisfyPendingInterests()
   NDN_LOG_DEBUG("Satisfying full sync interest: " << m_pendingEntries.size());
 
   for (auto it = m_pendingEntries.begin(); it != m_pendingEntries.end();) {
-    const PendingEntryInfoFull& entry = it->second;
-    IBLT diff = m_iblt - entry.iblt;
+    const auto& entry = it->second;
+    auto diff = m_iblt - entry.iblt;
     std::set<uint32_t> positive;
     std::set<uint32_t> negative;
 
@@ -330,7 +330,7 @@ FullProducer::satisfyPendingInterests()
       }
     }
 
-    State state;
+    detail::State state;
     for (const auto& hash : positive) {
       auto nameIt = m_biMap.left.find(hash);
       if (nameIt != m_biMap.left.end()) {
@@ -354,15 +354,9 @@ FullProducer::satisfyPendingInterests()
 bool
 FullProducer::isFutureHash(const ndn::Name& prefix, const std::set<uint32_t>& negative)
 {
-  uint32_t nextHash = murmurHash3(N_HASHCHECK,
-                                  ndn::Name(prefix).appendNumber(m_prefixes[prefix] + 1).toUri());
-  for (const auto& nHash : negative) {
-    if (nHash == nextHash) {
-      return true;
-      break;
-    }
-  }
-  return false;
+  auto nextHash = detail::murmurHash3(detail::N_HASHCHECK,
+                                      ndn::Name(prefix).appendNumber(m_prefixes[prefix] + 1).toUri());
+  return negative.find(nextHash) != negative.end();
 }
 
 void

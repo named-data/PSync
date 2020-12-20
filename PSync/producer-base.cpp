@@ -18,14 +18,12 @@
  **/
 
 #include "PSync/producer-base.hpp"
+#include "PSync/detail/util.hpp"
 
 #include <ndn-cxx/util/exception.hpp>
 #include <ndn-cxx/util/logger.hpp>
 
-#include <boost/algorithm/string.hpp>
-
 #include <cstring>
-#include <functional>
 #include <limits>
 
 namespace psync {
@@ -118,7 +116,7 @@ ProducerBase::updateSeqNo(const ndn::Name& prefix, uint64_t seq)
   // Insert the new seq no in m_prefixes, m_biMap, and m_iblt
   it->second = seq;
   ndn::Name prefixWithSeq = ndn::Name(prefix).appendNumber(seq);
-  uint32_t newHash = murmurHash3(N_HASHCHECK, prefixWithSeq.toUri());
+  auto newHash = detail::murmurHash3(detail::N_HASHCHECK, prefixWithSeq.toUri());
   m_biMap.insert({newHash, prefixWithSeq});
   m_iblt.insert(newHash);
 }

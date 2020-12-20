@@ -22,9 +22,8 @@
 
 #include "tests/boost-test.hpp"
 
-#include <ndn-cxx/interest.hpp>
-
 namespace psync {
+namespace detail {
 
 using namespace ndn;
 
@@ -32,7 +31,7 @@ BOOST_AUTO_TEST_SUITE(TestIBLT)
 
 BOOST_AUTO_TEST_CASE(Equal)
 {
-  int size = 10;
+  const size_t size = 10;
 
   IBLT iblt1(size, CompressionScheme::DEFAULT);
   IBLT iblt2(size, CompressionScheme::DEFAULT);
@@ -107,7 +106,7 @@ BOOST_AUTO_TEST_CASE(NameAppendAndExtract)
 
 BOOST_AUTO_TEST_CASE(CopyInsertErase)
 {
-  int size = 10;
+  const size_t size = 10;
 
   IBLT iblt1(size, CompressionScheme::DEFAULT);
 
@@ -136,7 +135,8 @@ BOOST_AUTO_TEST_CASE(HigherSeqTest)
 {
   // The case where we can't recognize if the rcvd IBF has higher sequence number
   // Relevant to full sync case
-  int size = 10;
+
+  const size_t size = 10;
 
   IBLT ownIBF(size, CompressionScheme::DEFAULT);
   IBLT rcvdIBF(size, CompressionScheme::DEFAULT);
@@ -160,10 +160,9 @@ BOOST_AUTO_TEST_CASE(HigherSeqTest)
 
 BOOST_AUTO_TEST_CASE(Difference)
 {
-  int size = 10;
+  const size_t size = 10;
 
   IBLT ownIBF(size, CompressionScheme::DEFAULT);
-
   IBLT rcvdIBF = ownIBF;
 
   IBLT diff = ownIBF - rcvdIBF;
@@ -200,7 +199,7 @@ BOOST_AUTO_TEST_CASE(DifferenceBwOversizedIBFs)
   // Check that we can still list the difference
   // even though we can't list the IBFs itself
 
-  int size = 10;
+  const size_t size = 10;
 
   IBLT ownIBF(size, CompressionScheme::DEFAULT);
 
@@ -231,4 +230,5 @@ BOOST_AUTO_TEST_CASE(DifferenceBwOversizedIBFs)
 
 BOOST_AUTO_TEST_SUITE_END()
 
+} // namespace detail
 } // namespace psync

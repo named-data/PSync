@@ -25,9 +25,9 @@
 
 #include <ndn-cxx/data.hpp>
 #include <ndn-cxx/interest.hpp>
+#include <ndn-cxx/security/validator-null.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>
 #include <ndn-cxx/util/segment-fetcher.hpp>
-#include <ndn-cxx/security/validator-null.hpp>
 
 namespace psync {
 
@@ -88,7 +88,7 @@ public:
   shared_ptr<util::SegmentFetcher> fetcher;
   Name dataName;
   time::milliseconds freshness = 1_s;
-  State state;
+  detail::State state;
 
   int numComplete = 0;
   int numRepliesFromStore = 0;

@@ -82,10 +82,9 @@ PartialProducer::onHelloInterest(const ndn::Name& prefix, const ndn::Interest& i
 
   NDN_LOG_DEBUG("Hello Interest Received, nonce: " << interest);
 
-  State state;
-
-  for (const auto& prefix : m_prefixes) {
-    state.addContent(ndn::Name(prefix.first).appendNumber(prefix.second));
+  detail::State state;
+  for (const auto& p : m_prefixes) {
+    state.addContent(ndn::Name(p.first).appendNumber(p.second));
   }
   NDN_LOG_DEBUG("sending content p: " << state);
 
@@ -137,11 +136,10 @@ PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& in
     return;
   }
 
-  BloomFilter bf;
-  IBLT iblt(m_expectedNumEntries, m_ibltCompression);
-
+  detail::BloomFilter bf;
+  detail::IBLT iblt(m_expectedNumEntries, m_ibltCompression);
   try {
-    bf = BloomFilter(projectedCount, falsePositiveProb, bfName);
+    bf = detail::BloomFilter(projectedCount, falsePositiveProb, bfName);
     iblt.initialize(ibltName);
   }
   catch (const std::exception& e) {
@@ -150,7 +148,7 @@ PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& in
   }
 
   // get the difference
-  IBLT diff = m_iblt - iblt;
+  auto diff = m_iblt - iblt;
 
   // non-empty positive means we have some elements that the others don't
   std::set<uint32_t> positive;
@@ -169,7 +167,7 @@ PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& in
   }
 
   // generate content for Sync reply
-  State state;
+  detail::State state;
   NDN_LOG_TRACE("Size of positive set " << positive.size());
   NDN_LOG_TRACE("Size of negative set " << negative.size());
   for (const auto& hash : positive) {
@@ -211,7 +209,7 @@ PartialProducer::satisfyPendingSyncInterests(const ndn::Name& prefix) {
   for (auto it = m_pendingEntries.begin(); it != m_pendingEntries.end();) {
     const PendingEntryInfo& entry = it->second;
 
-    IBLT diff = m_iblt - entry.iblt;
+    auto diff = m_iblt - entry.iblt;
     std::set<uint32_t> positive;
     std::set<uint32_t> negative;
 
@@ -228,7 +226,7 @@ PartialProducer::satisfyPendingSyncInterests(const ndn::Name& prefix) {
       continue;
     }
 
-    State state;
+    detail::State state;
     if (entry.bf.contains(prefix.toUri()) || positive.size() + negative.size() >= m_threshold) {
       if (entry.bf.contains(prefix.toUri())) {
         state.addContent(ndn::Name(prefix).appendNumber(m_prefixes[prefix]));
