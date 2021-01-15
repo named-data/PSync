@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2021,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -30,7 +30,6 @@
 #include <ndn-cxx/security/validator-config.hpp>
 #include <ndn-cxx/util/random.hpp>
 #include <ndn-cxx/util/scheduler.hpp>
-#include <ndn-cxx/util/time.hpp>
 
 #include <boost/bimap/bimap.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
@@ -40,9 +39,6 @@
 namespace psync {
 
 namespace bm = boost::bimaps;
-using namespace ndn::time_literals;
-
-const ndn::time::milliseconds SYNC_REPLY_FRESHNESS = 1_s;
 
 /**
  * @brief Base class for PartialProducer and FullProducer

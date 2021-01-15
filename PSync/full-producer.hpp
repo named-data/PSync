@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2021,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -28,8 +28,6 @@
 #include <ndn-cxx/util/segment-fetcher.hpp>
 
 namespace psync {
-
-const ndn::time::milliseconds SYNC_INTEREST_LIFTIME = 1_s;
 
 /**
  * @brief Full sync logic to synchronize with other nodes
@@ -63,7 +61,7 @@ public:
                const ndn::Name& syncPrefix,
                const ndn::Name& userPrefix,
                const UpdateCallback& onUpdateCallBack,
-               ndn::time::milliseconds syncInterestLifetime = SYNC_INTEREST_LIFTIME,
+               ndn::time::milliseconds syncInterestLifetime = SYNC_INTEREST_LIFETIME,
                ndn::time::milliseconds syncReplyFreshness = SYNC_REPLY_FRESHNESS,
                CompressionScheme ibltCompression = CompressionScheme::DEFAULT,
                CompressionScheme contentCompression = CompressionScheme::DEFAULT);

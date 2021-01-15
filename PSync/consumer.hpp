@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2021,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -28,18 +28,12 @@
 #include <ndn-cxx/util/random.hpp>
 #include <ndn-cxx/util/scheduler.hpp>
 #include <ndn-cxx/util/segment-fetcher.hpp>
-#include <ndn-cxx/util/time.hpp>
 
 #include <map>
 
 namespace psync {
 
-using namespace ndn::time_literals;
-
 using ReceiveHelloCallback = std::function<void(const std::map<ndn::Name, uint64_t>&)>;
-
-const ndn::time::milliseconds HELLO_INTEREST_LIFETIME = 1_s;
-const ndn::time::milliseconds SYNC_INTEREST_LIFETIME = 1_s;
 
 /**
  * @brief Consumer logic to subscribe to producer's data

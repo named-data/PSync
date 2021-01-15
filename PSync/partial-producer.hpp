@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2021,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -28,11 +28,8 @@
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/util/scheduler.hpp>
-#include <ndn-cxx/util/time.hpp>
 
 namespace psync {
-
-const ndn::time::milliseconds HELLO_REPLY_FRESHNESS = 1_s;
 
 /**
  * @brief Partial sync logic to publish data names

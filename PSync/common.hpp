@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2021,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -23,6 +23,7 @@
 #include "PSync/detail/config.hpp"
 
 #include <ndn-cxx/name.hpp>
+#include <ndn-cxx/util/time.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -31,6 +32,13 @@
 #include <vector>
 
 namespace psync {
+
+using namespace ndn::time_literals;
+
+const ndn::time::milliseconds HELLO_INTEREST_LIFETIME = 1_s;
+const ndn::time::milliseconds HELLO_REPLY_FRESHNESS = 1_s;
+const ndn::time::milliseconds SYNC_INTEREST_LIFETIME = 1_s;
+const ndn::time::milliseconds SYNC_REPLY_FRESHNESS = 1_s;
 
 enum class CompressionScheme {
   NONE,
