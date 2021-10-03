@@ -1,5 +1,5 @@
-PSync examples
-==============
+Examples
+========
 
 By default, examples in ``examples/`` folder are not built.  To enable them, use
 ``--with-examples`` configure option. For example:
@@ -9,12 +9,10 @@ By default, examples in ``examples/`` folder are not built.  To enable them, use
    ./waf configure --with-examples
    ./waf
 
+Example binary can be found under ``build/examples``:
 
-Example binary can be found under ``build/examples``\ :
-
-
-* Full sync : ``psync-full-sync``
-* Partial sync : ``psync-producer`` and ``psync-consumer``
+* Full sync: ``psync-full-sync``
+* Partial sync: ``psync-producer`` and ``psync-consumer``
 
 If the library is installed to the system using ``./waf install`` then the examples
 are also installed and can be executed directly.
@@ -44,7 +42,7 @@ Producer
 
 * Sample output:
 
-.. code-block:: bash
+::
 
    1546280442.096296 INFO: [examples.PartialSyncProducerApp] Publish: /a-1/1
    1546280456.053138 INFO: [examples.PartialSyncProducerApp] Publish: /a-6/1
@@ -77,7 +75,7 @@ Consumer
 * Sample output from the consumer shows that it received updates only
   for the subscribed prefixes:
 
-.. code-block:: bash
+::
 
    1546280436.502769 INFO: [examples.PartialSyncConsumerApp] Subscribing to: /a-7
    1546280436.502888 INFO: [examples.PartialSyncConsumerApp] Subscribing to: /a-9
@@ -124,7 +122,7 @@ We should see that node a and node b have received each other's updates.
 * Sample output from node a shows that it received all updates
   from node b successfully:
 
-.. code-block:: bash
+::
 
    1546282730.759387 INFO: [examples.FullSyncApp] Update /b-1/1
    1546282741.143225 INFO: [examples.FullSyncApp] Publish: /a-1/1
@@ -139,10 +137,9 @@ We should see that node a and node b have received each other's updates.
    1546282845.273772 INFO: [examples.FullSyncApp] Publish: /a-1/3
    1546282855.102790 INFO: [examples.FullSyncApp] Update /b-0/3
 
-
 * Sample output from node b:
 
-.. code-block:: bash
+::
 
    1546282730.758296 INFO: [examples.FullSyncApp] Publish: /b-1/1
    1546282741.144027 INFO: [examples.FullSyncApp] Update /a-1/1

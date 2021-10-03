@@ -1,8 +1,5 @@
-PSync Installation Instructions
-===============================
-
-.. toctree::
-..
+Installation Instructions
+=========================
 
 Prerequisites
 -------------
@@ -12,9 +9,9 @@ Prerequisites
 Build
 -----
 
-Execute the following commands to build PSync:
+Run the following commands to build PSync:
 
-::
+.. code-block:: sh
 
     ./waf configure
     ./waf

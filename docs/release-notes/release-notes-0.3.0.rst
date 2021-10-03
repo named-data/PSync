@@ -1,6 +1,8 @@
 PSync version 0.3.0
 -------------------
 
+*Release date: January 3, 2021*
+
 The build requirements have been increased to require Clang >= 4.0, Xcode >= 9.0, and Python >= 3.6.
 Meanwhile, it is *recommended* to use GCC >= 7.4.0 and Boost >= 1.65.1.
 This effectively drops official support for Ubuntu 16.04 when using distribution-provided Boost
@@ -12,7 +14,6 @@ New features
 ^^^^^^^^^^^^
 
 - **breaking** Consumer: change hello data callback to include sequence number (:issue:`5122`)
-- Support various compression schemes for compressing IBF and Sync Data (:issue:`5061`)
 
 Improvements and bug fixes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -22,4 +23,3 @@ Improvements and bug fixes
 - Consumer reacts faster on sync Interest timeout (:issue:`5124`)
 - Move private classes and functions to ``psync::detail`` namespace
 - Improved unit tests
-
