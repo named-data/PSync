@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -114,6 +114,13 @@ murmurHash3(const void* key, size_t len, uint32_t seed)
   h1 ^= h1 >> 16;
 
   return h1;
+}
+
+uint32_t
+murmurHash3(uint32_t seed, const ndn::Name& name)
+{
+  auto wire = name.wireEncode();
+  return murmurHash3(wire.value(), wire.value_size(), seed);
 }
 
 std::shared_ptr<ndn::Buffer>

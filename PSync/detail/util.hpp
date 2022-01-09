@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -32,11 +32,11 @@ namespace detail {
 uint32_t
 murmurHash3(const void* key, size_t len, uint32_t seed);
 
-inline uint32_t
-murmurHash3(uint32_t seed, const std::string& str)
-{
-  return murmurHash3(str.data(), str.size(), seed);
-}
+/**
+ * @brief Compute 32-bit MurmurHash3 of Name TLV-VALUE.
+ */
+uint32_t
+murmurHash3(uint32_t seed, const ndn::Name& name);
 
 inline uint32_t
 murmurHash3(uint32_t seed, uint32_t value)

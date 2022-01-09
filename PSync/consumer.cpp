@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -60,7 +60,7 @@ Consumer::addSubscription(const ndn::Name& prefix, uint64_t seqNo, bool callSync
   }
 
   m_subscriptionList.emplace(prefix);
-  m_bloomFilter.insert(prefix.toUri());
+  m_bloomFilter.insert(prefix);
 
   if (callSyncDataCb && seqNo != 0) {
     m_onUpdate({{prefix, seqNo, seqNo}});
@@ -130,7 +130,7 @@ Consumer::onHelloData(const ndn::ConstBufferPtr& bufferPtr)
   // Extract IBF from name which is the last element in hello data's name
   m_iblt = m_helloDataName.getSubName(m_helloDataName.size() - 1, 1);
 
-  NDN_LOG_TRACE("m_iblt: " << std::hash<std::string>{}(m_iblt.toUri()));
+  NDN_LOG_TRACE("m_iblt: " << std::hash<ndn::Name>{}(m_iblt));
 
   detail::State state{ndn::Block(bufferPtr)};
   std::vector<MissingDataInfo> updates;
@@ -175,7 +175,7 @@ Consumer::sendSyncInterest()
   ndn::Interest syncInterest(syncInterestName);
 
   NDN_LOG_DEBUG("sendSyncInterest, nonce: " << syncInterest.getNonce() <<
-                " hash: " << std::hash<std::string>{}(syncInterest.getName().toUri()));
+                " hash: " << std::hash<ndn::Name>{}(syncInterest.getName()));
 
   if (m_syncFetcher) {
     m_syncFetcher->stop();

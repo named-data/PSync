@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -250,7 +250,7 @@ BloomFilter::clear()
 }
 
 void
-BloomFilter::insert(const std::string& key)
+BloomFilter::insert(const ndn::Name& key)
 {
   std::size_t bit_index = 0;
   std::size_t bit       = 0;
@@ -266,7 +266,7 @@ BloomFilter::insert(const std::string& key)
 }
 
 bool
-BloomFilter::contains(const std::string& key) const
+BloomFilter::contains(const ndn::Name& key) const
 {
   std::size_t bit_index = 0;
   std::size_t bit       = 0;

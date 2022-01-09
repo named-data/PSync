@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -47,21 +47,21 @@ BOOST_AUTO_TEST_CASE(Basic)
   BOOST_CHECK_EQUAL(producerBase.getSeqNo(userNode).value(), 0);
 
   producerBase.updateSeqNo(userNode, 1);
-  BOOST_CHECK(producerBase.getSeqNo(userNode.toUri()).value() == 1);
+  BOOST_CHECK(producerBase.getSeqNo(userNode).value() == 1);
 
-  std::string prefixWithSeq = Name(userNode).appendNumber(1).toUri();
+  auto prefixWithSeq = Name(userNode).appendNumber(1);
   uint32_t hash = producerBase.m_biMap.right.find(prefixWithSeq)->second;
   Name prefix(producerBase.m_biMap.left.find(hash)->second);
   BOOST_CHECK_EQUAL(prefix.getPrefix(-1), userNode);
 
   producerBase.removeUserNode(userNode);
-  BOOST_CHECK(producerBase.getSeqNo(userNode.toUri()) == nullopt);
+  BOOST_CHECK(producerBase.getSeqNo(userNode) == nullopt);
   BOOST_CHECK(producerBase.m_biMap.right.find(prefixWithSeq) == producerBase.m_biMap.right.end());
   BOOST_CHECK(producerBase.m_biMap.left.find(hash) == producerBase.m_biMap.left.end());
 
   Name nonExistentUserNode("/notAUser");
   producerBase.updateSeqNo(nonExistentUserNode, 1);
-  BOOST_CHECK(producerBase.m_biMap.right.find(Name(nonExistentUserNode).appendNumber(1).toUri()) ==
+  BOOST_CHECK(producerBase.m_biMap.right.find(Name(nonExistentUserNode).appendNumber(1)) ==
               producerBase.m_biMap.right.end());
 }
 

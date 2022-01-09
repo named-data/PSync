@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -90,10 +90,10 @@ public:
   clear();
 
   void
-  insert(const std::string& key);
+  insert(const ndn::Name& key);
 
   bool
-  contains(const std::string& key) const;
+  contains(const ndn::Name& key) const;
 
 private:
   typedef uint32_t bloom_type;

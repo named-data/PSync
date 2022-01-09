@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -116,7 +116,7 @@ ProducerBase::updateSeqNo(const ndn::Name& prefix, uint64_t seq)
   // Insert the new seq no in m_prefixes, m_biMap, and m_iblt
   it->second = seq;
   ndn::Name prefixWithSeq = ndn::Name(prefix).appendNumber(seq);
-  auto newHash = detail::murmurHash3(detail::N_HASHCHECK, prefixWithSeq.toUri());
+  auto newHash = detail::murmurHash3(detail::N_HASHCHECK, prefixWithSeq);
   m_biMap.insert({newHash, prefixWithSeq});
   m_iblt.insert(newHash);
 }

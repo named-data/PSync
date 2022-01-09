@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -29,6 +29,9 @@ namespace psync {
 
 NDN_LOG_INIT(psync.PartialProducer);
 
+const ndn::name::Component HELLO("hello");
+const ndn::name::Component SYNC("sync");
+
 PartialProducer::PartialProducer(size_t expectedNumEntries,
                                  ndn::Face& face,
                                  const ndn::Name& syncPrefix,
@@ -42,9 +45,9 @@ PartialProducer::PartialProducer(size_t expectedNumEntries,
 {
   m_registeredPrefix = m_face.registerPrefix(m_syncPrefix,
     [this] (const ndn::Name& syncPrefix) {
-      m_face.setInterestFilter(ndn::Name(m_syncPrefix).append("hello"),
+      m_face.setInterestFilter(ndn::Name(m_syncPrefix).append(HELLO),
                                std::bind(&PartialProducer::onHelloInterest, this, _1, _2));
-      m_face.setInterestFilter(ndn::Name(m_syncPrefix).append("sync"),
+      m_face.setInterestFilter(ndn::Name(m_syncPrefix).append(SYNC),
                                std::bind(&PartialProducer::onSyncInterest, this, _1, _2));
     },
     std::bind(&PartialProducer::onRegisterFailed, this, _1, _2));
@@ -69,14 +72,14 @@ PartialProducer::publishName(const ndn::Name& prefix, ndn::optional<uint64_t> se
 void
 PartialProducer::onHelloInterest(const ndn::Name& prefix, const ndn::Interest& interest)
 {
-  if (m_segmentPublisher.replyFromStore(interest.getName())) {
+  const auto& name = interest.getName();
+  if (m_segmentPublisher.replyFromStore(name)) {
     return;
   }
 
   // Last component or fourth last component (in case of interest with version and segment)
   // needs to be hello
-  if (interest.getName().get(interest.getName().size()-1).toUri() != "hello" &&
-      interest.getName().get(interest.getName().size()-4).toUri() != "hello") {
+  if (name.get(name.size() - 1) != HELLO && name.get(name.size() - 4) != HELLO) {
     return;
   }
 
@@ -103,7 +106,7 @@ PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& in
   }
 
   NDN_LOG_DEBUG("Sync Interest Received, nonce: " << interest.getNonce() <<
-                " hash: " << std::hash<std::string>{}(interest.getName().toUri()));
+                " hash: " << std::hash<ndn::Name>{}(interest.getName()));
 
   ndn::Name nameWithoutSyncPrefix = interest.getName().getSubName(prefix.size());
   ndn::Name interestName;
@@ -173,7 +176,7 @@ PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& in
   for (const auto& hash : positive) {
     auto nameIt = m_biMap.left.find(hash);
     if (nameIt != m_biMap.left.end()) {
-      if (bf.contains(nameIt->second.getPrefix(-1).toUri())) {
+      if (bf.contains(nameIt->second.getPrefix(-1))) {
         // generate data
         state.addContent(nameIt->second);
         NDN_LOG_DEBUG("Content: " << nameIt->second << " " << nameIt->first);
@@ -227,8 +230,8 @@ PartialProducer::satisfyPendingSyncInterests(const ndn::Name& prefix) {
     }
 
     detail::State state;
-    if (entry.bf.contains(prefix.toUri()) || positive.size() + negative.size() >= m_threshold) {
-      if (entry.bf.contains(prefix.toUri())) {
+    if (entry.bf.contains(prefix) || positive.size() + negative.size() >= m_threshold) {
+      if (entry.bf.contains(prefix)) {
         state.addContent(ndn::Name(prefix).appendNumber(m_prefixes[prefix]));
         NDN_LOG_DEBUG("sending sync content " << prefix << " " << std::to_string(m_prefixes[prefix]));
       }

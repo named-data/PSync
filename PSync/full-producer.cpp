@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -207,7 +207,7 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
       ndn::Name nameWithoutSeq = nameIt->second.getPrefix(-1);
       // Don't sync up sequence number zero
       if (m_prefixes[nameWithoutSeq] != 0 &&
-          !isFutureHash(nameWithoutSeq.toUri(), negative)) {
+          !isFutureHash(nameWithoutSeq, negative)) {
         state.addContent(nameIt->second);
       }
     }
@@ -355,7 +355,7 @@ bool
 FullProducer::isFutureHash(const ndn::Name& prefix, const std::set<uint32_t>& negative)
 {
   auto nextHash = detail::murmurHash3(detail::N_HASHCHECK,
-                                      ndn::Name(prefix).appendNumber(m_prefixes[prefix] + 1).toUri());
+                                      ndn::Name(prefix).appendNumber(m_prefixes[prefix] + 1));
   return negative.find(nextHash) != negative.end();
 }
 
