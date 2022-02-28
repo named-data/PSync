@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2021,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -166,6 +166,12 @@ private:
    */
   bool
   isFutureHash(const ndn::Name& prefix, const std::set<uint32_t>& negative);
+
+#ifdef PSYNC_WITH_TESTS
+public:
+  size_t nIbfDecodeFailuresAboveThreshold = 0;
+  size_t nIbfDecodeFailuresBelowThreshold = 0;
+#endif // PSYNC_WITH_TESTS
 
 private:
   struct PendingEntryInfo

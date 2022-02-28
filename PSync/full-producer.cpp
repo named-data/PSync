@@ -196,8 +196,15 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
         sendSyncData(interest.getName(), state.wireEncode());
       }
 
+#ifdef PSYNC_WITH_TESTS
+      ++nIbfDecodeFailuresAboveThreshold;
+#endif // PSYNC_WITH_TESTS
       return;
     }
+
+#ifdef PSYNC_WITH_TESTS
+    ++nIbfDecodeFailuresBelowThreshold;
+#endif // PSYNC_WITH_TESTS
   }
 
   detail::State state;

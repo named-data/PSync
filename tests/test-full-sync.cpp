@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -29,28 +29,155 @@
 
 namespace psync {
 
-using namespace ndn;
+using ndn::Name;
+using ndn::optional;
+using ndn::util::DummyClientFace;
 
-class FullSyncFixture : public tests::IoFixture
+class FullSyncFixture : public ndn::tests::IoFixture
 {
 protected:
   void
   addNode(int id)
   {
-    BOOST_ASSERT(id >= 0 && id <= 3);
+    BOOST_ASSERT(id >= 0 && id < MAX_NODES);
+    faces[id] = std::make_shared<DummyClientFace>(m_io, DummyClientFace::Options{true, true});
+    userPrefixes[id] = "/userPrefix" + std::to_string(id);
+    nodes[id] = std::make_shared<FullProducer>(40, *faces[id], syncPrefix, userPrefixes[id],
+                                               [] (const auto&) {});
+  }
 
-    faces[id] = std::make_shared<util::DummyClientFace>(m_io, util::DummyClientFace::Options{true, true});
-    userPrefixes[id] = Name("userPrefix" + to_string(id));
-    nodes[id] = make_shared<FullProducer>(40, *faces[id], syncPrefix, userPrefixes[id],
-                                          [] (const auto&) {});
+  void
+  clearNodes()
+  {
+    faces.fill(nullptr);
+    userPrefixes.fill(Name());
+    nodes.fill(nullptr);
+  }
+
+  /**
+   * @brief Return a user prefix in the form /userNode<id>-<i>.
+   * @param id update originator node index.
+   * @param i user prefix index.
+   */
+  Name
+  makeSubPrefix(int id, int i) const
+  {
+    return "/userNode" + std::to_string(id) + "-" + std::to_string(i);
+  }
+
+  /**
+   * @brief Publish a batch of updates.
+   * @param id node index.
+   * @param min minimum user prefix index.
+   * @param min maximum user prefix index.
+   * @param seq update sequence number.
+   * @post nodes[id] has user nodes /userNode<id>-<i> ∀i∈[min,max] , with sequence number
+   *       set to @p seq ; only one sync Data may be sent after the last update.
+   */
+  void
+  batchUpdate(int id, int min, int max, uint64_t seq)
+  {
+    FullProducer& node = *nodes.at(id);
+    for (int i = min; i <= max; i++) {
+      auto userPrefix = makeSubPrefix(id, i);
+      node.addUserNode(userPrefix);
+      if (i < max) {
+        node.updateSeqNo(userPrefix, seq);
+      }
+      else {
+        node.publishName(userPrefix, seq);
+      }
+    }
+  }
+
+  /**
+   * @brief Check sequence number on a batch of user prefixes.
+   * @param id node index where the check is performed.
+   * @param origin update originator node index for deriving user prefixes.
+   * @param min minimum user prefix index.
+   * @param max maximum user prefix index.
+   * @param seq expected sequence number.
+   */
+  void
+  batchCheck(int id, int origin, int min, int max, optional<uint64_t> seq)
+  {
+    uint64_t expected = seq.value_or(NOT_EXIST);
+    FullProducer& node = *nodes.at(id);
+    for (int i = min; i <= max; i++) {
+      auto userPrefix = makeSubPrefix(origin, i);
+      BOOST_TEST_CONTEXT("node=" << id << " userPrefix=" << userPrefix) {
+        BOOST_CHECK_EQUAL(node.getSeqNo(userPrefix).value_or(NOT_EXIST), expected);
+      }
+    }
+  }
+
+  struct IbfDecodeFailureCounts
+  {
+    size_t aboveThreshold = 0;
+    size_t belowThreshold = 0;
+  };
+
+  /**
+   * @brief Return the sum of IBF decode failure counters among created nodes.
+   */
+  IbfDecodeFailureCounts
+  countIbfDecodeFailures() const
+  {
+    IbfDecodeFailureCounts result;
+    for (const auto& node : nodes) {
+      if (node == nullptr) {
+        continue;
+      }
+      result.aboveThreshold += node->nIbfDecodeFailuresAboveThreshold;
+      result.belowThreshold += node->nIbfDecodeFailuresBelowThreshold;
+    }
+    return result;
+  }
+
+  /**
+   * @brief Repeat a test function until there are IBF decode failures.
+   * @param minTotalUpdates minimum totalUpdates parameter.
+   * @param maxTotalUpdates maximum totalUpdates parameter.
+   * @param f test function.
+   *
+   * This method searches for totalUpdates∈[minTotalUpdates,maxTotalUpdates] until there is
+   * at least one execution that caused an IBF decode failure above threshold.
+   * If such an execution is never achieved within the range, fail the test case.
+   *
+   * Current FullSync logic cannot reliably recover from an IBF decode failure below threshold.
+   * Hence, that condition is not tested.
+   */
+  void
+  searchIbfDecodeFailures(int minTotalUpdates, int maxTotalUpdates, std::function<void(int totalUpdates)> f)
+  {
+    bool hasAboveThreshold = false;
+    for (int totalUpdates = minTotalUpdates; totalUpdates <= maxTotalUpdates; ++totalUpdates) {
+      clearNodes();
+      BOOST_TEST_CONTEXT("totalUpdates=" << totalUpdates) {
+        f(totalUpdates);
+
+        auto cnt = countIbfDecodeFailures();
+        BOOST_TEST_MESSAGE("aboveThreshold=" << cnt.aboveThreshold << " "
+                           "belowThreshold=" << cnt.belowThreshold);
+        hasAboveThreshold = hasAboveThreshold || cnt.aboveThreshold > 0;
+        if (hasAboveThreshold) {
+          return;
+        }
+      }
+    }
+    BOOST_TEST_FAIL("cannot find viable totalUpdates for IBF decode failures");
   }
 
 protected:
   const Name syncPrefix = "/psync";
-  shared_ptr<util::DummyClientFace> faces[4];
-  Name userPrefixes[4];
-  shared_ptr<FullProducer> nodes[4];
+  static const int MAX_NODES = 4;
+  std::array<std::shared_ptr<DummyClientFace>, MAX_NODES> faces;
+  std::array<Name, MAX_NODES> userPrefixes;
+  std::array<std::shared_ptr<FullProducer>, MAX_NODES> nodes;
+  static const uint64_t NOT_EXIST = std::numeric_limits<uint64_t>::max();
 };
+
+const uint64_t FullSyncFixture::NOT_EXIST;
 
 BOOST_FIXTURE_TEST_SUITE(TestFullSync, FullSyncFixture)
 
@@ -60,23 +187,23 @@ BOOST_AUTO_TEST_CASE(TwoNodesSimple)
   addNode(1);
 
   faces[0]->linkTo(*faces[1]);
-  advanceClocks(ndn::time::milliseconds(10));
+  advanceClocks(10_ms);
 
   nodes[0]->publishName(userPrefixes[0]);
-  advanceClocks(ndn::time::milliseconds(10), 100);
+  advanceClocks(10_ms, 100);
 
-  BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(userPrefixes[0]).value_or(-1), 1);
-  BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefixes[0]).value_or(-1), 1);
-
-  nodes[1]->publishName(userPrefixes[1]);
-  advanceClocks(ndn::time::milliseconds(10), 100);
-  BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(userPrefixes[1]).value_or(-1), 1);
-  BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefixes[1]).value_or(-1), 1);
+  BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(userPrefixes[0]).value_or(NOT_EXIST), 1);
+  BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefixes[0]).value_or(NOT_EXIST), 1);
 
   nodes[1]->publishName(userPrefixes[1]);
-  advanceClocks(ndn::time::milliseconds(10), 100);
-  BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(userPrefixes[1]).value_or(-1), 2);
-  BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefixes[1]).value_or(-1), 2);
+  advanceClocks(10_ms, 100);
+  BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(userPrefixes[1]).value_or(NOT_EXIST), 1);
+  BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefixes[1]).value_or(NOT_EXIST), 1);
+
+  nodes[1]->publishName(userPrefixes[1]);
+  advanceClocks(10_ms, 100);
+  BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(userPrefixes[1]).value_or(NOT_EXIST), 2);
+  BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefixes[1]).value_or(NOT_EXIST), 2);
 }
 
 BOOST_AUTO_TEST_CASE(TwoNodesForceSeqNo)
@@ -85,13 +212,13 @@ BOOST_AUTO_TEST_CASE(TwoNodesForceSeqNo)
   addNode(1);
 
   faces[0]->linkTo(*faces[1]);
-  advanceClocks(ndn::time::milliseconds(10));
+  advanceClocks(10_ms);
 
   nodes[0]->publishName(userPrefixes[0], 3);
-  advanceClocks(ndn::time::milliseconds(10), 100);
+  advanceClocks(10_ms, 100);
 
-  BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(userPrefixes[0]).value_or(-1), 3);
-  BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefixes[0]).value_or(-1), 3);
+  BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(userPrefixes[0]).value_or(NOT_EXIST), 3);
+  BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefixes[0]).value_or(NOT_EXIST), 3);
 }
 
 BOOST_AUTO_TEST_CASE(TwoNodesWithMultipleUserNodes)
@@ -100,31 +227,31 @@ BOOST_AUTO_TEST_CASE(TwoNodesWithMultipleUserNodes)
   addNode(1);
 
   faces[0]->linkTo(*faces[1]);
-  advanceClocks(ndn::time::milliseconds(10));
+  advanceClocks(10_ms);
 
-  Name nodeZeroExtraUser("userPrefix0-1");
-  Name nodeOneExtraUser("userPrefix1-1");
+  Name nodeZeroExtraUser("/userPrefix0-1");
+  Name nodeOneExtraUser("/userPrefix1-1");
 
   nodes[0]->addUserNode(nodeZeroExtraUser);
   nodes[1]->addUserNode(nodeOneExtraUser);
 
   nodes[0]->publishName(userPrefixes[0]);
-  advanceClocks(ndn::time::milliseconds(10), 100);
+  advanceClocks(10_ms, 100);
 
-  BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(userPrefixes[0]).value_or(-1), 1);
-  BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefixes[0]).value_or(-1), 1);
+  BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(userPrefixes[0]).value_or(NOT_EXIST), 1);
+  BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefixes[0]).value_or(NOT_EXIST), 1);
 
   nodes[0]->publishName(nodeZeroExtraUser);
-  advanceClocks(ndn::time::milliseconds(10), 100);
+  advanceClocks(10_ms, 100);
 
-  BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(nodeZeroExtraUser).value_or(-1), 1);
-  BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(nodeZeroExtraUser).value_or(-1), 1);
+  BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(nodeZeroExtraUser).value_or(NOT_EXIST), 1);
+  BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(nodeZeroExtraUser).value_or(NOT_EXIST), 1);
 
   nodes[1]->publishName(nodeOneExtraUser);
-  advanceClocks(ndn::time::milliseconds(10), 100);
+  advanceClocks(10_ms, 100);
 
-  BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(nodeOneExtraUser).value_or(-1), 1);
-  BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(nodeOneExtraUser).value_or(-1), 1);
+  BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(nodeOneExtraUser).value_or(NOT_EXIST), 1);
+  BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(nodeOneExtraUser).value_or(NOT_EXIST), 1);
 }
 
 BOOST_AUTO_TEST_CASE(MultipleNodes)
@@ -137,21 +264,21 @@ BOOST_AUTO_TEST_CASE(MultipleNodes)
   }
 
   nodes[0]->publishName(userPrefixes[0]);
-  advanceClocks(ndn::time::milliseconds(10), 100);
+  advanceClocks(10_ms, 100);
   for (int i = 0; i < 4; i++) {
-    BOOST_CHECK_EQUAL(nodes[i]->getSeqNo(userPrefixes[0]).value_or(-1), 1);
+    BOOST_CHECK_EQUAL(nodes[i]->getSeqNo(userPrefixes[0]).value_or(NOT_EXIST), 1);
   }
 
   nodes[1]->publishName(userPrefixes[1]);
-  advanceClocks(ndn::time::milliseconds(10), 100);
+  advanceClocks(10_ms, 100);
   for (int i = 0; i < 4; i++) {
-    BOOST_CHECK_EQUAL(nodes[i]->getSeqNo(userPrefixes[1]).value_or(-1), 1);
+    BOOST_CHECK_EQUAL(nodes[i]->getSeqNo(userPrefixes[1]).value_or(NOT_EXIST), 1);
   }
 
   nodes[1]->publishName(userPrefixes[1]);
-  advanceClocks(ndn::time::milliseconds(10), 100);
+  advanceClocks(10_ms, 100);
   for (int i = 0; i < 4; i++) {
-    BOOST_CHECK_EQUAL(nodes[i]->getSeqNo(userPrefixes[1]).value_or(-1), 2);
+    BOOST_CHECK_EQUAL(nodes[i]->getSeqNo(userPrefixes[1]).value_or(NOT_EXIST), 2);
   }
 }
 
@@ -167,10 +294,10 @@ BOOST_AUTO_TEST_CASE(MultipleNodesSimultaneousPublish)
     nodes[i]->publishName(userPrefixes[i]);
   }
 
-  advanceClocks(ndn::time::milliseconds(10), 100);
+  advanceClocks(10_ms, 100);
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
-      BOOST_CHECK_EQUAL(nodes[i]->getSeqNo(userPrefixes[j]).value_or(-1), 1);
+      BOOST_CHECK_EQUAL(nodes[i]->getSeqNo(userPrefixes[j]).value_or(NOT_EXIST), 1);
     }
   }
 
@@ -178,10 +305,10 @@ BOOST_AUTO_TEST_CASE(MultipleNodesSimultaneousPublish)
     nodes[i]->publishName(userPrefixes[i], 4);
   }
 
-  advanceClocks(ndn::time::milliseconds(10), 100);
+  advanceClocks(10_ms, 100);
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
-      BOOST_CHECK_EQUAL(nodes[i]->getSeqNo(userPrefixes[j]).value_or(-1), 4);
+      BOOST_CHECK_EQUAL(nodes[i]->getSeqNo(userPrefixes[j]).value_or(NOT_EXIST), 4);
     }
   }
 }
@@ -196,9 +323,9 @@ BOOST_AUTO_TEST_CASE(NetworkPartition)
   }
 
   nodes[0]->publishName(userPrefixes[0]);
-  advanceClocks(ndn::time::milliseconds(10), 100);
+  advanceClocks(10_ms, 100);
   for (int i = 0; i < 4; i++) {
-    BOOST_CHECK_EQUAL(nodes[i]->getSeqNo(userPrefixes[0]).value_or(-1), 1);
+    BOOST_CHECK_EQUAL(nodes[i]->getSeqNo(userPrefixes[0]).value_or(NOT_EXIST), 1);
   }
 
   for (int i = 0; i < 3; i++) {
@@ -208,25 +335,25 @@ BOOST_AUTO_TEST_CASE(NetworkPartition)
   faces[2]->linkTo(*faces[3]);
 
   nodes[0]->publishName(userPrefixes[0]);
-  advanceClocks(ndn::time::milliseconds(10), 100);
-  BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefixes[0]).value_or(-1), 2);
-  BOOST_CHECK_EQUAL(nodes[2]->getSeqNo(userPrefixes[0]).value_or(-1), 1);
-  BOOST_CHECK_EQUAL(nodes[3]->getSeqNo(userPrefixes[0]).value_or(-1), 1);
+  advanceClocks(10_ms, 100);
+  BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefixes[0]).value_or(NOT_EXIST), 2);
+  BOOST_CHECK_EQUAL(nodes[2]->getSeqNo(userPrefixes[0]).value_or(NOT_EXIST), 1);
+  BOOST_CHECK_EQUAL(nodes[3]->getSeqNo(userPrefixes[0]).value_or(NOT_EXIST), 1);
 
   nodes[1]->publishName(userPrefixes[1], 2);
-  advanceClocks(ndn::time::milliseconds(10), 100);
-  BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(userPrefixes[1]).value_or(-1), 2);
+  advanceClocks(10_ms, 100);
+  BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(userPrefixes[1]).value_or(NOT_EXIST), 2);
 
   nodes[2]->publishName(userPrefixes[2], 2);
-  advanceClocks(ndn::time::milliseconds(10), 100);
-  BOOST_CHECK_EQUAL(nodes[3]->getSeqNo(userPrefixes[2]).value_or(-1), 2);
+  advanceClocks(10_ms, 100);
+  BOOST_CHECK_EQUAL(nodes[3]->getSeqNo(userPrefixes[2]).value_or(NOT_EXIST), 2);
 
   nodes[3]->publishName(userPrefixes[3], 2);
-  advanceClocks(ndn::time::milliseconds(10), 100);
-  BOOST_CHECK_EQUAL(nodes[2]->getSeqNo(userPrefixes[3]).value_or(-1), 2);
+  advanceClocks(10_ms, 100);
+  BOOST_CHECK_EQUAL(nodes[2]->getSeqNo(userPrefixes[3]).value_or(NOT_EXIST), 2);
 
-  BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(userPrefixes[3]).value_or(-1), -1);
-  BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefixes[3]).value_or(-1), -1);
+  BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(userPrefixes[3]).value_or(NOT_EXIST), NOT_EXIST);
+  BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefixes[3]).value_or(NOT_EXIST), NOT_EXIST);
 
   for (int i = 0; i < 3; i++) {
     faces[i]->unlink();
@@ -235,10 +362,10 @@ BOOST_AUTO_TEST_CASE(NetworkPartition)
     faces[i]->linkTo(*faces[i + 1]);
   }
 
-  advanceClocks(ndn::time::milliseconds(10), 100);
+  advanceClocks(10_ms, 100);
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
-      BOOST_CHECK_EQUAL(nodes[i]->getSeqNo(userPrefixes[j]).value_or(-1), 2);
+      BOOST_CHECK_EQUAL(nodes[i]->getSeqNo(userPrefixes[j]).value_or(NOT_EXIST), 2);
     }
   }
 }
@@ -249,140 +376,89 @@ BOOST_AUTO_TEST_CASE(IBFOverflow)
   addNode(1);
 
   faces[0]->linkTo(*faces[1]);
-  advanceClocks(ndn::time::milliseconds(10));
+  advanceClocks(10_ms);
 
   // 50 > 40 (expected number of entries in IBF)
   for (int i = 0; i < 50; i++) {
-    nodes[0]->addUserNode(Name("userNode0-" + to_string(i)));
+    nodes[0]->addUserNode(makeSubPrefix(0, i));
   }
+  batchUpdate(0, 0, 20, 1);
+  advanceClocks(10_ms, 100);
+  batchCheck(1, 0, 0, 20, 1);
 
-  for (int i = 0; i < 20; i++) {
-    // Suppose all sync data were lost for these:
-    nodes[0]->updateSeqNo(Name("userNode0-" + to_string(i)), 1);
-  }
-  nodes[0]->publishName(Name("userNode0-" + to_string(20)));
-  advanceClocks(ndn::time::milliseconds(10), 100);
-
-  for (int i = 0; i <= 20; i++) {
-    Name userPrefix("userNode0-" + to_string(i));
-    BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefix).value_or(-1), 1);
-  }
-
-  for (int i = 21; i < 49; i++) {
-    nodes[0]->updateSeqNo(Name("userNode0-" + to_string(i)), 1);
-  }
-  nodes[0]->publishName(Name("userNode0-49"));
-  advanceClocks(ndn::time::milliseconds(10), 100);
-
-  for (int i = 21; i < 49; i++) {
-    Name userPrefix("userNode0-" + to_string(i));
-    BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefix).value_or(-1), 1);
-  }
+  batchUpdate(0, 21, 49, 1);
+  advanceClocks(10_ms, 100);
+  batchCheck(1, 0, 21, 49, 1);
 }
 
 BOOST_AUTO_TEST_CASE(DiffIBFDecodeFailureSimple)
 {
-  addNode(0);
-  addNode(1);
+  searchIbfDecodeFailures(46, 52, [this] (int totalUpdates) {
+    addNode(0);
+    addNode(1);
 
-  faces[0]->linkTo(*faces[1]);
-  advanceClocks(ndn::time::milliseconds(10));
+    faces[0]->linkTo(*faces[1]);
+    advanceClocks(10_ms);
 
-  // Lowest number that triggers a decode failure for IBF size of 40
-  int totalUpdates = 47;
+    batchUpdate(0, 0, totalUpdates, 1);
+    advanceClocks(10_ms, 100);
+    batchCheck(1, 0, 0, totalUpdates, 1);
 
-  for (int i = 0; i <= totalUpdates; i++) {
-    nodes[0]->addUserNode(Name("userNode0-" + to_string(i)));
-    if (i != totalUpdates) {
-      nodes[0]->updateSeqNo(Name("userNode0-" + to_string(i)), 1);
-    }
-  }
-  nodes[0]->publishName(Name("userNode0-" + to_string(totalUpdates)));
-  advanceClocks(ndn::time::milliseconds(10), 100);
+    BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(userPrefixes[1]).value_or(NOT_EXIST), NOT_EXIST);
+    BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefixes[0]).value_or(NOT_EXIST), NOT_EXIST);
 
-  // No mechanism to recover yet
-  for (int i = 0; i <= totalUpdates; i++) {
-    Name userPrefix("userNode0-" + to_string(i));
-    BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefix).value_or(-1), 1);
-  }
+    nodes[1]->publishName(userPrefixes[1]);
+    advanceClocks(10_ms, 100);
+    BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(userPrefixes[1]).value_or(NOT_EXIST), 1);
 
-  BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(userPrefixes[1]).value_or(-1), -1);
-  BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefixes[0]).value_or(-1), -1);
-
-  nodes[1]->publishName(userPrefixes[1]);
-  advanceClocks(ndn::time::milliseconds(10), 100);
-  BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(userPrefixes[1]).value_or(-1), 1);
-
-  nodes[0]->publishName(userPrefixes[0]);
-  advanceClocks(ndn::time::milliseconds(10), 100);
-  BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefixes[0]).value_or(-1), 1);
+    nodes[0]->publishName(userPrefixes[0]);
+    advanceClocks(10_ms, 100);
+    BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefixes[0]).value_or(NOT_EXIST), 1);
+  });
 }
 
 BOOST_AUTO_TEST_CASE(DiffIBFDecodeFailureSimpleSegmentedRecovery)
 {
-  addNode(0);
-  addNode(1);
-  faces[0]->linkTo(*faces[1]);
+  searchIbfDecodeFailures(46, 52, [this] (int totalUpdates) {
+    addNode(0);
+    addNode(1);
+    faces[0]->linkTo(*faces[1]);
 
-  advanceClocks(ndn::time::milliseconds(10));
+    advanceClocks(10_ms);
 
-  // Lowest number that triggers a decode failure for IBF size of 40
-  int totalUpdates = 270;
+    batchUpdate(0, 0, totalUpdates, 1);
+    advanceClocks(10_ms, 100);
+    batchCheck(1, 0, 0, totalUpdates, 1);
 
-  for (int i = 0; i <= totalUpdates; i++) {
-    nodes[0]->addUserNode(Name("userNode0-" + to_string(i)));
-    if (i != totalUpdates) {
-      nodes[0]->updateSeqNo(Name("userNode0-" + to_string(i)), 1);
-    }
-  }
-  nodes[0]->publishName(Name("userNode0-" + to_string(totalUpdates)));
-  advanceClocks(ndn::time::milliseconds(10), 100);
+    BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(userPrefixes[1]).value_or(NOT_EXIST), NOT_EXIST);
+    BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefixes[0]).value_or(NOT_EXIST), NOT_EXIST);
 
-  // No mechanism to recover yet
-  for (int i = 0; i <= totalUpdates; i++) {
-    Name userPrefix("userNode0-" + to_string(i));
-    BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefix).value_or(-1), 1);
-  }
+    nodes[1]->publishName(userPrefixes[1]);
+    advanceClocks(10_ms, 100);
+    BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(userPrefixes[1]).value_or(NOT_EXIST), 1);
 
-  BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(userPrefixes[1]).value_or(-1), -1);
-  BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefixes[0]).value_or(-1), -1);
-
-  nodes[1]->publishName(userPrefixes[1]);
-  advanceClocks(ndn::time::milliseconds(10), 100);
-  BOOST_CHECK_EQUAL(nodes[0]->getSeqNo(userPrefixes[1]).value_or(-1), 1);
-
-  nodes[0]->publishName(userPrefixes[0]);
-  advanceClocks(ndn::time::milliseconds(10), 100);
-  BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefixes[0]).value_or(-1), 1);
+    nodes[0]->publishName(userPrefixes[0]);
+    advanceClocks(10_ms, 100);
+    BOOST_CHECK_EQUAL(nodes[1]->getSeqNo(userPrefixes[0]).value_or(NOT_EXIST), 1);
+  });
 }
 
 BOOST_AUTO_TEST_CASE(DiffIBFDecodeFailureMultipleNodes)
 {
-  for (int i = 0; i < 4; i++) {
-    addNode(i);
-  }
-  for (int i = 0; i < 3; i++) {
-    faces[i]->linkTo(*faces[i + 1]);
-  }
-
-  // Lowest number that triggers a decode failure for IBF size of 40
-  int totalUpdates = 47;
-
-  for (int i = 0; i <= totalUpdates; i++) {
-    nodes[0]->addUserNode(Name("userNode0-" + to_string(i)));
-    if (i != totalUpdates) {
-      nodes[0]->updateSeqNo(Name("userNode0-" + to_string(i)), 1);
+  searchIbfDecodeFailures(46, 52, [this] (int totalUpdates) {
+    for (int i = 0; i < 4; i++) {
+      addNode(i);
     }
-  }
-  nodes[0]->publishName(Name("userNode0-" + to_string(totalUpdates)));
-  advanceClocks(ndn::time::milliseconds(10), 100);
-
-  for (int i = 0; i <= totalUpdates; i++) {
-    Name userPrefix("userNode0-" + to_string(i));
-    for (int j = 0; j < 4; j++) {
-      BOOST_CHECK_EQUAL(nodes[j]->getSeqNo(userPrefix).value_or(-1), 1);
+    for (int i = 0; i < 3; i++) {
+      faces[i]->linkTo(*faces[i + 1]);
     }
-  }
+
+    batchUpdate(0, 0, totalUpdates, 1);
+    advanceClocks(10_ms, 100);
+    for (int i = 0; i < 4; i++) {
+      batchCheck(i, 0, 0, totalUpdates, 1);
+    }
+  });
 }
 
 BOOST_AUTO_TEST_CASE(DelayedSecondSegment)
@@ -391,9 +467,9 @@ BOOST_AUTO_TEST_CASE(DelayedSecondSegment)
 
   int i = 0;
   detail::State state;
-  std::shared_ptr<Buffer> compressed;
+  std::shared_ptr<ndn::Buffer> compressed;
   do {
-    Name prefixToPublish("userNode0-" + to_string(i++));
+    auto prefixToPublish = makeSubPrefix(0, i++);
     nodes[0]->addUserNode(prefixToPublish);
     nodes[0]->publishName(prefixToPublish);
 
@@ -401,21 +477,21 @@ BOOST_AUTO_TEST_CASE(DelayedSecondSegment)
 
     auto block = state.wireEncode();
     compressed = detail::compress(nodes[0]->m_contentCompression, block.wire(), block.size());
-  } while (compressed->size() < (MAX_NDN_PACKET_SIZE >> 1));
+  } while (compressed->size() < (ndn::MAX_NDN_PACKET_SIZE >> 1));
 
-  advanceClocks(ndn::time::milliseconds(10), 100);
+  advanceClocks(10_ms, 100);
 
   Name syncInterestName(syncPrefix);
   detail::IBLT iblt(40, nodes[0]->m_ibltCompression);
   iblt.appendToName(syncInterestName);
 
-  nodes[0]->onSyncInterest(syncPrefix, Interest(syncInterestName));
+  nodes[0]->onSyncInterest(syncPrefix, ndn::Interest(syncInterestName));
 
-  advanceClocks(ndn::time::milliseconds(10));
+  advanceClocks(10_ms);
 
   BOOST_CHECK_EQUAL(nodes[0]->m_segmentPublisher.m_ims.size(), 2);
   // Expire contents from segmentPublisher
-  advanceClocks(ndn::time::milliseconds(10), 100);
+  advanceClocks(10_ms, 100);
   BOOST_CHECK_EQUAL(nodes[0]->m_segmentPublisher.m_ims.size(), 0);
 
   // Get data name from face and increase segment number to form next interest
@@ -425,8 +501,8 @@ BOOST_AUTO_TEST_CASE(DelayedSecondSegment)
   interestName.appendSegment(1);
   faces[0]->sentData.clear();
 
-  nodes[0]->onSyncInterest(syncPrefix, Interest(interestName));
-  advanceClocks(ndn::time::milliseconds(10));
+  nodes[0]->onSyncInterest(syncPrefix, ndn::Interest(interestName));
+  advanceClocks(10_ms);
 
   // Should have repopulated SegmentPublisher
   BOOST_CHECK_EQUAL(nodes[0]->m_segmentPublisher.m_ims.size(), 2);
