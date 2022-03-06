@@ -18,7 +18,7 @@ import sys
 # -- Project information -----------------------------------------------------
 
 project = u'PSync: Full/Partial Synchronization Protocol for NDN'
-copyright = u'Copyright © 2018-2021 Named Data Networking Project.'
+copyright = u'Copyright © 2018-2022 Named Data Networking Project.'
 author = u'Named Data Networking Project'
 
 # The short X.Y version.

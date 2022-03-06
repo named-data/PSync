@@ -32,10 +32,10 @@ PSync Documentation
 
    install
    examples
-   RELEASE-NOTES
+   release-notes
    releases
 
 -  :doc:`install`
 -  :doc:`examples`
--  :doc:`RELEASE-NOTES`
+-  :doc:`release-notes`
 -  :doc:`releases`
