@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -158,7 +158,7 @@ IBLT::listEntries(std::set<uint32_t>& positive, std::set<uint32_t>& negative) co
   // If any buckets for one of the hash functions is not empty,
   // then we didn't peel them all:
   for (const auto& entry : peeled.m_hashTable) {
-    if (entry.isEmpty() != true) {
+    if (!entry.isEmpty()) {
       return false;
     }
   }
@@ -203,14 +203,14 @@ IBLT::appendToName(ndn::Name& name) const
     std::memcpy(&table[(i * unitSize) + 8], &keyCheck, sizeof(keyCheck));
   }
 
-  auto compressed = compress(m_compressionScheme, table.data(), table.size());
+  auto compressed = compress(m_compressionScheme, table);
   name.append(ndn::name::Component(std::move(compressed)));
 }
 
 std::vector<uint32_t>
 IBLT::extractValueFromName(const ndn::name::Component& ibltName) const
 {
-  auto decompressedBuf = decompress(m_compressionScheme, ibltName.value(), ibltName.value_size());
+  auto decompressedBuf = decompress(m_compressionScheme, ibltName.value_bytes());
 
   if (decompressedBuf->size() % 4 != 0) {
     NDN_THROW(Error("Received IBF cannot be decompressed correctly!"));

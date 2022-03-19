@@ -476,7 +476,7 @@ BOOST_AUTO_TEST_CASE(DelayedSecondSegment)
     state.addContent(Name(prefixToPublish).appendNumber(nodes[0]->m_prefixes[prefixToPublish]));
 
     auto block = state.wireEncode();
-    compressed = detail::compress(nodes[0]->m_contentCompression, block.wire(), block.size());
+    compressed = detail::compress(nodes[0]->m_contentCompression, block);
   } while (compressed->size() < (ndn::MAX_NDN_PACKET_SIZE >> 1));
 
   advanceClocks(10_ms, 100);

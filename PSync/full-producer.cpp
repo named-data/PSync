@@ -184,7 +184,7 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
     // Send all data if greater then threshold, else send positive below as usual
     // Or send if we can't get neither positive nor negative differences
     if (positive.size() + negative.size() >= m_threshold ||
-        (positive.size() == 0 && negative.size() == 0)) {
+        (positive.empty() && negative.empty())) {
       detail::State state;
       for (const auto& content : m_prefixes) {
         if (content.second != 0) {
@@ -245,7 +245,7 @@ FullProducer::sendSyncData(const ndn::Name& name, const ndn::Block& block)
   // TODO: Remove appending of hash - serves no purpose to the receiver
   ndn::Name dataName(ndn::Name(name).appendNumber(std::hash<ndn::Name>{}(nameWithIblt)));
 
-  auto content = detail::compress(m_contentCompression, block.wire(), block.size());
+  auto content = detail::compress(m_contentCompression, block);
 
   // checking if our own interest got satisfied
   if (m_outstandingInterestName == name) {
@@ -278,7 +278,7 @@ FullProducer::onSyncData(const ndn::Interest& interest, const ndn::ConstBufferPt
 
   detail::State state;
   try {
-    auto decompressed = detail::decompress(m_contentCompression, bufferPtr->data(), bufferPtr->size());
+    auto decompressed = detail::decompress(m_contentCompression, *bufferPtr);
     state.wireDecode(ndn::Block(std::move(decompressed)));
   }
   catch (const std::exception& e) {
@@ -330,7 +330,7 @@ FullProducer::satisfyPendingInterests()
     if (!diff.listEntries(positive, negative)) {
       NDN_LOG_TRACE("Decode failed for pending interest");
       if (positive.size() + negative.size() >= m_threshold ||
-          (positive.size() == 0 && negative.size() == 0)) {
+          (positive.empty() && negative.empty())) {
         NDN_LOG_TRACE("pos + neg > threshold or no diff can be found, erase pending interest");
         it = m_pendingEntries.erase(it);
         continue;

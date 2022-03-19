@@ -23,8 +23,7 @@
 #include "PSync/common.hpp"
 
 #include <ndn-cxx/encoding/buffer.hpp>
-
-#include <string>
+#include <ndn-cxx/util/span.hpp>
 
 namespace psync {
 namespace detail {
@@ -45,10 +44,10 @@ murmurHash3(uint32_t seed, uint32_t value)
 }
 
 std::shared_ptr<ndn::Buffer>
-compress(CompressionScheme scheme, const uint8_t* buffer, size_t bufferSize);
+compress(CompressionScheme scheme, ndn::span<const uint8_t> buffer);
 
 std::shared_ptr<ndn::Buffer>
-decompress(CompressionScheme scheme, const uint8_t* buffer, size_t bufferSize);
+decompress(CompressionScheme scheme, ndn::span<const uint8_t> buffer);
 
 } // namespace detail
 } // namespace psync

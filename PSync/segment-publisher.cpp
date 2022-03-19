@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -36,7 +36,7 @@ SegmentPublisher::publish(const ndn::Name& interestName, const ndn::Name& dataNa
                           const ndn::Block& block, ndn::time::milliseconds freshness,
                           const ndn::security::SigningInfo& signingInfo)
 {
-  auto buf = std::make_shared<const ndn::Buffer>(block.wire(), block.size());
+  auto buf = std::make_shared<const ndn::Buffer>(block.begin(), block.end());
   publish(interestName, dataName, buf, freshness, signingInfo);
 }
 
@@ -55,8 +55,7 @@ SegmentPublisher::publish(const ndn::Name& interestName, const ndn::Name& dataNa
   const uint8_t* segmentBegin = rawBuffer;
   const uint8_t* end = rawBuffer + buffer->size();
 
-  size_t maxPacketSize = (ndn::MAX_NDN_PACKET_SIZE >> 1);
-
+  const size_t maxPacketSize = ndn::MAX_NDN_PACKET_SIZE >> 1;
   uint64_t totalSegments = buffer->size() / maxPacketSize;
 
   ndn::Name segmentPrefix(dataName);
@@ -74,13 +73,13 @@ SegmentPublisher::publish(const ndn::Name& interestName, const ndn::Name& dataNa
 
     // We get a std::exception: bad_weak_ptr from m_ims if we don't use shared_ptr for data
     auto data = std::make_shared<ndn::Data>(segmentName);
-    data->setContent(segmentBegin, segmentEnd - segmentBegin);
+    data->setContent(ndn::span<const uint8_t>(segmentBegin, segmentEnd));
     data->setFreshnessPeriod(freshness);
     data->setFinalBlock(ndn::name::Component::fromSegment(totalSegments));
 
-    segmentBegin = segmentEnd;
-
     m_keyChain.sign(*data, signingInfo);
+
+    segmentBegin = segmentEnd;
 
     // Put on face only the segment which has a pending interest
     // otherwise the segment is unsolicited
@@ -99,7 +98,6 @@ bool
 SegmentPublisher::replyFromStore(const ndn::Name& interestName)
 {
   auto it = m_ims.find(interestName);
-
   if (it != nullptr) {
     m_face.put(*it);
     return true;

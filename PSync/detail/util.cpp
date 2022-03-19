@@ -119,12 +119,12 @@ murmurHash3(const void* key, size_t len, uint32_t seed)
 uint32_t
 murmurHash3(uint32_t seed, const ndn::Name& name)
 {
-  auto wire = name.wireEncode();
+  const auto& wire = name.wireEncode();
   return murmurHash3(wire.value(), wire.value_size(), seed);
 }
 
 std::shared_ptr<ndn::Buffer>
-compress(CompressionScheme scheme, const uint8_t* buffer, size_t bufferSize)
+compress(CompressionScheme scheme, ndn::span<const uint8_t> buffer)
 {
   ndn::OBufferStream out;
   bio::filtering_streambuf<bio::input> in;
@@ -173,14 +173,14 @@ compress(CompressionScheme scheme, const uint8_t* buffer, size_t bufferSize)
     case CompressionScheme::NONE:
       break;
   }
-  in.push(bio::array_source(reinterpret_cast<const char*>(buffer), bufferSize));
+  in.push(bio::array_source(reinterpret_cast<const char*>(buffer.data()), buffer.size()));
   bio::copy(in, out);
 
   return out.buf();
 }
 
 std::shared_ptr<ndn::Buffer>
-decompress(CompressionScheme scheme, const uint8_t* buffer, size_t bufferSize)
+decompress(CompressionScheme scheme, ndn::span<const uint8_t> buffer)
 {
   ndn::OBufferStream out;
   bio::filtering_streambuf<bio::input> in;
@@ -229,7 +229,7 @@ decompress(CompressionScheme scheme, const uint8_t* buffer, size_t bufferSize)
     case CompressionScheme::NONE:
       break;
   }
-  in.push(bio::array_source(reinterpret_cast<const char*>(buffer), bufferSize));
+  in.push(bio::array_source(reinterpret_cast<const char*>(buffer.data()), buffer.size()));
   bio::copy(in, out);
 
   return out.buf();

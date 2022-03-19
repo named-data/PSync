@@ -127,7 +127,7 @@ private: // non-member operators
   friend std::ostream&
   operator<<(std::ostream& os, const BloomFilter& bf)
   {
-    ndn::printHex(os, bf.bit_table_.data(), bf.bit_table_.size(), false);
+    ndn::printHex(os, bf.bit_table_, false);
     return os;
   }
 

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE(OnSyncDataDecodeFailure)
   BOOST_CHECK_NO_THROW(node.onSyncData(syncInterest, badCompress));
 
   const uint8_t test[] = {'t', 'e', 's', 't'};
-  auto goodCompressBadBlock = detail::compress(node.m_contentCompression, test, sizeof(test));
+  auto goodCompressBadBlock = detail::compress(node.m_contentCompression, test);
   BOOST_CHECK_NO_THROW(node.onSyncData(syncInterest, goodCompressBadBlock));
 }
 

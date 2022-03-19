@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -56,14 +56,14 @@ BOOST_AUTO_TEST_CASE(Compression)
   const uint8_t uncompressed[] = {'t', 'e', 's', 't'};
 
   for (const auto& s : supported) {
-    BOOST_CHECK_NO_THROW(compress(s, uncompressed, sizeof(uncompressed)));
-    auto compressed = compress(s, uncompressed, sizeof(uncompressed));
-    BOOST_CHECK_NO_THROW(decompress(s, compressed->data(), compressed->size()));
+    BOOST_CHECK_NO_THROW(compress(s, uncompressed));
+    auto compressed = compress(s, uncompressed);
+    BOOST_CHECK_NO_THROW(decompress(s, *compressed));
   }
 
   for (const auto& s : notSupported) {
-    BOOST_CHECK_THROW(compress(s, uncompressed, sizeof(uncompressed)), CompressionError);
-    BOOST_CHECK_THROW(decompress(s, uncompressed, sizeof(uncompressed)), CompressionError);
+    BOOST_CHECK_THROW(compress(s, uncompressed), CompressionError);
+    BOOST_CHECK_THROW(decompress(s, uncompressed), CompressionError);
   }
 }
 

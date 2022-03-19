@@ -97,9 +97,8 @@ BOOST_AUTO_TEST_CASE(NameAppendAndExtract)
 
   Name malformedName("/test");
   auto compressed = compress(CompressionScheme::DEFAULT,
-                             malformedName.wireEncode().value(),
-                             malformedName.wireEncode().value_size());
-  malformedName.append(compressed->data(), compressed->size());
+                             malformedName.wireEncode().value_bytes());
+  malformedName.append(name::Component(std::move(compressed)));
   IBLT rcvd2(size, CompressionScheme::DEFAULT);
   BOOST_CHECK_THROW(rcvd2.initialize(malformedName.at(-1)), IBLT::Error);
 }
