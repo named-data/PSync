@@ -24,6 +24,7 @@
 #include <ndn-cxx/security/validator-null.hpp>
 #include <ndn-cxx/util/logger.hpp>
 #include <ndn-cxx/util/segment-fetcher.hpp>
+#include <ndn-cxx/lp/tags.hpp>
 
 #include <cstring>
 
@@ -116,6 +117,16 @@ FullProducer::sendSyncInterest()
   m_fetcher->onComplete.connect([this, syncInterest] (const ndn::ConstBufferPtr& bufferPtr) {
     onSyncData(syncInterest, bufferPtr);
   });
+
+  m_fetcher->afterSegmentValidated.connect([this] (const ndn::Data& data) {
+      auto tag = data.getTag<ndn::lp::IncomingFaceIdTag>();
+      if (tag) {
+        m_incomingFace = *tag;
+      }
+      else {
+        m_incomingFace = 0;
+      }
+    });
 
   m_fetcher->onError.connect([this] (uint32_t errorCode, const std::string& msg) {
     NDN_LOG_ERROR("Cannot fetch sync data, error: " << errorCode << ", message: " << msg);
@@ -295,7 +306,7 @@ FullProducer::onSyncData(const ndn::Interest& interest, const ndn::ConstBufferPt
     uint64_t seq = content.get(content.size() - 1).toNumber();
 
     if (m_prefixes.find(prefix) == m_prefixes.end() || m_prefixes[prefix] < seq) {
-      updates.push_back({prefix, m_prefixes[prefix] + 1, seq});
+      updates.push_back({prefix, m_prefixes[prefix] + 1, seq, m_incomingFace});
       updateSeqNo(prefix, seq);
       // We should not call satisfyPendingSyncInterests here because we just
       // got data and deleted pending interest by calling deletePendingFullSyncInterests

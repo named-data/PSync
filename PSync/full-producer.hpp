@@ -188,6 +188,7 @@ private:
   ndn::Name m_outstandingInterestName;
   ndn::ScopedRegisteredPrefixHandle m_registeredPrefix;
   std::shared_ptr<ndn::util::SegmentFetcher> m_fetcher;
+  uint64_t m_incomingFace = 0;
 };
 
 } // namespace psync

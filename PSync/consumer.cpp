@@ -63,7 +63,7 @@ Consumer::addSubscription(const ndn::Name& prefix, uint64_t seqNo, bool callSync
   m_bloomFilter.insert(prefix);
 
   if (callSyncDataCb && seqNo != 0) {
-    m_onUpdate({{prefix, seqNo, seqNo}});
+    m_onUpdate({{prefix, seqNo, seqNo, 0}});
   }
 
   return true;
@@ -145,7 +145,7 @@ Consumer::onHelloData(const ndn::ConstBufferPtr& bufferPtr)
     // m_prefixes (see addSubscription). So [] operator is safe to use.
     if (isSubscribed(prefix) && seq > m_prefixes[prefix]) {
       // In case we are behind on this prefix and consumer is subscribed to it
-      updates.push_back({prefix, m_prefixes[prefix] + 1, seq});
+      updates.push_back({prefix, m_prefixes[prefix] + 1, seq, 0});
       m_prefixes[prefix] = seq;
     }
     availableSubscriptions.emplace(prefix, seq);
@@ -240,7 +240,7 @@ Consumer::onSyncData(const ndn::ConstBufferPtr& bufferPtr)
     if (m_prefixes.find(prefix) == m_prefixes.end() || seq > m_prefixes[prefix]) {
       // If this is just the next seq number then we had already informed the consumer about
       // the previous sequence number and hence seq low and seq high should be equal to current seq
-      updates.push_back({prefix, m_prefixes[prefix] + 1, seq});
+      updates.push_back({prefix, m_prefixes[prefix] + 1, seq, 0});
       m_prefixes[prefix] = seq;
     }
     // Else updates will be empty and consumer will not be notified.
