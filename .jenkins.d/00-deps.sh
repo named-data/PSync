@@ -42,4 +42,8 @@ elif has Ubuntu $NODE_LABELS; then
             pip3 install --user --upgrade --upgrade-strategy=eager sphinx sphinxcontrib-doxylink
             ;;
     esac
+
+elif has CentOS $NODE_LABELS; then
+    sudo dnf -y install gcc-c++ libasan pkgconf-pkg-config python3 \
+                        boost-devel openssl-devel sqlite-devel
 fi
