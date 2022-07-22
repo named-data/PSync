@@ -65,7 +65,7 @@ FullProducer::~FullProducer()
 }
 
 void
-FullProducer::publishName(const ndn::Name& prefix, ndn::optional<uint64_t> seq)
+FullProducer::publishName(const ndn::Name& prefix, std::optional<uint64_t> seq)
 {
   if (m_prefixes.find(prefix) == m_prefixes.end()) {
     NDN_LOG_WARN("Prefix not added: " << prefix);
@@ -73,11 +73,8 @@ FullProducer::publishName(const ndn::Name& prefix, ndn::optional<uint64_t> seq)
   }
 
   uint64_t newSeq = seq.value_or(m_prefixes[prefix] + 1);
-
   NDN_LOG_INFO("Publish: " << prefix << "/" << newSeq);
-
   updateSeqNo(prefix, newSeq);
-
   satisfyPendingInterests();
 }
 
@@ -296,7 +293,6 @@ FullProducer::onSyncData(const ndn::Interest& interest, const ndn::ConstBufferPt
     NDN_LOG_ERROR("Cannot parse received sync Data: " << e.what());
     return;
   }
-
   NDN_LOG_DEBUG("Sync Data received: " << state);
 
   std::vector<MissingDataInfo> updates;

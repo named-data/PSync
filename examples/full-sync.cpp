@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -53,7 +53,7 @@ public:
   {
     // Add user prefixes and schedule updates for them in specified interval
     for (int i = 0; i < m_numDataStreams; i++) {
-      ndn::Name prefix(userPrefix + "-" + ndn::to_string(i));
+      ndn::Name prefix(userPrefix + "-" + std::to_string(i));
       m_fullProducer.addUserNode(prefix);
       m_scheduler.schedule(ndn::time::milliseconds(m_rangeUniformRandom(m_rng)),
                            [this, prefix] { doUpdate(prefix); });

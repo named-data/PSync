@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -47,7 +47,7 @@ public:
   {
     // Add user prefixes and schedule updates for them
     for (int i = 0; i < m_nDataStreams; i++) {
-      ndn::Name updateName(userPrefix + "-" + ndn::to_string(i));
+      ndn::Name updateName(userPrefix + "-" + std::to_string(i));
 
       // Add the user prefix to the producer
       // Note that this does not add the already added userPrefix-0 in the constructor

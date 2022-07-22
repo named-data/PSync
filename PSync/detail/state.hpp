@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -22,16 +22,15 @@
 
 #include <ndn-cxx/name.hpp>
 
-namespace psync {
-namespace tlv {
+namespace psync::tlv {
 
 enum {
   PSyncContent = 128
 };
 
-} // namespace tlv
+} // namespace psync::tlv
 
-namespace detail {
+namespace psync::detail {
 
 class State
 {
@@ -82,7 +81,6 @@ NDN_CXX_DECLARE_WIRE_ENCODE_INSTANTIATIONS(State);
 std::ostream&
 operator<<(std::ostream& os, const State& State);
 
-} // namespace detail
-} // namespace psync
+} // namespace psync::detail
 
 #endif // PSYNC_DETAIL_STATE_HPP

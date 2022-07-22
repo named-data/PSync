@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2021,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -79,12 +79,12 @@ public:
    *
    * @param prefix prefix to get the sequence number of
    */
-  ndn::optional<uint64_t>
+  std::optional<uint64_t>
   getSeqNo(const ndn::Name& prefix) const
   {
     auto it = m_prefixes.find(prefix);
     if (it == m_prefixes.end()) {
-      return ndn::nullopt;
+      return std::nullopt;
     }
     return it->second;
   }

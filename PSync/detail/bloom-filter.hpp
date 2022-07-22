@@ -52,8 +52,7 @@
 #include <string>
 #include <vector>
 
-namespace psync {
-namespace detail {
+namespace psync::detail {
 
 class bloom_parameters;
 
@@ -142,7 +141,6 @@ private:
   double                  desired_false_positive_probability_ = 0.0;
 };
 
-} // namespace detail
-} // namespace psync
+} // namespace psync::detail
 
 #endif // PSYNC_DETAIL_BLOOM_FILTER_HPP

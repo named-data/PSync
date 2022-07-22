@@ -34,7 +34,7 @@ BOOST_AUTO_TEST_SUITE(TestProducerBase)
 BOOST_AUTO_TEST_CASE(Constructor)
 {
   util::DummyClientFace face;
-  BOOST_REQUIRE_NO_THROW(ProducerBase(40, face, Name("/psync"), Name("/testUser")));
+  BOOST_CHECK_NO_THROW(ProducerBase(40, face, Name("/psync"), Name("/testUser")));
 }
 
 BOOST_AUTO_TEST_CASE(Basic)
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(Basic)
   BOOST_CHECK_EQUAL(prefix.getPrefix(-1), userNode);
 
   producerBase.removeUserNode(userNode);
-  BOOST_CHECK(producerBase.getSeqNo(userNode) == nullopt);
+  BOOST_CHECK(producerBase.getSeqNo(userNode) == std::nullopt);
   BOOST_CHECK(producerBase.m_biMap.right.find(prefixWithSeq) == producerBase.m_biMap.right.end());
   BOOST_CHECK(producerBase.m_biMap.left.find(hash) == producerBase.m_biMap.left.end());
 

@@ -91,9 +91,7 @@ BOOST_AUTO_TEST_CASE(NameAppendAndExtract)
   iblt2.insert(hash);
   Name ibltName2("/sync");
   iblt2.appendToName(ibltName2);
-  BOOST_CHECK_EQUAL_COLLECTIONS(IBF, IBF + sizeof(IBF),
-                                ibltName2.at(-1).wireEncode().begin(),
-                                ibltName2.at(-1).wireEncode().end());
+  BOOST_TEST(ibltName2.at(-1).wireEncode() == IBF, boost::test_tools::per_element());
 
   Name malformedName("/test");
   auto compressed = compress(CompressionScheme::DEFAULT,

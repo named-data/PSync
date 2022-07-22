@@ -54,18 +54,15 @@ PartialProducer::PartialProducer(size_t expectedNumEntries,
 }
 
 void
-PartialProducer::publishName(const ndn::Name& prefix, ndn::optional<uint64_t> seq)
+PartialProducer::publishName(const ndn::Name& prefix, std::optional<uint64_t> seq)
 {
   if (m_prefixes.find(prefix) == m_prefixes.end()) {
     return;
   }
 
   uint64_t newSeq = seq.value_or(m_prefixes[prefix] + 1);
-
   NDN_LOG_INFO("Publish: " << prefix << "/" << newSeq);
-
   updateSeqNo(prefix, newSeq);
-
   satisfyPendingSyncInterests(prefix);
 }
 

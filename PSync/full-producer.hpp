@@ -80,7 +80,7 @@ public:
    * @param seq the sequence number of the prefix
    */
   void
-  publishName(const ndn::Name& prefix, ndn::optional<uint64_t> seq = ndn::nullopt);
+  publishName(const ndn::Name& prefix, std::optional<uint64_t> seq = std::nullopt);
 
 PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   /**

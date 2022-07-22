@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-file-style: "gnu"; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2013-2020  Regents of the University of California
+ * Copyright (c) 2013-2022  Regents of the University of California
  *                          The University of Memphis
  *
  * This file is part of PSync.
@@ -22,8 +22,7 @@
 
 #include <ndn-cxx/util/time-unit-test-clock.hpp>
 
-namespace ndn {
-namespace tests {
+namespace ndn::tests {
 
 /** \brief A test fixture that overrides steady clock and system clock.
  */
@@ -77,7 +76,6 @@ protected:
   shared_ptr<time::UnitTestSystemClock> m_systemClock;
 };
 
-} // namespace tests
-} // namespace ndn
+} // namespace ndn::tests
 
 #endif // PSYNC_TESTS_CLOCK_FIXTURE_HPP

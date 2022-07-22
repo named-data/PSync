@@ -25,8 +25,7 @@
 #include <ndn-cxx/encoding/buffer.hpp>
 #include <ndn-cxx/util/span.hpp>
 
-namespace psync {
-namespace detail {
+namespace psync::detail {
 
 uint32_t
 murmurHash3(const void* key, size_t len, uint32_t seed);
@@ -49,7 +48,6 @@ compress(CompressionScheme scheme, ndn::span<const uint8_t> buffer);
 std::shared_ptr<ndn::Buffer>
 decompress(CompressionScheme scheme, ndn::span<const uint8_t> buffer);
 
-} // namespace detail
-} // namespace psync
+} // namespace psync::detail
 
 #endif // PSYNC_DETAIL_UTIL_HPP

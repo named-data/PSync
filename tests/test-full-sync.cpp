@@ -30,7 +30,6 @@
 namespace psync {
 
 using ndn::Name;
-using ndn::optional;
 using ndn::util::DummyClientFace;
 
 class FullSyncFixture : public ndn::tests::IoFixture
@@ -99,7 +98,7 @@ protected:
    * @param seq expected sequence number.
    */
   void
-  batchCheck(int id, int origin, int min, int max, optional<uint64_t> seq)
+  batchCheck(int id, int origin, int min, int max, std::optional<uint64_t> seq)
   {
     uint64_t expected = seq.value_or(NOT_EXIST);
     FullProducer& node = *nodes.at(id);
@@ -170,14 +169,12 @@ protected:
 
 protected:
   const Name syncPrefix = "/psync";
-  static const int MAX_NODES = 4;
+  static constexpr int MAX_NODES = 4;
   std::array<std::shared_ptr<DummyClientFace>, MAX_NODES> faces;
   std::array<Name, MAX_NODES> userPrefixes;
   std::array<std::shared_ptr<FullProducer>, MAX_NODES> nodes;
-  static const uint64_t NOT_EXIST = std::numeric_limits<uint64_t>::max();
+  static constexpr uint64_t NOT_EXIST = std::numeric_limits<uint64_t>::max();
 };
-
-const uint64_t FullSyncFixture::NOT_EXIST;
 
 BOOST_FIXTURE_TEST_SUITE(TestFullSync, FullSyncFixture)
 

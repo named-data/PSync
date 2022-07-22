@@ -98,8 +98,7 @@ def build(bld):
         bld.recurse('examples')
 
     headers = bld.path.ant_glob('PSync/**/*.hpp')
-    bld.install_files(bld.env.INCLUDEDIR, headers,
-                      relative_trick=True)
+    bld.install_files('${INCLUDEDIR}', headers, relative_trick=True)
 
     bld.install_files('${INCLUDEDIR}/PSync/detail',
                       bld.path.find_resource('PSync/detail/config.hpp'))

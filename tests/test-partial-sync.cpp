@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -112,7 +112,7 @@ public:
   {
     // zeroth is added through constructor
     for (int i = 1; i < numOfUserNodes; i++) {
-      producer->addUserNode(prefix + "-" + to_string(i));
+      producer->addUserNode(prefix + "-" + std::to_string(i));
     }
   }
 
@@ -291,7 +291,7 @@ BOOST_AUTO_TEST_CASE(ReplicatedProducer)
   util::DummyClientFace face2(m_io, {true, true});
   PartialProducer replicatedProducer(40, face2, syncPrefix, userPrefix);
   for (int i = 1; i < 10; i++) {
-      replicatedProducer.addUserNode("testUser-" + to_string(i));
+      replicatedProducer.addUserNode("testUser-" + std::to_string(i));
   }
   advanceClocks(ndn::time::milliseconds(10));
   replicatedProducer.publishName("testUser-2");
@@ -326,7 +326,7 @@ BOOST_AUTO_TEST_CASE(ApplicationNack)
 
   oldSeqMap = producer->m_prefixes;
   for (int i = 0; i < 50; i++) {
-    Name prefix("testUser-" + to_string(i));
+    Name prefix("testUser-" + std::to_string(i));
     producer->updateSeqNo(prefix, producer->getSeqNo(prefix).value() + 1);
   }
   // Next sync interest should trigger the nack
@@ -387,7 +387,7 @@ BOOST_AUTO_TEST_CASE(SegmentedSync)
 
   std::vector<std::string> subscribeTo;
   for (int i = 1; i < 10; i++) {
-    subscribeTo.push_back(longNameToExceedDataSize.toUri() + "-" + to_string(i));
+    subscribeTo.push_back(longNameToExceedDataSize.toUri() + "-" + std::to_string(i));
   }
   addConsumer(0, subscribeTo);
 
@@ -404,7 +404,7 @@ BOOST_AUTO_TEST_CASE(SegmentedSync)
 
   oldSeqMap = producer->m_prefixes;
   for (int i = 1; i < 10; i++) {
-    producer->updateSeqNo(longNameToExceedDataSize.toUri() + "-" + to_string(i), 1);
+    producer->updateSeqNo(longNameToExceedDataSize.toUri() + "-" + std::to_string(i), 1);
   }
 
   advanceClocks(ndn::time::milliseconds(999));

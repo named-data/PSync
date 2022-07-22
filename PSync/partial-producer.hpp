@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2021,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -76,7 +76,7 @@ public:
    * @param seq the sequence number of the prefix
    */
   void
-  publishName(const ndn::Name& prefix, ndn::optional<uint64_t> seq = ndn::nullopt);
+  publishName(const ndn::Name& prefix, std::optional<uint64_t> seq = std::nullopt);
 
 private:
   /**

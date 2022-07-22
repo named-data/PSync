@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -22,8 +22,7 @@
 #include <ndn-cxx/util/exception.hpp>
 #include <ndn-cxx/util/ostream-joiner.hpp>
 
-namespace psync {
-namespace detail {
+namespace psync::detail {
 
 State::State(const ndn::Block& block)
 {
@@ -76,8 +75,7 @@ void
 State::wireDecode(const ndn::Block& wire)
 {
   if (wire.type() != tlv::PSyncContent) {
-    NDN_THROW(ndn::tlv::Error("Expected PSyncContent element, but TLV has type " +
-                              ndn::to_string(wire.type())));
+    NDN_THROW(ndn::tlv::Error("PSyncContent", wire.type()));
   }
 
   m_content.clear();
@@ -90,8 +88,7 @@ State::wireDecode(const ndn::Block& wire)
       m_content.emplace_back(*it);
     }
     else {
-      NDN_THROW(ndn::tlv::Error("Expected Name element, but TLV has type " +
-                                ndn::to_string(it->type())));
+      NDN_THROW(ndn::tlv::Error("Name", it->type()));
     }
   }
 }
@@ -108,5 +105,4 @@ operator<<(std::ostream& os, const State& state)
   return os;
 }
 
-} // namespace detail
-} // namespace psync
+} // namespace psync::detail

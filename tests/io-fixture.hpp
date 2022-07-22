@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-file-style: "gnu"; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2013-2020  Regents of the University of California
+ * Copyright (c) 2013-2022  Regents of the University of California
  *                          The University of Memphis
  *
  * This file is part of PSync.
@@ -24,8 +24,7 @@
 
 #include <boost/asio/io_service.hpp>
 
-namespace ndn {
-namespace tests {
+namespace ndn::tests {
 
 class IoFixture : public ClockFixture
 {
@@ -47,7 +46,6 @@ protected:
   boost::asio::io_service m_io;
 };
 
-} // namespace tests
-} // namespace ndn
+} // namespace ndn::tests
 
 #endif // PSYNC_TESTS_IO_FIXTURE_HPP

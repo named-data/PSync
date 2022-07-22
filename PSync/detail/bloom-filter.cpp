@@ -53,8 +53,7 @@
 #include <cstdlib>
 #include <limits>
 
-namespace psync {
-namespace detail {
+namespace psync::detail {
 
 // https://github.com/ArashPartow/bloom
 
@@ -376,5 +375,4 @@ BloomFilter::generate_unique_salt()
   }
 }
 
-} // namespace detail
-} // namespace psync
+} // namespace psync::detail

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -53,8 +53,7 @@
 #include <set>
 #include <string>
 
-namespace psync {
-namespace detail {
+namespace psync::detail {
 
 class HashTableEntry
 {
@@ -162,8 +161,8 @@ private:
 
 private:
   std::vector<HashTableEntry> m_hashTable;
-  static const int INSERT = 1;
-  static const int ERASE = -1;
+  static constexpr int INSERT = 1;
+  static constexpr int ERASE = -1;
   CompressionScheme m_compressionScheme;
 };
 
@@ -176,7 +175,6 @@ operator!=(const IBLT& iblt1, const IBLT& iblt2);
 std::ostream&
 operator<<(std::ostream& os, const IBLT& iblt);
 
-} // namespace detail
-} // namespace psync
+} // namespace psync::detail
 
 #endif // PSYNC_DETAIL_IBLT_HPP

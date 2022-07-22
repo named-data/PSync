@@ -48,8 +48,7 @@
 
 #include <ndn-cxx/util/exception.hpp>
 
-namespace psync {
-namespace detail {
+namespace psync::detail {
 
 namespace be = boost::endian;
 
@@ -267,5 +266,4 @@ operator<<(std::ostream& os, const IBLT& iblt)
   return os;
 }
 
-} // namespace detail
-} // namespace psync
+} // namespace psync::detail
