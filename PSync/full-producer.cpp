@@ -32,8 +32,9 @@ namespace psync {
 
 NDN_LOG_INIT(psync.FullProducer);
 
-FullProducer::FullProducer(const size_t expectedNumEntries,
-                           ndn::Face& face,
+FullProducer::FullProducer(ndn::Face& face,
+                           ndn::KeyChain& keyChain,
+                           size_t expectedNumEntries,
                            const ndn::Name& syncPrefix,
                            const ndn::Name& userPrefix,
                            const UpdateCallback& onUpdateCallBack,
@@ -41,8 +42,8 @@ FullProducer::FullProducer(const size_t expectedNumEntries,
                            ndn::time::milliseconds syncReplyFreshness,
                            CompressionScheme ibltCompression,
                            CompressionScheme contentCompression)
-  : ProducerBase(expectedNumEntries, face, syncPrefix, userPrefix, syncReplyFreshness,
-                 ibltCompression, contentCompression)
+  : ProducerBase(face, keyChain, expectedNumEntries, syncPrefix, userPrefix,
+                 syncReplyFreshness, ibltCompression, contentCompression)
   , m_syncInterestLifetime(syncInterestLifetime)
   , m_onUpdate(onUpdateCallBack)
   , m_jitter(100, 500)

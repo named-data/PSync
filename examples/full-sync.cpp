@@ -20,6 +20,7 @@
 #include <PSync/full-producer.hpp>
 
 #include <ndn-cxx/face.hpp>
+#include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/util/logger.hpp>
 #include <ndn-cxx/util/random.hpp>
 #include <ndn-cxx/util/scheduler.hpp>
@@ -42,17 +43,15 @@ public:
    */
   Producer(const ndn::Name& syncPrefix, const std::string& userPrefix,
            int numDataStreams, int maxNumPublish)
-    : m_scheduler(m_face.getIoService())
-    , m_fullProducer(80, m_face, syncPrefix, userPrefix,
+    : m_fullProducer(m_face, m_keyChain, 80, syncPrefix, userPrefix,
                      std::bind(&Producer::processSyncUpdate, this, _1),
                      1600_ms, 1600_ms)
-    , m_numDataStreams(numDataStreams)
     , m_maxNumPublish(maxNumPublish)
     , m_rng(ndn::random::getRandomNumberEngine())
     , m_rangeUniformRandom(0, 60000)
   {
     // Add user prefixes and schedule updates for them in specified interval
-    for (int i = 0; i < m_numDataStreams; i++) {
+    for (int i = 0; i < numDataStreams; i++) {
       ndn::Name prefix(userPrefix + "-" + std::to_string(i));
       m_fullProducer.addUserNode(prefix);
       m_scheduler.schedule(ndn::time::milliseconds(m_rangeUniformRandom(m_rng)),
@@ -93,11 +92,10 @@ private:
 
 private:
   ndn::Face m_face;
-  ndn::Scheduler m_scheduler;
+  ndn::KeyChain m_keyChain;
+  ndn::Scheduler m_scheduler{m_face.getIoService()};
 
   psync::FullProducer m_fullProducer;
-
-  int m_numDataStreams;
   uint64_t m_maxNumPublish;
 
   ndn::random::RandomNumberEngine& m_rng;

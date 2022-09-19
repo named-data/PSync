@@ -42,12 +42,13 @@ class FullProducer : public ProducerBase
 {
 public:
   /**
-   * @brief constructor
+   * @brief Constructor
    *
-   * Registers syncPrefix in NFD and sends a sync interest
+   * Registers syncPrefix in NFD and sends a sync interest.
    *
-   * @param expectedNumEntries expected entries in IBF
-   * @param face application's face
+   * @param face Application's face
+   * @param keyChain KeyChain instance to use for signing
+   * @param expectedNumEntries Expected number of entries in IBF
    * @param syncPrefix The prefix of the sync group
    * @param userPrefix The prefix of the first user in the group
    * @param onUpdateCallBack The call back to be called when there is new data
@@ -56,8 +57,9 @@ public:
    * @param ibltCompression Compression scheme to use for IBF
    * @param contentCompression Compression scheme to use for Data content
    */
-  FullProducer(size_t expectedNumEntries,
-               ndn::Face& face,
+  FullProducer(ndn::Face& face,
+               ndn::KeyChain& keyChain,
+               size_t expectedNumEntries,
                const ndn::Name& syncPrefix,
                const ndn::Name& userPrefix,
                const UpdateCallback& onUpdateCallBack,

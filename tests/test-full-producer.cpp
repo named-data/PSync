@@ -22,55 +22,50 @@
 
 #include "tests/boost-test.hpp"
 #include "tests/io-fixture.hpp"
+#include "tests/key-chain-fixture.hpp"
 
-#include <ndn-cxx/mgmt/nfd/control-parameters.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace psync {
 
 using namespace ndn;
 
-BOOST_AUTO_TEST_SUITE(TestFullProducer)
-
-BOOST_AUTO_TEST_CASE(Constructor)
+class FullProducerFixture : public tests::IoFixture, public tests::KeyChainFixture
 {
-  util::DummyClientFace face({true, true});
-  BOOST_CHECK_NO_THROW(FullProducer(40, face, Name("/psync"), Name("/testUser"), nullptr));
-}
+protected:
+  util::DummyClientFace m_face{m_io, m_keyChain, {true, true}};
+};
+
+BOOST_FIXTURE_TEST_SUITE(TestFullProducer, FullProducerFixture)
 
 BOOST_AUTO_TEST_CASE(OnInterest)
 {
   Name syncPrefix("/psync"), userNode("/testUser");
-  util::DummyClientFace face({true, true});
-
-  FullProducer node(40, face, syncPrefix, userNode, nullptr);
+  FullProducer node(m_face, m_keyChain, 40, syncPrefix, userNode, nullptr);
 
   Name syncInterestName(syncPrefix);
   syncInterestName.append("malicious-IBF");
 
-  BOOST_REQUIRE_NO_THROW(node.onSyncInterest(syncPrefix, Interest(syncInterestName)));
+  BOOST_CHECK_NO_THROW(node.onSyncInterest(syncPrefix, Interest(syncInterestName)));
 }
 
-BOOST_FIXTURE_TEST_CASE(ConstantTimeoutForFirstSegment, tests::IoFixture)
+BOOST_AUTO_TEST_CASE(ConstantTimeoutForFirstSegment)
 {
   Name syncPrefix("/psync"), userNode("/testUser");
-  util::DummyClientFace face(m_io, {true, true});
+  FullProducer node(m_face, m_keyChain, 40, syncPrefix, userNode, nullptr, 8_s);
 
-  FullProducer node(40, face, syncPrefix, userNode, nullptr, 8_s);
   advanceClocks(10_ms);
-  face.sentInterests.clear();
+  m_face.sentInterests.clear();
 
   // full sync sends the next one in interest lifetime / 2 +- jitter
   advanceClocks(6_s);
-  BOOST_CHECK_EQUAL(face.sentInterests.size(), 1);
+  BOOST_CHECK_EQUAL(m_face.sentInterests.size(), 1);
 }
 
 BOOST_AUTO_TEST_CASE(OnSyncDataDecodeFailure)
 {
   Name syncPrefix("/psync"), userNode("/testUser");
-  util::DummyClientFace face({true, true});
-
-  FullProducer node(40, face, syncPrefix, userNode, nullptr);
+  FullProducer node(m_face, m_keyChain, 40, syncPrefix, userNode, nullptr);
 
   Name syncInterestName(syncPrefix);
   node.m_iblt.appendToName(syncInterestName);

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -20,8 +20,8 @@
 #include "PSync/partial-producer.hpp"
 
 #include "tests/boost-test.hpp"
+#include "tests/key-chain-fixture.hpp"
 
-#include <ndn-cxx/name.hpp>
 #include <ndn-cxx/mgmt/nfd/control-parameters.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
@@ -29,24 +29,23 @@ namespace psync {
 
 using namespace ndn;
 
-BOOST_AUTO_TEST_SUITE(TestPartialProducer)
-
-BOOST_AUTO_TEST_CASE(Constructor)
+class PartialProducerFixture : public tests::KeyChainFixture
 {
-  util::DummyClientFace face({true, true});
-  BOOST_CHECK_NO_THROW(PartialProducer(40, face, Name("/psync"), Name("/testUser")));
-}
+protected:
+  util::DummyClientFace m_face{m_keyChain, {true, true}};
+};
+
+BOOST_FIXTURE_TEST_SUITE(TestPartialProducer, PartialProducerFixture)
 
 BOOST_AUTO_TEST_CASE(RegisterPrefix)
 {
   Name syncPrefix("/psync"), userNode("/testUser");
-  util::DummyClientFace face({true, true});
-  PartialProducer producer(40, face, syncPrefix, userNode);
+  PartialProducer producer(m_face, m_keyChain, 40, syncPrefix, userNode);
 
-  face.processEvents(-1_ms);
+  m_face.processEvents(-1_ms);
 
-  BOOST_REQUIRE_EQUAL(face.sentInterests.size(), 1);
-  auto interest = face.sentInterests.front();
+  BOOST_REQUIRE_EQUAL(m_face.sentInterests.size(), 1);
+  auto interest = m_face.sentInterests.front();
   BOOST_CHECK_EQUAL(interest.getName().at(3), name::Component("register"));
   nfd::ControlParameters params(interest.getName().at(4).blockFromValue());
   BOOST_CHECK_EQUAL(params.getName(), syncPrefix);
@@ -55,8 +54,7 @@ BOOST_AUTO_TEST_CASE(RegisterPrefix)
 BOOST_AUTO_TEST_CASE(PublishName)
 {
   Name syncPrefix("/psync"), userNode("/testUser"), nonUser("/testUser2");
-  util::DummyClientFace face({true, true});
-  PartialProducer producer(40, face, syncPrefix, userNode);
+  PartialProducer producer(m_face, m_keyChain, 40, syncPrefix, userNode);
 
   BOOST_CHECK_EQUAL(producer.getSeqNo(userNode).value_or(-1), 0);
   producer.publishName(userNode);
@@ -75,8 +73,7 @@ BOOST_AUTO_TEST_CASE(PublishName)
 BOOST_AUTO_TEST_CASE(SameSyncInterest)
 {
   Name syncPrefix("/psync"), userNode("/testUser");
-  util::DummyClientFace face({true, true});
-  PartialProducer producer(40, face, syncPrefix, userNode);
+  PartialProducer producer(m_face, m_keyChain, 40, syncPrefix, userNode);
 
   Name syncInterestName(syncPrefix);
   syncInterestName.append("sync");
@@ -91,29 +88,28 @@ BOOST_AUTO_TEST_CASE(SameSyncInterest)
   syncInterest.setInterestLifetime(1_s);
   syncInterest.setNonce(1);
   BOOST_CHECK_NO_THROW(producer.onSyncInterest(syncInterestPrefix, syncInterest));
-  face.processEvents(10_ms);
+  m_face.processEvents(10_ms);
   BOOST_CHECK_EQUAL(producer.m_pendingEntries.size(), 1);
 
-  face.processEvents(500_ms);
+  m_face.processEvents(500_ms);
 
   // Same interest again - size of pending interest should remain same, but expirationEvent should change
   syncInterest.setNonce(2);
   BOOST_CHECK_NO_THROW(producer.onSyncInterest(syncInterestPrefix, syncInterest));
-  face.processEvents(10_ms);
+  m_face.processEvents(10_ms);
   BOOST_CHECK_EQUAL(producer.m_pendingEntries.size(), 1);
 
-  face.processEvents(500_ms);
+  m_face.processEvents(500_ms);
   BOOST_CHECK_EQUAL(producer.m_pendingEntries.size(), 1);
 
-  face.processEvents(500_ms);
+  m_face.processEvents(500_ms);
   BOOST_CHECK_EQUAL(producer.m_pendingEntries.size(), 0);
 }
 
 BOOST_AUTO_TEST_CASE(OnSyncInterest)
 {
   Name syncPrefix("/psync"), userNode("/testUser");
-  util::DummyClientFace face({true, true});
-  PartialProducer producer(40, face, syncPrefix, userNode);
+  PartialProducer producer(m_face, m_keyChain, 40, syncPrefix, userNode);
 
   // Sync interest with no bloom filter attached
   Name syncInterestName(syncPrefix);

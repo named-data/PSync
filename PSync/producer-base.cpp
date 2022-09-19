@@ -30,23 +30,25 @@ namespace psync {
 
 NDN_LOG_INIT(psync.ProducerBase);
 
-ProducerBase::ProducerBase(size_t expectedNumEntries,
-                           ndn::Face& face,
+ProducerBase::ProducerBase(ndn::Face& face,
+                           ndn::KeyChain& keyChain,
+                           size_t expectedNumEntries,
                            const ndn::Name& syncPrefix,
                            const ndn::Name& userPrefix,
                            ndn::time::milliseconds syncReplyFreshness,
                            CompressionScheme ibltCompression,
                            CompressionScheme contentCompression)
-  : m_iblt(expectedNumEntries, ibltCompression)
+  : m_face(face)
+  , m_keyChain(keyChain)
+  , m_scheduler(m_face.getIoService())
+  , m_rng(ndn::random::getRandomNumberEngine())
+  , m_iblt(expectedNumEntries, ibltCompression)
+  , m_segmentPublisher(m_face, m_keyChain)
   , m_expectedNumEntries(expectedNumEntries)
   , m_threshold(expectedNumEntries / 2)
-  , m_face(face)
-  , m_scheduler(m_face.getIoService())
   , m_syncPrefix(syncPrefix)
   , m_userPrefix(userPrefix)
   , m_syncReplyFreshness(syncReplyFreshness)
-  , m_segmentPublisher(m_face, m_keyChain)
-  , m_rng(ndn::random::getRandomNumberEngine())
   , m_ibltCompression(ibltCompression)
   , m_contentCompression(contentCompression)
 {

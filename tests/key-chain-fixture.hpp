@@ -1,7 +1,6 @@
-/* -*- Mode: C++; c-file-style: "gnu"; indent-tabs-mode:nil -*- */
+/* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2022  Regents of the University of California
- *                          The University of Memphis
+ * Copyright (c) 2013-2022 Regents of the University of California.
  *
  * This file is part of PSync.
  *
@@ -17,35 +16,22 @@
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PSYNC_TESTS_IO_FIXTURE_HPP
-#define PSYNC_TESTS_IO_FIXTURE_HPP
+#ifndef PSYNC_TESTS_KEY_CHAIN_FIXTURE_HPP
+#define PSYNC_TESTS_KEY_CHAIN_FIXTURE_HPP
 
-#include "tests/clock-fixture.hpp"
-
-#include <boost/asio/io_service.hpp>
+#include <ndn-cxx/security/key-chain.hpp>
 
 namespace psync::tests {
 
-class IoFixture : public ClockFixture
+/**
+ * @brief A fixture providing an in-memory KeyChain.
+ */
+class KeyChainFixture
 {
-private:
-  void
-  afterTick() final
-  {
-    if (m_io.stopped()) {
-#if BOOST_VERSION >= 106600
-      m_io.restart();
-#else
-      m_io.reset();
-#endif
-    }
-    m_io.poll();
-  }
-
 protected:
-  boost::asio::io_service m_io;
+  ndn::KeyChain m_keyChain{"pib-memory:", "tpm-memory:"};
 };
 
 } // namespace psync::tests
 
-#endif // PSYNC_TESTS_IO_FIXTURE_HPP
+#endif // PSYNC_TESTS_KEY_CHAIN_FIXTURE_HPP

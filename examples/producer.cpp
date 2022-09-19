@@ -20,6 +20,7 @@
 #include <PSync/partial-producer.hpp>
 
 #include <ndn-cxx/face.hpp>
+#include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/util/logger.hpp>
 #include <ndn-cxx/util/random.hpp>
 #include <ndn-cxx/util/scheduler.hpp>
@@ -37,16 +38,14 @@ public:
    * IBF size is set to 40 in m_producer as the expected number of update to IBF in a sync cycle
    */
   PSyncPartialProducer(const ndn::Name& syncPrefix, const std::string& userPrefix,
-                       int nDataStreams, int maxNumPublish)
-    : m_scheduler(m_face.getIoService())
-    , m_producer(40, m_face, syncPrefix, userPrefix + "-0")
-    , m_nDataStreams(nDataStreams)
+                       int numDataStreams, int maxNumPublish)
+    : m_producer(m_face, m_keyChain, 40, syncPrefix, userPrefix + "-0")
     , m_maxNumPublish(maxNumPublish)
     , m_rng(ndn::random::getRandomNumberEngine())
     , m_rangeUniformRandom(0, 60000)
   {
     // Add user prefixes and schedule updates for them
-    for (int i = 0; i < m_nDataStreams; i++) {
+    for (int i = 0; i < numDataStreams; i++) {
       ndn::Name updateName(userPrefix + "-" + std::to_string(i));
 
       // Add the user prefix to the producer
@@ -84,11 +83,10 @@ private:
 
 private:
   ndn::Face m_face;
-  ndn::Scheduler m_scheduler;
+  ndn::KeyChain m_keyChain;
+  ndn::Scheduler m_scheduler{m_face.getIoService()};
 
   psync::PartialProducer m_producer;
-
-  int m_nDataStreams;
   uint64_t m_maxNumPublish;
 
   ndn::random::RandomNumberEngine& m_rng;

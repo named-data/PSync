@@ -19,11 +19,11 @@
 
 #include "tests/clock-fixture.hpp"
 
-namespace ndn::tests {
+namespace psync::tests {
 
 ClockFixture::ClockFixture()
-  : m_steadyClock(make_shared<time::UnitTestSteadyClock>())
-  , m_systemClock(make_shared<time::UnitTestSystemClock>())
+  : m_steadyClock(std::make_shared<time::UnitTestSteadyClock>())
+  , m_systemClock(std::make_shared<time::UnitTestSystemClock>())
 {
   time::setCustomClocks(m_steadyClock, m_systemClock);
 }
@@ -49,4 +49,4 @@ ClockFixture::advanceClocks(time::nanoseconds tick, time::nanoseconds total)
   }
 }
 
-} // namespace ndn::tests
+} // namespace psync::tests

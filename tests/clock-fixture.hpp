@@ -22,7 +22,9 @@
 
 #include <ndn-cxx/util/time-unit-test-clock.hpp>
 
-namespace ndn::tests {
+namespace psync::tests {
+
+namespace time = ndn::time;
 
 /** \brief A test fixture that overrides steady clock and system clock.
  */
@@ -72,10 +74,10 @@ private:
   }
 
 protected:
-  shared_ptr<time::UnitTestSteadyClock> m_steadyClock;
-  shared_ptr<time::UnitTestSystemClock> m_systemClock;
+  std::shared_ptr<time::UnitTestSteadyClock> m_steadyClock;
+  std::shared_ptr<time::UnitTestSystemClock> m_systemClock;
 };
 
-} // namespace ndn::tests
+} // namespace psync::tests
 
 #endif // PSYNC_TESTS_CLOCK_FIXTURE_HPP

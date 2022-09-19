@@ -22,6 +22,7 @@
 
 #include "tests/boost-test.hpp"
 #include "tests/io-fixture.hpp"
+#include "tests/key-chain-fixture.hpp"
 
 #include <ndn-cxx/name.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>
@@ -30,12 +31,12 @@ namespace psync {
 
 using namespace ndn;
 
-class PartialSyncFixture : public tests::IoFixture
+class PartialSyncFixture : public tests::IoFixture, public tests::KeyChainFixture
 {
 public:
   PartialSyncFixture()
   {
-    producer = make_shared<PartialProducer>(40, face, syncPrefix, userPrefix);
+    producer = make_shared<PartialProducer>(face, m_keyChain, 40, syncPrefix, userPrefix);
     addUserNodes("testUser", 10);
   }
 
@@ -51,9 +52,8 @@ public:
   void
   addConsumer(int id, const std::vector<std::string>& subscribeTo, bool linkToProducer = true)
   {
-    consumerFaces[id] =
-        std::make_shared<util::DummyClientFace>(m_io, util::DummyClientFace::Options{true, true});
-
+    consumerFaces[id] = std::make_shared<util::DummyClientFace>(m_io, m_keyChain,
+                                                                util::DummyClientFace::Options{true, true});
     if (linkToProducer) {
       face.linkTo(*consumerFaces[id]);
     }
@@ -131,7 +131,8 @@ public:
     producer->updateSeqNo(prefix, seq);
   }
 
-  util::DummyClientFace face{m_io, {true, true}};
+protected:
+  util::DummyClientFace face{m_io, m_keyChain, {true, true}};
   Name syncPrefix{"psync"};
   Name userPrefix{"testUser-0"};
 
@@ -288,8 +289,8 @@ BOOST_AUTO_TEST_CASE(ReplicatedProducer)
   // Link to first producer goes down
   face.unlink();
 
-  util::DummyClientFace face2(m_io, {true, true});
-  PartialProducer replicatedProducer(40, face2, syncPrefix, userPrefix);
+  util::DummyClientFace face2(m_io, m_keyChain, {true, true});
+  PartialProducer replicatedProducer(face2, m_keyChain, 40, syncPrefix, userPrefix);
   for (int i = 1; i < 10; i++) {
       replicatedProducer.addUserNode("testUser-" + std::to_string(i));
   }

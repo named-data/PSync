@@ -24,24 +24,26 @@
 
 #include "tests/boost-test.hpp"
 #include "tests/io-fixture.hpp"
+#include "tests/key-chain-fixture.hpp"
 
+#include <array>
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace psync {
 
-using ndn::Name;
-using ndn::util::DummyClientFace;
+using namespace ndn;
 
-class FullSyncFixture : public ndn::tests::IoFixture
+class FullSyncFixture : public tests::IoFixture, public tests::KeyChainFixture
 {
 protected:
   void
   addNode(int id)
   {
     BOOST_ASSERT(id >= 0 && id < MAX_NODES);
-    faces[id] = std::make_shared<DummyClientFace>(m_io, DummyClientFace::Options{true, true});
     userPrefixes[id] = "/userPrefix" + std::to_string(id);
-    nodes[id] = std::make_shared<FullProducer>(40, *faces[id], syncPrefix, userPrefixes[id],
+    faces[id] = std::make_shared<util::DummyClientFace>(m_io, m_keyChain,
+                                                        util::DummyClientFace::Options{true, true});
+    nodes[id] = std::make_shared<FullProducer>(*faces[id], m_keyChain, 40, syncPrefix, userPrefixes[id],
                                                [] (const auto&) {});
   }
 
@@ -170,8 +172,8 @@ protected:
 protected:
   const Name syncPrefix = "/psync";
   static constexpr int MAX_NODES = 4;
-  std::array<std::shared_ptr<DummyClientFace>, MAX_NODES> faces;
   std::array<Name, MAX_NODES> userPrefixes;
+  std::array<std::shared_ptr<util::DummyClientFace>, MAX_NODES> faces;
   std::array<std::shared_ptr<FullProducer>, MAX_NODES> nodes;
   static constexpr uint64_t NOT_EXIST = std::numeric_limits<uint64_t>::max();
 };

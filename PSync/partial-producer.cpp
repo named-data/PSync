@@ -32,16 +32,17 @@ NDN_LOG_INIT(psync.PartialProducer);
 const ndn::name::Component HELLO{"hello"};
 const ndn::name::Component SYNC{"sync"};
 
-PartialProducer::PartialProducer(size_t expectedNumEntries,
-                                 ndn::Face& face,
+PartialProducer::PartialProducer(ndn::Face& face,
+                                 ndn::KeyChain& keyChain,
+                                 size_t expectedNumEntries,
                                  const ndn::Name& syncPrefix,
                                  const ndn::Name& userPrefix,
                                  ndn::time::milliseconds helloReplyFreshness,
                                  ndn::time::milliseconds syncReplyFreshness,
                                  CompressionScheme ibltCompression)
- : ProducerBase(expectedNumEntries, face, syncPrefix,
-                userPrefix, syncReplyFreshness, ibltCompression)
- , m_helloReplyFreshness(helloReplyFreshness)
+  : ProducerBase(face, keyChain, expectedNumEntries, syncPrefix, userPrefix,
+                 syncReplyFreshness, ibltCompression, CompressionScheme::NONE)
+  , m_helloReplyFreshness(helloReplyFreshness)
 {
   m_registeredPrefix = m_face.registerPrefix(m_syncPrefix,
     [this] (const ndn::Name& syncPrefix) {

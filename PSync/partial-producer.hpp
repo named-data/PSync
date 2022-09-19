@@ -43,21 +43,23 @@ class PartialProducer : public ProducerBase
 {
 public:
   /**
-   * @brief constructor
+   * @brief Constructor
    *
    * Registers syncPrefix in NFD and sets internal filters for
-   * "sync" and "hello" under syncPrefix
+   * "sync" and "hello" under syncPrefix.
    *
-   * @param expectedNumEntries expected entries in IBF
-   * @param face application's face
+   * @param face Application's face
+   * @param keyChain KeyChain instance to use for signing
+   * @param expectedNumEntries Expected number of entries in IBF
    * @param syncPrefix The prefix of the sync group
    * @param userPrefix The prefix of the first user in the group
    * @param syncReplyFreshness freshness of sync data
    * @param helloReplyFreshness freshness of hello data
    * @param ibltCompression Compression scheme to use for IBF
    */
-  PartialProducer(size_t expectedNumEntries,
-                  ndn::Face& face,
+  PartialProducer(ndn::Face& face,
+                  ndn::KeyChain& keyChain,
+                  size_t expectedNumEntries,
                   const ndn::Name& syncPrefix,
                   const ndn::Name& userPrefix,
                   ndn::time::milliseconds helloReplyFreshness = HELLO_REPLY_FRESHNESS,

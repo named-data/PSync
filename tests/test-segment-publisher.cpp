@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -22,9 +22,8 @@
 
 #include "tests/boost-test.hpp"
 #include "tests/io-fixture.hpp"
+#include "tests/key-chain-fixture.hpp"
 
-#include <ndn-cxx/data.hpp>
-#include <ndn-cxx/interest.hpp>
 #include <ndn-cxx/security/validator-null.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>
 #include <ndn-cxx/util/segment-fetcher.hpp>
@@ -33,16 +32,14 @@ namespace psync {
 
 using namespace ndn;
 
-class SegmentPublisherFixture : public tests::IoFixture
+class SegmentPublisherFixture : public tests::IoFixture, public tests::KeyChainFixture
 {
-public:
+protected:
   SegmentPublisherFixture()
-    : face(m_io, util::DummyClientFace::Options{true, true})
-    , publisher(face, keyChain)
   {
-    face.setInterestFilter(InterestFilter("/hello/world"),
-                           bind(&SegmentPublisherFixture::onInterest, this, _1, _2),
-                           [] (auto&&...) { BOOST_CHECK(false); });
+    m_face.setInterestFilter(InterestFilter("/hello/world"),
+                             bind(&SegmentPublisherFixture::onInterest, this, _1, _2),
+                             [] (auto&&...) { BOOST_CHECK(false); });
     advanceClocks(10_ms);
 
     for (int i = 0; i < 1000; ++i) {
@@ -58,7 +55,7 @@ public:
   void
   expressInterest(const Interest& interest)
   {
-    fetcher = util::SegmentFetcher::start(face, interest, security::getAcceptAllValidator());
+    fetcher = util::SegmentFetcher::start(m_face, interest, security::getAcceptAllValidator());
     fetcher->onComplete.connect([this] (auto&&...) { numComplete++; });
     fetcher->onError.connect([] (auto&&...) { BOOST_CHECK(false); });
 
@@ -82,16 +79,17 @@ public:
     }
   }
 
-  util::DummyClientFace face;
-  KeyChain keyChain;
-  SegmentPublisher publisher;
+protected:
+  util::DummyClientFace m_face{m_io, m_keyChain, {true, true}};
+  SegmentPublisher publisher{m_face, m_keyChain};
   shared_ptr<util::SegmentFetcher> fetcher;
   Name dataName;
-  time::milliseconds freshness = 1_s;
   detail::State state;
 
   int numComplete = 0;
   int numRepliesFromStore = 0;
+
+  static constexpr time::milliseconds freshness = 1_s;
 };
 
 BOOST_FIXTURE_TEST_SUITE(TestSegmentPublisher, SegmentPublisherFixture)
@@ -120,10 +118,10 @@ BOOST_AUTO_TEST_CASE(Basic)
   BOOST_CHECK_EQUAL(numRepliesFromStore, 2);
 
   numRepliesFromStore = 0;
-  face.expressInterest(Interest("/hello/world/").setCanBePrefix(true),
-                       [this] (auto&&...) { this->numComplete++; },
-                       [] (auto&&...) { BOOST_CHECK(false); },
-                       [] (auto&&...) { BOOST_CHECK(false); });
+  m_face.expressInterest(Interest("/hello/world/").setCanBePrefix(true),
+                         [this] (auto&&...) { this->numComplete++; },
+                         [] (auto&&...) { BOOST_CHECK(false); },
+                         [] (auto&&...) { BOOST_CHECK(false); });
   advanceClocks(10_ms);
   BOOST_CHECK_EQUAL(numComplete, 4);
   BOOST_CHECK_EQUAL(numRepliesFromStore, 1);

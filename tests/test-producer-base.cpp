@@ -20,28 +20,27 @@
 #include "PSync/producer-base.hpp"
 
 #include "tests/boost-test.hpp"
+#include "tests/key-chain-fixture.hpp"
 
-#include <ndn-cxx/data.hpp>
-#include <ndn-cxx/interest.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace psync {
 
 using namespace ndn;
 
-BOOST_AUTO_TEST_SUITE(TestProducerBase)
-
-BOOST_AUTO_TEST_CASE(Constructor)
+class ProducerBaseFixture : public tests::KeyChainFixture
 {
-  util::DummyClientFace face;
-  BOOST_CHECK_NO_THROW(ProducerBase(40, face, Name("/psync"), Name("/testUser")));
-}
+protected:
+  util::DummyClientFace m_face;
+};
+
+BOOST_FIXTURE_TEST_SUITE(TestProducerBase, ProducerBaseFixture)
 
 BOOST_AUTO_TEST_CASE(Basic)
 {
-  util::DummyClientFace face;
   Name userNode("/testUser");
-  ProducerBase producerBase(40, face, Name("/psync"), userNode);
+  ProducerBase producerBase(m_face, m_keyChain, 40, Name("/psync"), userNode);
+
   // Hash table size should be 40 + 40/2 = 60 (which is perfectly divisible by N_HASH = 3)
   BOOST_CHECK_EQUAL(producerBase.m_iblt.getHashTable().size(), 60);
   BOOST_CHECK_EQUAL(producerBase.getSeqNo(userNode).value(), 0);
@@ -67,16 +66,14 @@ BOOST_AUTO_TEST_CASE(Basic)
 
 BOOST_AUTO_TEST_CASE(ApplicationNack)
 {
-  util::DummyClientFace face;
-  ProducerBase producerBase(40, face, Name("/psync"), Name("/testUser"));
+  ProducerBase producerBase(m_face, m_keyChain, 40, Name("/psync"), Name("/testUser"));
 
-  BOOST_CHECK_EQUAL(face.sentData.size(), 0);
-  producerBase.m_syncReplyFreshness = 1_s;
+  BOOST_CHECK_EQUAL(m_face.sentData.size(), 0);
   producerBase.sendApplicationNack(Name("test"));
-  face.processEvents(10_ms);
+  m_face.processEvents(10_ms);
 
-  BOOST_REQUIRE_EQUAL(face.sentData.size(), 1);
-  BOOST_CHECK_EQUAL(face.sentData.front().getContentType(), tlv::ContentType_Nack);
+  BOOST_REQUIRE_EQUAL(m_face.sentData.size(), 1);
+  BOOST_CHECK_EQUAL(m_face.sentData.front().getContentType(), tlv::ContentType_Nack);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -56,23 +56,26 @@ public:
 
 PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   /**
-   * @brief constructor
+   * @brief Constructor
    *
-   * @param expectedNumEntries expected number entries in IBF
-   * @param face application's face
+   * @param face Application's face
+   * @param keyChain KeyChain instance to use for signing
+   * @param expectedNumEntries Expected number of entries in IBF
    * @param syncPrefix The prefix of the sync group
    * @param userPrefix The prefix of the first user in the group
-   * @param syncReplyFreshness freshness of sync data
+   * @param syncReplyFreshness FreshnessPeriod of sync data
    * @param ibltCompression Compression scheme to use for IBF
    * @param contentCompression Compression scheme to use for Data content
    */
-  ProducerBase(size_t expectedNumEntries,
-               ndn::Face& face,
+  ProducerBase(ndn::Face& face,
+               ndn::KeyChain& keyChain,
+               size_t expectedNumEntries,
                const ndn::Name& syncPrefix,
                const ndn::Name& userPrefix,
                ndn::time::milliseconds syncReplyFreshness = SYNC_REPLY_FRESHNESS,
                CompressionScheme ibltCompression = CompressionScheme::NONE,
                CompressionScheme contentCompression = CompressionScheme::NONE);
+
 public:
   /**
    * @brief Returns the current sequence number of the given prefix
@@ -152,11 +155,12 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   onRegisterFailed(const ndn::Name& prefix, const std::string& msg) const;
 
 PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
+  ndn::Face& m_face;
+  ndn::KeyChain& m_keyChain;
+  ndn::Scheduler m_scheduler;
+  ndn::random::RandomNumberEngine& m_rng;
+
   detail::IBLT m_iblt;
-  uint32_t m_expectedNumEntries;
-  // Threshold is used check if the differences are greater
-  // than it and whether we need to update the other side.
-  uint32_t m_threshold;
 
   // prefix and sequence number
   std::map<ndn::Name, uint64_t> m_prefixes;
@@ -165,20 +169,17 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
                                   bm::unordered_set_of<ndn::Name, std::hash<ndn::Name>>>;
   HashNameBiMap m_biMap;
 
-  ndn::Face& m_face;
-  ndn::KeyChain m_keyChain;
-  ndn::Scheduler m_scheduler;
-
-  ndn::Name m_syncPrefix;
-  ndn::Name m_userPrefix;
-
-  ndn::time::milliseconds m_syncReplyFreshness;
-
   SegmentPublisher m_segmentPublisher;
 
-  ndn::random::RandomNumberEngine& m_rng;
-  CompressionScheme m_ibltCompression;
-  CompressionScheme m_contentCompression;
+  const size_t m_expectedNumEntries;
+  // Threshold is used check if the differences are greater
+  // than it and whether we need to update the other side.
+  const size_t m_threshold;
+  const ndn::Name m_syncPrefix;
+  const ndn::Name m_userPrefix;
+  const ndn::time::milliseconds m_syncReplyFreshness;
+  const CompressionScheme m_ibltCompression;
+  const CompressionScheme m_contentCompression;
 };
 
 } // namespace psync
