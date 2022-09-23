@@ -21,10 +21,9 @@
 #include "PSync/detail/state.hpp"
 #include "PSync/detail/util.hpp"
 
+#include <ndn-cxx/lp/tags.hpp>
 #include <ndn-cxx/security/validator-null.hpp>
 #include <ndn-cxx/util/logger.hpp>
-#include <ndn-cxx/util/segment-fetcher.hpp>
-#include <ndn-cxx/lp/tags.hpp>
 
 #include <cstring>
 
@@ -37,7 +36,7 @@ FullProducer::FullProducer(ndn::Face& face,
                            size_t expectedNumEntries,
                            const ndn::Name& syncPrefix,
                            const ndn::Name& userPrefix,
-                           const UpdateCallback& onUpdateCallBack,
+                           UpdateCallback onUpdateCb,
                            ndn::time::milliseconds syncInterestLifetime,
                            ndn::time::milliseconds syncReplyFreshness,
                            CompressionScheme ibltCompression,
@@ -45,13 +44,11 @@ FullProducer::FullProducer(ndn::Face& face,
   : ProducerBase(face, keyChain, expectedNumEntries, syncPrefix, userPrefix,
                  syncReplyFreshness, ibltCompression, contentCompression)
   , m_syncInterestLifetime(syncInterestLifetime)
-  , m_onUpdate(onUpdateCallBack)
-  , m_jitter(100, 500)
+  , m_onUpdate(std::move(onUpdateCb))
 {
-  m_registeredPrefix = m_face.setInterestFilter(
-                         ndn::InterestFilter(m_syncPrefix).allowLoopback(false),
-                         std::bind(&FullProducer::onSyncInterest, this, _1, _2),
-                         std::bind(&FullProducer::onRegisterFailed, this, _1, _2));
+  m_registeredPrefix = m_face.setInterestFilter(ndn::InterestFilter(m_syncPrefix).allowLoopback(false),
+    [this] (auto&&... args) { onSyncInterest(std::forward<decltype(args)>(args)...); },
+    [] (auto&&... args) { onRegisterFailed(std::forward<decltype(args)>(args)...); });
 
   // Should we do this after setInterestFilter success call back
   // (Currently following ChronoSync's way)

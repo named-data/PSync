@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -22,7 +22,6 @@
 #include "tests/boost-test.hpp"
 #include "tests/io-fixture.hpp"
 
-#include <ndn-cxx/name.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace psync {
@@ -31,18 +30,9 @@ using namespace ndn;
 
 BOOST_AUTO_TEST_SUITE(TestConsumer)
 
-BOOST_AUTO_TEST_CASE(Constructor)
-{
-  util::DummyClientFace face({true, true});
-  BOOST_REQUIRE_NO_THROW(Consumer(Name("/psync"), face,
-                                  [] (const auto&) {},
-                                  [] (const auto&) {},
-                                  40, 0.001));
-}
-
 BOOST_AUTO_TEST_CASE(AddSubscription)
 {
-  util::DummyClientFace face({true, true});
+  util::DummyClientFace face;
   Consumer consumer(Name("/psync"), face,
                     [] (const auto&) {},
                     [] (const auto&) {},
@@ -57,7 +47,7 @@ BOOST_AUTO_TEST_CASE(AddSubscription)
 
 BOOST_FIXTURE_TEST_CASE(ConstantTimeoutForFirstSegment, tests::IoFixture)
 {
-  util::DummyClientFace face(m_io, {true, true});
+  util::DummyClientFace face(m_io);
   Consumer consumer(Name("/psync"), face,
                     [] (const auto&) {},
                     [] (const auto&) {},

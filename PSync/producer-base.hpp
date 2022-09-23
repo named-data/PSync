@@ -27,7 +27,6 @@
 
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
-#include <ndn-cxx/security/validator-config.hpp>
 #include <ndn-cxx/util/random.hpp>
 #include <ndn-cxx/util/scheduler.hpp>
 
@@ -43,7 +42,7 @@ namespace bm = boost::bimaps;
 /**
  * @brief Base class for PartialProducer and FullProducer
  *
- * Contains code common to both
+ * Contains code common to both.
  */
 class ProducerBase
 {
@@ -149,10 +148,10 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   sendApplicationNack(const ndn::Name& name);
 
   /**
-   * @brief Logs a message if setting an interest filter fails
+   * @brief Logs a message and throws if setting an interest filter fails
    */
-  void
-  onRegisterFailed(const ndn::Name& prefix, const std::string& msg) const;
+  [[noreturn]] static void
+  onRegisterFailed(const ndn::Name& prefix, const std::string& msg);
 
 PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   ndn::Face& m_face;

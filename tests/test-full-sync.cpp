@@ -41,18 +41,18 @@ protected:
   {
     BOOST_ASSERT(id >= 0 && id < MAX_NODES);
     userPrefixes[id] = "/userPrefix" + std::to_string(id);
-    faces[id] = std::make_shared<util::DummyClientFace>(m_io, m_keyChain,
+    faces[id] = std::make_unique<util::DummyClientFace>(m_io, m_keyChain,
                                                         util::DummyClientFace::Options{true, true});
-    nodes[id] = std::make_shared<FullProducer>(*faces[id], m_keyChain, 40, syncPrefix, userPrefixes[id],
+    nodes[id] = std::make_unique<FullProducer>(*faces[id], m_keyChain, 40, syncPrefix, userPrefixes[id],
                                                [] (const auto&) {});
   }
 
   void
   clearNodes()
   {
-    faces.fill(nullptr);
-    userPrefixes.fill(Name());
-    nodes.fill(nullptr);
+    nodes = {};
+    faces = {};
+    userPrefixes = {};
   }
 
   /**
@@ -60,8 +60,8 @@ protected:
    * @param id update originator node index.
    * @param i user prefix index.
    */
-  Name
-  makeSubPrefix(int id, int i) const
+  static Name
+  makeSubPrefix(int id, int i)
   {
     return "/userNode" + std::to_string(id) + "-" + std::to_string(i);
   }
@@ -141,15 +141,16 @@ protected:
    * @param maxTotalUpdates maximum totalUpdates parameter.
    * @param f test function.
    *
-   * This method searches for totalUpdates∈[minTotalUpdates,maxTotalUpdates] until there is
-   * at least one execution that caused an IBF decode failure above threshold.
-   * If such an execution is never achieved within the range, fail the test case.
+   * This method searches for totalUpdates ∈ [minTotalUpdates,maxTotalUpdates] until
+   * there is at least one execution that caused an IBF decode failure above threshold.
+   * If such an execution never occurs within the range, the test case fails.
    *
    * Current FullSync logic cannot reliably recover from an IBF decode failure below threshold.
    * Hence, that condition is not tested.
    */
   void
-  searchIbfDecodeFailures(int minTotalUpdates, int maxTotalUpdates, std::function<void(int totalUpdates)> f)
+  searchIbfDecodeFailures(int minTotalUpdates, int maxTotalUpdates,
+                          const std::function<void(int totalUpdates)>& f)
   {
     bool hasAboveThreshold = false;
     for (int totalUpdates = minTotalUpdates; totalUpdates <= maxTotalUpdates; ++totalUpdates) {
@@ -173,8 +174,8 @@ protected:
   const Name syncPrefix = "/psync";
   static constexpr int MAX_NODES = 4;
   std::array<Name, MAX_NODES> userPrefixes;
-  std::array<std::shared_ptr<util::DummyClientFace>, MAX_NODES> faces;
-  std::array<std::shared_ptr<FullProducer>, MAX_NODES> nodes;
+  std::array<std::unique_ptr<util::DummyClientFace>, MAX_NODES> faces;
+  std::array<std::unique_ptr<FullProducer>, MAX_NODES> nodes;
   static constexpr uint64_t NOT_EXIST = std::numeric_limits<uint64_t>::max();
 };
 
@@ -466,7 +467,7 @@ BOOST_AUTO_TEST_CASE(DelayedSecondSegment)
 
   int i = 0;
   detail::State state;
-  std::shared_ptr<ndn::Buffer> compressed;
+  std::shared_ptr<Buffer> compressed;
   do {
     auto prefixToPublish = makeSubPrefix(0, i++);
     nodes[0]->addUserNode(prefixToPublish);
@@ -476,7 +477,7 @@ BOOST_AUTO_TEST_CASE(DelayedSecondSegment)
 
     auto block = state.wireEncode();
     compressed = detail::compress(nodes[0]->m_contentCompression, block);
-  } while (compressed->size() < (ndn::MAX_NDN_PACKET_SIZE >> 1));
+  } while (compressed->size() < (MAX_NDN_PACKET_SIZE >> 1));
 
   advanceClocks(10_ms, 100);
 
@@ -484,7 +485,7 @@ BOOST_AUTO_TEST_CASE(DelayedSecondSegment)
   detail::IBLT iblt(40, nodes[0]->m_ibltCompression);
   iblt.appendToName(syncInterestName);
 
-  nodes[0]->onSyncInterest(syncPrefix, ndn::Interest(syncInterestName));
+  nodes[0]->onSyncInterest(syncPrefix, Interest(syncInterestName));
 
   advanceClocks(10_ms);
 
@@ -500,7 +501,7 @@ BOOST_AUTO_TEST_CASE(DelayedSecondSegment)
   interestName.appendSegment(1);
   faces[0]->sentData.clear();
 
-  nodes[0]->onSyncInterest(syncPrefix, ndn::Interest(interestName));
+  nodes[0]->onSyncInterest(syncPrefix, Interest(interestName));
   advanceClocks(10_ms);
 
   // Should have repopulated SegmentPublisher

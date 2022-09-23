@@ -20,14 +20,8 @@
 #ifndef PSYNC_PARTIAL_PRODUCER_HPP
 #define PSYNC_PARTIAL_PRODUCER_HPP
 
-#include "PSync/detail/bloom-filter.hpp"
 #include "PSync/producer-base.hpp"
-
-#include <map>
-
-#include <ndn-cxx/face.hpp>
-#include <ndn-cxx/security/key-chain.hpp>
-#include <ndn-cxx/util/scheduler.hpp>
+#include "PSync/detail/bloom-filter.hpp"
 
 namespace psync {
 
@@ -53,8 +47,8 @@ public:
    * @param expectedNumEntries Expected number of entries in IBF
    * @param syncPrefix The prefix of the sync group
    * @param userPrefix The prefix of the first user in the group
-   * @param syncReplyFreshness freshness of sync data
-   * @param helloReplyFreshness freshness of hello data
+   * @param helloReplyFreshness FreshnessPeriod of hello data
+   * @param syncReplyFreshness FreshnessPeriod of sync data
    * @param ibltCompression Compression scheme to use for IBF
    */
   PartialProducer(ndn::Face& face,

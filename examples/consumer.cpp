@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -19,7 +19,7 @@
 
 #include <PSync/consumer.hpp>
 
-#include <ndn-cxx/name.hpp>
+#include <ndn-cxx/face.hpp>
 #include <ndn-cxx/util/logger.hpp>
 #include <ndn-cxx/util/random.hpp>
 
@@ -44,7 +44,6 @@ public:
                  std::bind(&PSyncConsumer::afterReceiveHelloData, this, _1),
                  std::bind(&PSyncConsumer::processSyncUpdate, this, _1),
                  m_nSub, 0.001)
-    , m_rng(ndn::random::getRandomNumberEngine())
   {
     // This starts the consumer side by sending a hello interest to the producer
     // When the producer responds with hello data, afterReceiveHelloData is called
@@ -96,18 +95,18 @@ private:
 
 private:
   ndn::Face m_face;
-  int m_nSub;
 
+  int m_nSub;
   psync::Consumer m_consumer;
-  ndn::random::RandomNumberEngine& m_rng;
+
+  ndn::random::RandomNumberEngine& m_rng{ndn::random::getRandomNumberEngine()};
 };
 
 int
 main(int argc, char* argv[])
 {
   if (argc != 3) {
-    std::cout << "usage: " << argv[0] << " "
-              << "<sync-prefix> <number-of-subscriptions>" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " <sync-prefix> <number-of-subscriptions>\n";
     return 1;
   }
 

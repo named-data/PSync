@@ -43,18 +43,16 @@ public:
    */
   Producer(const ndn::Name& syncPrefix, const std::string& userPrefix,
            int numDataStreams, int maxNumPublish)
-    : m_fullProducer(m_face, m_keyChain, 80, syncPrefix, userPrefix,
-                     std::bind(&Producer::processSyncUpdate, this, _1),
-                     1600_ms, 1600_ms)
+    : m_producer(m_face, m_keyChain, 80, syncPrefix, userPrefix,
+                 std::bind(&Producer::processSyncUpdate, this, _1),
+                 1600_ms, 1600_ms)
     , m_maxNumPublish(maxNumPublish)
-    , m_rng(ndn::random::getRandomNumberEngine())
-    , m_rangeUniformRandom(0, 60000)
   {
     // Add user prefixes and schedule updates for them in specified interval
     for (int i = 0; i < numDataStreams; i++) {
       ndn::Name prefix(userPrefix + "-" + std::to_string(i));
-      m_fullProducer.addUserNode(prefix);
-      m_scheduler.schedule(ndn::time::milliseconds(m_rangeUniformRandom(m_rng)),
+      m_producer.addUserNode(prefix);
+      m_scheduler.schedule(ndn::time::milliseconds(m_uniformRand(m_rng)),
                            [this, prefix] { doUpdate(prefix); });
     }
   }
@@ -69,13 +67,13 @@ private:
   void
   doUpdate(const ndn::Name& prefix)
   {
-    m_fullProducer.publishName(prefix);
+    m_producer.publishName(prefix);
 
-    uint64_t seqNo = m_fullProducer.getSeqNo(prefix).value();
+    uint64_t seqNo = m_producer.getSeqNo(prefix).value();
     NDN_LOG_INFO("Publish: " << prefix << "/" << seqNo);
 
     if (seqNo < m_maxNumPublish) {
-      m_scheduler.schedule(ndn::time::milliseconds(m_rangeUniformRandom(m_rng)),
+      m_scheduler.schedule(ndn::time::milliseconds(m_uniformRand(m_rng)),
                            [this, prefix] { doUpdate(prefix); });
     }
   }
@@ -95,20 +93,19 @@ private:
   ndn::KeyChain m_keyChain;
   ndn::Scheduler m_scheduler{m_face.getIoService()};
 
-  psync::FullProducer m_fullProducer;
+  psync::FullProducer m_producer;
   uint64_t m_maxNumPublish;
 
-  ndn::random::RandomNumberEngine& m_rng;
-  std::uniform_int_distribution<> m_rangeUniformRandom;
+  ndn::random::RandomNumberEngine& m_rng{ndn::random::getRandomNumberEngine()};
+  std::uniform_int_distribution<> m_uniformRand{0, 60000};
 };
 
 int
 main(int argc, char* argv[])
 {
   if (argc != 5) {
-    std::cout << "usage: " << argv[0] << " <syncPrefix> <user-prefix> "
-              << "<number-of-user-prefixes> <max-number-of-updates-per-user-prefix>"
-              << std::endl;
+    std::cerr << "Usage: " << argv[0] << " <sync-prefix> <user-prefix> "
+              << "<number-of-user-prefixes> <max-number-of-updates-per-user-prefix>\n";
     return 1;
   }
 

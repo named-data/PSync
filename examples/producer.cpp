@@ -41,8 +41,6 @@ public:
                        int numDataStreams, int maxNumPublish)
     : m_producer(m_face, m_keyChain, 40, syncPrefix, userPrefix + "-0")
     , m_maxNumPublish(maxNumPublish)
-    , m_rng(ndn::random::getRandomNumberEngine())
-    , m_rangeUniformRandom(0, 60000)
   {
     // Add user prefixes and schedule updates for them
     for (int i = 0; i < numDataStreams; i++) {
@@ -52,8 +50,8 @@ public:
       // Note that this does not add the already added userPrefix-0 in the constructor
       m_producer.addUserNode(updateName);
 
-      // Each user prefix is updated at random interval between 0 and 60 second
-      m_scheduler.schedule(ndn::time::milliseconds(m_rangeUniformRandom(m_rng)),
+      // Each user prefix is updated at a random interval between 0 and 60 seconds
+      m_scheduler.schedule(ndn::time::milliseconds(m_uniformRand(m_rng)),
                            [this, updateName] { doUpdate(updateName); });
     }
   }
@@ -75,8 +73,8 @@ private:
     NDN_LOG_INFO("Publish: " << updateName << "/" << seqNo);
 
     if (seqNo < m_maxNumPublish) {
-      // Schedule the next update for this user prefix b/w 0 and 60 seconds
-      m_scheduler.schedule(ndn::time::milliseconds(m_rangeUniformRandom(m_rng)),
+      // Schedule the next update for this user prefix between 0 and 60 seconds
+      m_scheduler.schedule(ndn::time::milliseconds(m_uniformRand(m_rng)),
                            [this, updateName] { doUpdate(updateName); });
     }
   }
@@ -89,17 +87,16 @@ private:
   psync::PartialProducer m_producer;
   uint64_t m_maxNumPublish;
 
-  ndn::random::RandomNumberEngine& m_rng;
-  std::uniform_int_distribution<int> m_rangeUniformRandom;
+  ndn::random::RandomNumberEngine& m_rng{ndn::random::getRandomNumberEngine()};
+  std::uniform_int_distribution<> m_uniformRand{0, 60000};
 };
 
 int
 main(int argc, char* argv[])
 {
   if (argc != 5) {
-    std::cout << "usage: " << argv[0] << " <sync-prefix> <user-prefix> "
-              << "<number-of-user-prefixes> <max-number-of-updates-per-user-prefix>"
-              << std::endl;
+    std::cerr << "Usage: " << argv[0] << " <sync-prefix> <user-prefix> "
+              << "<number-of-user-prefixes> <max-number-of-updates-per-user-prefix>\n";
     return 1;
   }
 

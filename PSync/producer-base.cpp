@@ -23,9 +23,6 @@
 #include <ndn-cxx/util/exception.hpp>
 #include <ndn-cxx/util/logger.hpp>
 
-#include <cstring>
-#include <limits>
-
 namespace psync {
 
 NDN_LOG_INIT(psync.ProducerBase);
@@ -127,22 +124,23 @@ void
 ProducerBase::sendApplicationNack(const ndn::Name& name)
 {
   NDN_LOG_DEBUG("Sending application nack");
+
   ndn::Name dataName(name);
   m_iblt.appendToName(dataName);
-
   dataName.appendSegment(0);
   ndn::Data data(dataName);
-  data.setFreshnessPeriod(m_syncReplyFreshness);
-  data.setContentType(ndn::tlv::ContentType_Nack);
-  data.setFinalBlock(dataName[-1]);
+  data.setContentType(ndn::tlv::ContentType_Nack)
+      .setFreshnessPeriod(m_syncReplyFreshness)
+      .setFinalBlock(dataName[-1]);
+
   m_keyChain.sign(data);
   m_face.put(data);
 }
 
 void
-ProducerBase::onRegisterFailed(const ndn::Name& prefix, const std::string& msg) const
+ProducerBase::onRegisterFailed(const ndn::Name& prefix, const std::string& msg)
 {
-  NDN_LOG_ERROR("ProducerBase::onRegisterFailed(" << prefix << "): " << msg);
+  NDN_LOG_ERROR("onRegisterFailed(" << prefix << "): " << msg);
   NDN_THROW(Error(msg));
 }
 

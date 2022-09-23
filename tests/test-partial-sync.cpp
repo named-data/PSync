@@ -24,7 +24,7 @@
 #include "tests/io-fixture.hpp"
 #include "tests/key-chain-fixture.hpp"
 
-#include <ndn-cxx/name.hpp>
+#include <array>
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace psync {
@@ -33,10 +33,10 @@ using namespace ndn;
 
 class PartialSyncFixture : public tests::IoFixture, public tests::KeyChainFixture
 {
-public:
+protected:
   PartialSyncFixture()
   {
-    producer = make_shared<PartialProducer>(face, m_keyChain, 40, syncPrefix, userPrefix);
+    producer = std::make_unique<PartialProducer>(face, m_keyChain, 40, syncPrefix, userPrefix);
     addUserNodes("testUser", 10);
   }
 
@@ -52,13 +52,13 @@ public:
   void
   addConsumer(int id, const std::vector<std::string>& subscribeTo, bool linkToProducer = true)
   {
-    consumerFaces[id] = std::make_shared<util::DummyClientFace>(m_io, m_keyChain,
+    consumerFaces[id] = std::make_unique<util::DummyClientFace>(m_io, m_keyChain,
                                                                 util::DummyClientFace::Options{true, true});
     if (linkToProducer) {
       face.linkTo(*consumerFaces[id]);
     }
 
-    consumers[id] = std::make_shared<Consumer>(syncPrefix, *consumerFaces[id],
+    consumers[id] = std::make_unique<Consumer>(syncPrefix, *consumerFaces[id],
                       [&, id] (const auto& availableSubs) {
                         numHelloDataRcvd++;
                         BOOST_CHECK(checkSubList(availableSubs));
@@ -133,14 +133,14 @@ public:
 
 protected:
   util::DummyClientFace face{m_io, m_keyChain, {true, true}};
-  Name syncPrefix{"psync"};
-  Name userPrefix{"testUser-0"};
+  const Name syncPrefix{"psync"};
+  const Name userPrefix{"testUser-0"};
 
-  shared_ptr<PartialProducer> producer;
+  std::unique_ptr<PartialProducer> producer;
   std::map<Name, uint64_t> oldSeqMap;
 
-  shared_ptr<Consumer> consumers[3];
-  shared_ptr<util::DummyClientFace> consumerFaces[3];
+  std::array<std::unique_ptr<Consumer>, 3> consumers;
+  std::array<std::unique_ptr<util::DummyClientFace>, 3> consumerFaces;
   int numHelloDataRcvd = 0;
   int numSyncDataRcvd = 0;
 };
@@ -292,7 +292,7 @@ BOOST_AUTO_TEST_CASE(ReplicatedProducer)
   util::DummyClientFace face2(m_io, m_keyChain, {true, true});
   PartialProducer replicatedProducer(face2, m_keyChain, 40, syncPrefix, userPrefix);
   for (int i = 1; i < 10; i++) {
-      replicatedProducer.addUserNode("testUser-" + std::to_string(i));
+    replicatedProducer.addUserNode("testUser-" + std::to_string(i));
   }
   advanceClocks(ndn::time::milliseconds(10));
   replicatedProducer.publishName("testUser-2");

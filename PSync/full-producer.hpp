@@ -51,9 +51,9 @@ public:
    * @param expectedNumEntries Expected number of entries in IBF
    * @param syncPrefix The prefix of the sync group
    * @param userPrefix The prefix of the first user in the group
-   * @param onUpdateCallBack The call back to be called when there is new data
-   * @param syncInterestLifetime lifetime of the sync interest
-   * @param syncReplyFreshness freshness of sync data
+   * @param onUpdateCallBack The callback to be invoked when there is new data
+   * @param syncInterestLifetime Lifetime of the sync interest
+   * @param syncReplyFreshness FreshnessPeriod of sync data
    * @param ibltCompression Compression scheme to use for IBF
    * @param contentCompression Compression scheme to use for Data content
    */
@@ -62,7 +62,7 @@ public:
                size_t expectedNumEntries,
                const ndn::Name& syncPrefix,
                const ndn::Name& userPrefix,
-               const UpdateCallback& onUpdateCallBack,
+               UpdateCallback onUpdateCallBack,
                ndn::time::milliseconds syncInterestLifetime = SYNC_INTEREST_LIFETIME,
                ndn::time::milliseconds syncReplyFreshness = SYNC_REPLY_FRESHNESS,
                CompressionScheme ibltCompression = CompressionScheme::DEFAULT,
@@ -186,7 +186,7 @@ private:
   ndn::time::milliseconds m_syncInterestLifetime;
   UpdateCallback m_onUpdate;
   ndn::scheduler::ScopedEventId m_scheduledSyncInterestId;
-  std::uniform_int_distribution<> m_jitter;
+  std::uniform_int_distribution<> m_jitter{100, 500};
   ndn::Name m_outstandingInterestName;
   ndn::ScopedRegisteredPrefixHandle m_registeredPrefix;
   std::shared_ptr<ndn::util::SegmentFetcher> m_fetcher;

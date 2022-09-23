@@ -48,8 +48,6 @@
 
 namespace psync::detail {
 
-namespace bio = boost::iostreams;
-
 static inline uint32_t
 ROTL32(uint32_t x, int8_t r)
 {
@@ -125,10 +123,14 @@ murmurHash3(uint32_t seed, const ndn::Name& name)
 std::shared_ptr<ndn::Buffer>
 compress(CompressionScheme scheme, ndn::span<const uint8_t> buffer)
 {
-  ndn::OBufferStream out;
-  bio::filtering_streambuf<bio::input> in;
+  namespace bio = boost::iostreams;
+
+  bio::filtering_istreambuf in;
 
   switch (scheme) {
+    case CompressionScheme::NONE:
+      break;
+
     case CompressionScheme::ZLIB:
 #ifdef PSYNC_HAVE_ZLIB
       in.push(bio::zlib_compressor(bio::zlib::best_compression));
@@ -168,11 +170,10 @@ compress(CompressionScheme scheme, ndn::span<const uint8_t> buffer)
 #else
       NDN_THROW(CompressionError("ZSTD compression not supported!"));
 #endif
-
-    case CompressionScheme::NONE:
-      break;
   }
+
   in.push(bio::array_source(reinterpret_cast<const char*>(buffer.data()), buffer.size()));
+  ndn::OBufferStream out;
   bio::copy(in, out);
 
   return out.buf();
@@ -181,10 +182,14 @@ compress(CompressionScheme scheme, ndn::span<const uint8_t> buffer)
 std::shared_ptr<ndn::Buffer>
 decompress(CompressionScheme scheme, ndn::span<const uint8_t> buffer)
 {
-  ndn::OBufferStream out;
-  bio::filtering_streambuf<bio::input> in;
+  namespace bio = boost::iostreams;
+
+  bio::filtering_istreambuf in;
 
   switch (scheme) {
+    case CompressionScheme::NONE:
+      break;
+
     case CompressionScheme::ZLIB:
 #ifdef PSYNC_HAVE_ZLIB
       in.push(bio::zlib_decompressor());
@@ -224,11 +229,10 @@ decompress(CompressionScheme scheme, ndn::span<const uint8_t> buffer)
 #else
       NDN_THROW(CompressionError("ZSTD compression not supported!"));
 #endif
-
-    case CompressionScheme::NONE:
-      break;
   }
+
   in.push(bio::array_source(reinterpret_cast<const char*>(buffer.data()), buffer.size()));
+  ndn::OBufferStream out;
   bio::copy(in, out);
 
   return out.buf();

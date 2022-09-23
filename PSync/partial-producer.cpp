@@ -23,7 +23,6 @@
 #include <ndn-cxx/util/logger.hpp>
 
 #include <cstring>
-#include <limits>
 
 namespace psync {
 
@@ -45,13 +44,13 @@ PartialProducer::PartialProducer(ndn::Face& face,
   , m_helloReplyFreshness(helloReplyFreshness)
 {
   m_registeredPrefix = m_face.registerPrefix(m_syncPrefix,
-    [this] (const ndn::Name& syncPrefix) {
+    [this] (const auto&) {
       m_face.setInterestFilter(ndn::Name(m_syncPrefix).append(HELLO),
                                std::bind(&PartialProducer::onHelloInterest, this, _1, _2));
       m_face.setInterestFilter(ndn::Name(m_syncPrefix).append(SYNC),
                                std::bind(&PartialProducer::onSyncInterest, this, _1, _2));
     },
-    std::bind(&PartialProducer::onRegisterFailed, this, _1, _2));
+    [] (auto&&... args) { onRegisterFailed(std::forward<decltype(args)>(args)...); });
 }
 
 void
