@@ -52,9 +52,6 @@ namespace psync::detail {
 
 namespace be = boost::endian;
 
-const size_t N_HASH(3);
-const size_t N_HASHCHECK(11);
-
 bool
 HashTableEntry::isPure() const
 {

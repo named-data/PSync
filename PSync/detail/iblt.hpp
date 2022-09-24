@@ -69,8 +69,8 @@ public:
   isEmpty() const;
 };
 
-extern const size_t N_HASH;
-extern const size_t N_HASHCHECK;
+inline constexpr size_t N_HASH = 3;
+inline constexpr size_t N_HASHCHECK = 11;
 
 /**
  * @brief Invertible Bloom Lookup Table (Invertible Bloom Filter)

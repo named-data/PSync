@@ -1,4 +1,4 @@
-PSYNC - Partial/Full Sync Library based on BF and IBF
+PSync - Partial/Full Sync Library based on BF and IBF
 =====================================================
 
 PSync is a C++ library for name synchronization that implements the `PSync protocol

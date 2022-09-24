@@ -29,8 +29,8 @@ namespace psync {
 
 NDN_LOG_INIT(psync.PartialProducer);
 
-const ndn::name::Component HELLO("hello");
-const ndn::name::Component SYNC("sync");
+const ndn::name::Component HELLO{"hello"};
+const ndn::name::Component SYNC{"sync"};
 
 PartialProducer::PartialProducer(size_t expectedNumEntries,
                                  ndn::Face& face,
