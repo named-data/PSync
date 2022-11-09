@@ -45,6 +45,23 @@ BOOST_AUTO_TEST_CASE(AddSubscription)
   BOOST_CHECK(!consumer.addSubscription(subscription, 0));
 }
 
+BOOST_AUTO_TEST_CASE(RemoveSubscription)
+{
+  util::DummyClientFace face;
+  Consumer consumer(Name("/psync"), face,
+                    [] (const auto&) {},
+                    [] (const auto&) {},
+                    40, 0.001);
+
+  Name subscription("test");
+  consumer.addSubscription(subscription, 0);
+
+  BOOST_CHECK(consumer.isSubscribed(subscription));
+  BOOST_CHECK(consumer.removeSubscription(subscription));
+  BOOST_CHECK(!consumer.removeSubscription(subscription));
+  BOOST_CHECK(!consumer.isSubscribed(subscription));
+}
+
 BOOST_FIXTURE_TEST_CASE(ConstantTimeoutForFirstSegment, tests::IoFixture)
 {
   util::DummyClientFace face(m_io);

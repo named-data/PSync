@@ -59,6 +59,8 @@ Consumer::addSubscription(const ndn::Name& prefix, uint64_t seqNo, bool callSync
     return false;
   }
 
+  NDN_LOG_DEBUG("Subscribing prefix: " << prefix);
+
   m_subscriptionList.emplace(prefix);
   m_bloomFilter.insert(prefix);
 
@@ -69,9 +71,30 @@ Consumer::addSubscription(const ndn::Name& prefix, uint64_t seqNo, bool callSync
   return true;
 }
 
+bool
+Consumer::removeSubscription(const ndn::Name& prefix)
+{
+  if (!isSubscribed(prefix))
+    return false;
+
+  NDN_LOG_DEBUG("Unsubscribing prefix: " << prefix);
+
+  m_prefixes.erase(prefix);
+  m_subscriptionList.erase(prefix);
+
+  // Clear and reconstruct the bloom filter
+  m_bloomFilter.clear();
+
+  for (const auto& item : m_subscriptionList)
+    m_bloomFilter.insert(item);
+
+  return true;
+}
+
 void
 Consumer::stop()
 {
+  NDN_LOG_DEBUG("Canceling all the scheduled events");
   m_scheduler.cancelAllEvents();
 
   if (m_syncFetcher) {

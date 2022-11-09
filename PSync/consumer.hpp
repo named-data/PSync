@@ -107,6 +107,15 @@ public:
   bool
   addSubscription(const ndn::Name& prefix, uint64_t seqNo, bool callSyncDataCb = true);
 
+  /**
+   * @brief Remove prefix from subscription list
+   *
+   * @param prefix prefix to be removed from the list
+   * @return true if prefix is removed, false if it is not present
+   */
+  bool
+  removeSubscription(const ndn::Name& prefix);
+
   std::set<ndn::Name>
   getSubscriptionList() const
   {
