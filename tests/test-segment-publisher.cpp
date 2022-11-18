@@ -38,7 +38,7 @@ protected:
   SegmentPublisherFixture()
   {
     m_face.setInterestFilter(InterestFilter("/hello/world"),
-                             bind(&SegmentPublisherFixture::onInterest, this, _1, _2),
+                             bind(&SegmentPublisherFixture::onInterest, this, _2),
                              [] (auto&&...) { BOOST_CHECK(false); });
     advanceClocks(10_ms);
 
@@ -63,7 +63,7 @@ protected:
   }
 
   void
-  onInterest(const Name& prefix, const Interest& interest)
+  onInterest(const Interest& interest)
   {
     if (publisher.replyFromStore(interest.getName())) {
       numRepliesFromStore++;
@@ -82,7 +82,7 @@ protected:
 protected:
   util::DummyClientFace m_face{m_io, m_keyChain, {true, true}};
   SegmentPublisher publisher{m_face, m_keyChain};
-  shared_ptr<util::SegmentFetcher> fetcher;
+  std::shared_ptr<util::SegmentFetcher> fetcher;
   Name dataName;
   detail::State state;
 
@@ -97,6 +97,7 @@ BOOST_FIXTURE_TEST_SUITE(TestSegmentPublisher, SegmentPublisherFixture)
 BOOST_AUTO_TEST_CASE(Basic)
 {
   BOOST_CHECK_EQUAL(publisher.m_ims.size(), 0);
+
   expressInterest(Interest("/hello/world"));
   BOOST_CHECK_EQUAL(numComplete, 1);
   // First segment is answered directly in publish,
@@ -104,12 +105,20 @@ BOOST_AUTO_TEST_CASE(Basic)
   BOOST_CHECK_EQUAL(numRepliesFromStore, 2);
   BOOST_CHECK_EQUAL(publisher.m_ims.size(), 3);
 
+  for (const auto& data : publisher.m_ims) {
+    BOOST_TEST_CONTEXT(data.getName()) {
+      BOOST_REQUIRE_EQUAL(data.getName().size(), 4);
+      BOOST_CHECK(data.getName()[-1].isSegment());
+      BOOST_CHECK(data.getName()[-2].isVersion());
+    }
+  }
+
   numRepliesFromStore = 0;
   expressInterest(Interest("/hello/world"));
   BOOST_CHECK_EQUAL(numComplete, 2);
   BOOST_CHECK_EQUAL(numRepliesFromStore, 3);
 
-  advanceClocks(time::milliseconds(freshness));
+  advanceClocks(freshness);
   BOOST_CHECK_EQUAL(publisher.m_ims.size(), 0);
 
   numRepliesFromStore = 0;
@@ -118,7 +127,7 @@ BOOST_AUTO_TEST_CASE(Basic)
   BOOST_CHECK_EQUAL(numRepliesFromStore, 2);
 
   numRepliesFromStore = 0;
-  m_face.expressInterest(Interest("/hello/world/").setCanBePrefix(true),
+  m_face.expressInterest(Interest("/hello/world").setCanBePrefix(true),
                          [this] (auto&&...) { this->numComplete++; },
                          [] (auto&&...) { BOOST_CHECK(false); },
                          [] (auto&&...) { BOOST_CHECK(false); });
@@ -127,10 +136,10 @@ BOOST_AUTO_TEST_CASE(Basic)
   BOOST_CHECK_EQUAL(numRepliesFromStore, 1);
 }
 
-BOOST_AUTO_TEST_CASE(LargerDataName)
+BOOST_AUTO_TEST_CASE(LongerDataName)
 {
-  BOOST_CHECK_EQUAL(publisher.m_ims.size(), 0);
   dataName = Name("/hello/world/IBF");
+  BOOST_CHECK_EQUAL(publisher.m_ims.size(), 0);
 
   expressInterest(Interest("/hello/world"));
   BOOST_CHECK_EQUAL(numComplete, 1);
@@ -139,7 +148,15 @@ BOOST_AUTO_TEST_CASE(LargerDataName)
   BOOST_CHECK_EQUAL(numRepliesFromStore, 2);
   BOOST_CHECK_EQUAL(publisher.m_ims.size(), 3);
 
-  advanceClocks(time::milliseconds(freshness));
+  for (const auto& data : publisher.m_ims) {
+    BOOST_TEST_CONTEXT(data.getName()) {
+      BOOST_REQUIRE_EQUAL(data.getName().size(), 5);
+      BOOST_CHECK(data.getName()[-1].isSegment());
+      BOOST_CHECK(data.getName()[-2].isVersion());
+    }
+  }
+
+  advanceClocks(freshness);
   BOOST_CHECK_EQUAL(publisher.m_ims.size(), 0);
 }
 

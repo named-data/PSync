@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2022,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -23,21 +23,20 @@
 #include "PSync/detail/access-specifiers.hpp"
 
 #include <ndn-cxx/face.hpp>
-#include <ndn-cxx/name.hpp>
 #include <ndn-cxx/ims/in-memory-storage-fifo.hpp>
-#include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/util/scheduler.hpp>
-#include <ndn-cxx/util/time.hpp>
+#include <ndn-cxx/util/segmenter.hpp>
 
 namespace psync {
 
 /**
- * @brief Segment Publisher to publish segmented data
+ * @brief Helper class to publish segmented data.
  */
 class SegmentPublisher
 {
 public:
   SegmentPublisher(ndn::Face& face, ndn::KeyChain& keyChain,
+                   const ndn::security::SigningInfo& signingInfo = ndn::security::SigningInfo(),
                    size_t imsLimit = 100);
 
   /**
@@ -45,33 +44,17 @@ public:
    *
    * @param interestName the interest name, to determine the sequence to be answered immediately
    * @param dataName the data name, has components after interest name
-   * @param block the content of the data
-   * @param freshness freshness of the segments
-   * @param signingInfo signing info to sign the data with
-   */
-  void
-  publish(const ndn::Name& interestName, const ndn::Name& dataName,
-          const ndn::Block& block, ndn::time::milliseconds freshness,
-          const ndn::security::SigningInfo& signingInfo = ndn::security::SigningInfo());
-
-  /**
-   * @brief Put all the segments in memory.
-   *
-   * @param interestName the interest name, to determine the sequence to be answered immediately
-   * @param dataName the data name, has components after interest name
    * @param buffer the content of the data
-   * @param freshness freshness of the segments
-   * @param signingInfo signing info to sign the data with
+   * @param freshness freshness period of the segments
    */
   void
   publish(const ndn::Name& interestName, const ndn::Name& dataName,
-          const ndn::ConstBufferPtr& buffer, ndn::time::milliseconds freshness,
-          const ndn::security::SigningInfo& signingInfo = ndn::security::SigningInfo());
+          ndn::span<const uint8_t> buffer, ndn::time::milliseconds freshness);
 
   /**
    * @brief Try to reply from memory, return false if we cannot find the segment.
    *
-   * The caller is then expected to use publish if this returns false.
+   * The caller is then expected to use publish() if this returns false.
    */
   bool
   replyFromStore(const ndn::Name& interestName);
@@ -79,7 +62,7 @@ public:
 private:
   ndn::Face& m_face;
   ndn::Scheduler m_scheduler;
-  ndn::KeyChain& m_keyChain;
+  ndn::util::Segmenter m_segmenter;
 
 PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   ndn::InMemoryStorageFifo m_ims;

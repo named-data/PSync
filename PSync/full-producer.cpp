@@ -266,14 +266,14 @@ FullProducer::sendSyncData(const ndn::Name& name, const ndn::Block& block)
     NDN_LOG_DEBUG("Sending sync Data");
 
     // Send data after removing pending sync interest on face
-    m_segmentPublisher.publish(name, dataName, content, m_syncReplyFreshness);
+    m_segmentPublisher.publish(name, dataName, *content, m_syncReplyFreshness);
 
     NDN_LOG_TRACE("Renewing sync interest");
     sendSyncInterest();
   }
   else {
     NDN_LOG_DEBUG("Sending sync Data");
-    m_segmentPublisher.publish(name, dataName, content, m_syncReplyFreshness);
+    m_segmentPublisher.publish(name, dataName, *content, m_syncReplyFreshness);
   }
 }
 

@@ -19,79 +19,37 @@
 
 #include "PSync/segment-publisher.hpp"
 
-#include <ndn-cxx/name-component.hpp>
-
 namespace psync {
 
-SegmentPublisher::SegmentPublisher(ndn::Face& face, ndn::KeyChain& keyChain, size_t imsLimit)
+SegmentPublisher::SegmentPublisher(ndn::Face& face, ndn::KeyChain& keyChain,
+                                   const ndn::security::SigningInfo& signingInfo, size_t imsLimit)
   : m_face(face)
   , m_scheduler(m_face.getIoService())
-  , m_keyChain(keyChain)
+  , m_segmenter(keyChain, signingInfo)
   , m_ims(imsLimit)
 {
 }
 
 void
 SegmentPublisher::publish(const ndn::Name& interestName, const ndn::Name& dataName,
-                          const ndn::Block& block, ndn::time::milliseconds freshness,
-                          const ndn::security::SigningInfo& signingInfo)
+                          ndn::span<const uint8_t> buffer, ndn::time::milliseconds freshness)
 {
-  auto buf = std::make_shared<const ndn::Buffer>(block.begin(), block.end());
-  publish(interestName, dataName, buf, freshness, signingInfo);
-}
+  auto segments = m_segmenter.segment(buffer, ndn::Name(dataName).appendVersion(),
+                                      ndn::MAX_NDN_PACKET_SIZE >> 1, freshness);
+  for (const auto& data : segments) {
+    m_ims.insert(*data, freshness);
+    m_scheduler.schedule(freshness, [this, name = data->getName()] { m_ims.erase(name); });
+  }
 
-void
-SegmentPublisher::publish(const ndn::Name& interestName, const ndn::Name& dataName,
-                          const ndn::ConstBufferPtr& buffer,
-                          ndn::time::milliseconds freshness,
-                          const ndn::security::SigningInfo& signingInfo)
-{
+  // Put on face only the segment which has a pending interest,
+  // otherwise the segment is unsolicited
   uint64_t interestSegment = 0;
   if (interestName[-1].isSegment()) {
     interestSegment = interestName[-1].toSegment();
   }
-
-  const uint8_t* rawBuffer = buffer->data();
-  const uint8_t* segmentBegin = rawBuffer;
-  const uint8_t* end = rawBuffer + buffer->size();
-
-  const size_t maxPacketSize = ndn::MAX_NDN_PACKET_SIZE >> 1;
-  uint64_t totalSegments = buffer->size() / maxPacketSize;
-
-  ndn::Name segmentPrefix(dataName);
-  segmentPrefix.appendVersion();
-
-  uint64_t segmentNo = 0;
-  do {
-    const uint8_t* segmentEnd = segmentBegin + maxPacketSize;
-    if (segmentEnd > end) {
-      segmentEnd = end;
-    }
-
-    ndn::Name segmentName(segmentPrefix);
-    segmentName.appendSegment(segmentNo);
-
-    // We get a std::exception: bad_weak_ptr from m_ims if we don't use shared_ptr for data
-    auto data = std::make_shared<ndn::Data>(segmentName);
-    data->setContent(ndn::span<const uint8_t>(segmentBegin, segmentEnd));
-    data->setFreshnessPeriod(freshness);
-    data->setFinalBlock(ndn::name::Component::fromSegment(totalSegments));
-
-    m_keyChain.sign(*data, signingInfo);
-
-    segmentBegin = segmentEnd;
-
-    // Put on face only the segment which has a pending interest
-    // otherwise the segment is unsolicited
-    if (interestSegment == segmentNo) {
-      m_face.put(*data);
-    }
-
-    m_ims.insert(*data, freshness);
-    m_scheduler.schedule(freshness, [this, segmentName] { m_ims.erase(segmentName); });
-
-    ++segmentNo;
-  } while (segmentBegin < end);
+  if (interestSegment < segments.size()) {
+    m_face.put(*segments[interestSegment]);
+  }
 }
 
 bool
