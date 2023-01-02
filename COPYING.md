@@ -18,9 +18,8 @@ PSync relies on third-party software, licensed under the following licenses:
 - The waf build system is licensed under the terms of the
   [BSD license](https://github.com/named-data/PSync/blob/master/waf)
 
-
 The LGPL and GPL licenses are provided below in this file.  For more information
-about these licenses, see https://www.gnu.org/licenses/
+about these licenses, see <https://www.gnu.org/licenses/>
 
 --------------------------------------------------------------------------------
 
