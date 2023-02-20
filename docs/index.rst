@@ -28,14 +28,24 @@ Documentation
 - :doc:`release-notes`
 - :doc:`releases`
 
+Issues
+------
+
+Please submit any bug reports or feature requests to the
+`PSync issue tracker <https://redmine.named-data.net/projects/psync/issues>`__.
+
 Contributing
 ------------
 
-We greatly appreciate contributions to the PSync code base, provided that they are
-licensed under the GNU LGPL version 3 or a compatible license (see `COPYING.md
-<https://github.com/named-data/PSync/blob/master/COPYING.md>`__ for more information).
+Contributions to PSync are greatly appreciated and can be made through our
+`Gerrit code review site <https://gerrit.named-data.net/>`__.
 If you are new to the NDN software community, please read our `Contributor's Guide
-<https://github.com/named-data/.github/blob/master/CONTRIBUTING.md>`__ to get started.
+<https://github.com/named-data/.github/blob/main/CONTRIBUTING.md>`__ to get started.
 
-Please submit any bug reports or feature requests to the `PSync issue tracker
-<https://redmine.named-data.net/projects/psync/issues>`__.
+License
+-------
+
+PSync is free software: you can redistribute it and/or modify it under the terms of
+the GNU Lesser General Public License as published by the Free Software Foundation,
+either version 3 of the License, or (at your option) any later version. See `COPYING.md
+<https://github.com/named-data/PSync/blob/master/COPYING.md>`__ for details.

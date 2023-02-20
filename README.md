@@ -19,7 +19,7 @@ PSync uses the [ndn-cxx](https://github.com/named-data/ndn-cxx) library.
 
 ### Prerequisites
 
-* [ndn-cxx and its dependencies](https://named-data.net/doc/ndn-cxx/current/INSTALL.html)
+* [ndn-cxx and its dependencies](https://docs.named-data.net/ndn-cxx/current/INSTALL.html)
 
 ### Build
 
@@ -29,11 +29,11 @@ To build PSync from source:
     ./waf
     sudo ./waf install
 
-To build on memory constrained platform, please use `./waf -j1` instead of `./waf`. The
-command will disable parallel compilation.
+To build on memory constrained systems, please use `./waf -j1` instead of `./waf`. This
+will disable parallel compilation.
 
 If configured with tests (`./waf configure --with-tests`), the above commands will also
-generate unit tests that can be run with `./build/unit-tests`.
+build a suite of unit tests that can be run with `./build/unit-tests`.
 
 ## Reporting bugs
 
@@ -42,10 +42,10 @@ Please submit any bug reports or feature requests to the
 
 ## Contributing
 
-We greatly appreciate contributions to the PSync code base, provided that they are
-licensed under the GNU LGPL version 3 or a compatible license.
+Contributions to PSync are greatly appreciated and can be made through our
+[Gerrit code review site](https://gerrit.named-data.net/).
 If you are new to the NDN software community, please read our [Contributor's Guide](
-https://github.com/named-data/.github/blob/master/CONTRIBUTING.md) to get started.
+https://github.com/named-data/.github/blob/main/CONTRIBUTING.md) to get started.
 
 ## License
 

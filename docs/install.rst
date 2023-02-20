@@ -4,7 +4,7 @@ Installation Instructions
 Prerequisites
 -------------
 
--  `ndn-cxx <https://named-data.net/doc/ndn-cxx>`_ and its dependencies
+- `ndn-cxx <https://docs.named-data.net/ndn-cxx/>`__ and its dependencies
 
 Build
 -----
