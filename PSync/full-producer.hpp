@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2023,  The University of Memphis
+ * Copyright (c) 2014-2024,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public License along with
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
- **/
+ */
 
 #ifndef PSYNC_FULL_PRODUCER_HPP
 #define PSYNC_FULL_PRODUCER_HPP
@@ -112,6 +112,12 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
   sendSyncInterest();
 
+  void
+  processWaitingInterests();
+
+  void
+  scheduleProcessWaitingInterests();
+
   /**
    * @brief Process sync interest from other parties
    *
@@ -125,9 +131,11 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
    *
    * @param prefixName prefix for sync group which we registered
    * @param interest the interest we got
+   * @param isTimedProcessing is this interest from the waiting interests list
    */
   void
-  onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& interest);
+  onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& interest,
+                 bool isTimedProcessing = false);
 
   /**
    * @brief Send sync data
@@ -138,9 +146,11 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
    *
    * @param name name to be set as data name
    * @param block the content of the data
+   * @param syncReplyFreshness the freshness to use for the sync data; defaults to @p SYNC_REPLY_FRESHNESS
    */
   void
-  sendSyncData(const ndn::Name& name, const ndn::Block& block);
+  sendSyncData(const ndn::Name& name, const ndn::Block& block,
+               ndn::time::milliseconds syncReplyFreshness);
 
   /**
    * @brief Process sync data
@@ -164,12 +174,14 @@ private:
   /**
    * @brief Satisfy pending sync interests
    *
-   * For pending sync interests SI, if IBF of SI has any difference from our own IBF:
-   * send data back.
-   * If we can't decode differences from the stored IBF, then delete it.
+   * For pending sync interests do a difference with current IBF to find out missing prefixes.
+   * Send [Missing Prefixes] union @p updatedPrefixWithSeq
+   *
+   * This is because it is called from publish, so the @p updatedPrefixWithSeq must be missing
+   * from other nodes regardless of IBF difference failure.
    */
   void
-  satisfyPendingInterests();
+  satisfyPendingInterests(const ndn::Name& updatedPrefixWithSeq);
 
   /**
    * @brief Delete pending sync interests that match given name
@@ -177,7 +189,7 @@ private:
   void
   deletePendingInterests(const ndn::Name& interestName);
 
-   /**
+  /**
    * @brief Check if hash(prefix + 1) is in negative
    *
    * Sometimes what happens is that interest from other side
@@ -199,15 +211,29 @@ private:
     ndn::scheduler::ScopedEventId expirationEvent;
   };
 
-  std::map<ndn::Name, PendingEntryInfo> m_pendingEntries;
+  struct WaitingEntryInfo
+  {
+    uint16_t numTries = 0;
+    ndn::Interest::Nonce nonce;
+  };
+
   ndn::time::milliseconds m_syncInterestLifetime;
   UpdateCallback m_onUpdate;
   ndn::scheduler::ScopedEventId m_scheduledSyncInterestId;
-  std::uniform_int_distribution<> m_jitter{100, 500};
+  static constexpr int MIN_JITTER = 100;
+  static constexpr int MAX_JITTER = 500;
+  std::uniform_int_distribution<> m_jitter{MIN_JITTER, MAX_JITTER};
+  ndn::time::system_clock::time_point m_lastInterestSentTime;
   ndn::Name m_outstandingInterestName;
   ndn::ScopedRegisteredPrefixHandle m_registeredPrefix;
   std::shared_ptr<ndn::SegmentFetcher> m_fetcher;
   uint64_t m_incomingFace = 0;
+  std::map<ndn::Name, WaitingEntryInfo> m_waitingForProcessing;
+  bool m_inNoNewDataWaitOutPeriod = false;
+  ndn::scheduler::ScopedEventId m_interestDelayTimerId;
+
+PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
+  std::map<ndn::Name, PendingEntryInfo> m_pendingEntries;
 };
 
 } // namespace psync

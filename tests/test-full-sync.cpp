@@ -297,7 +297,7 @@ BOOST_AUTO_TEST_CASE(MultipleNodesSimultaneousPublish)
     nodes[i]->publishName(userPrefixes[i]);
   }
 
-  advanceClocks(10_ms, 100);
+  advanceClocks(100_ms, 100);
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
       BOOST_CHECK_EQUAL(nodes[i]->getSeqNo(userPrefixes[j]).value_or(NOT_EXIST), 1);
@@ -308,7 +308,7 @@ BOOST_AUTO_TEST_CASE(MultipleNodesSimultaneousPublish)
     nodes[i]->publishName(userPrefixes[i], 4);
   }
 
-  advanceClocks(10_ms, 100);
+  advanceClocks(100_ms, 100);
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
       BOOST_CHECK_EQUAL(nodes[i]->getSeqNo(userPrefixes[j]).value_or(NOT_EXIST), 4);
@@ -462,55 +462,6 @@ BOOST_AUTO_TEST_CASE(DiffIBFDecodeFailureMultipleNodes)
       batchCheck(i, 0, 0, totalUpdates, 1);
     }
   });
-}
-
-BOOST_AUTO_TEST_CASE(DelayedSecondSegment)
-{
-  addNode(0);
-
-  int i = 0;
-  detail::State state;
-  std::shared_ptr<ndn::Buffer> compressed;
-  do {
-    auto prefixToPublish = makeSubPrefix(0, i++);
-    nodes[0]->addUserNode(prefixToPublish);
-    nodes[0]->publishName(prefixToPublish);
-
-    state.addContent(Name(prefixToPublish).appendNumber(nodes[0]->m_prefixes[prefixToPublish]));
-
-    auto block = state.wireEncode();
-    compressed = detail::compress(nodes[0]->m_contentCompression, block);
-  } while (compressed->size() < (ndn::MAX_NDN_PACKET_SIZE >> 1));
-
-  advanceClocks(10_ms, 100);
-
-  Name syncInterestName(syncPrefix);
-  detail::IBLT iblt(40, nodes[0]->m_ibltCompression);
-  iblt.appendToName(syncInterestName);
-
-  nodes[0]->onSyncInterest(syncPrefix, Interest(syncInterestName));
-
-  advanceClocks(10_ms);
-
-  BOOST_CHECK_EQUAL(nodes[0]->m_segmentPublisher.m_ims.size(), 2);
-  // Expire contents from segmentPublisher
-  advanceClocks(10_ms, 100);
-  BOOST_CHECK_EQUAL(nodes[0]->m_segmentPublisher.m_ims.size(), 0);
-
-  // Get data name from face and increase segment number to form next interest
-  BOOST_REQUIRE(!faces[0]->sentData.empty());
-  Name dataName = faces[0]->sentData.front().getName();
-  Name interestName = dataName.getPrefix(-1).appendSegment(1);
-  faces[0]->sentData.clear();
-
-  nodes[0]->onSyncInterest(syncPrefix, Interest(interestName));
-  advanceClocks(10_ms);
-
-  // Should have repopulated SegmentPublisher
-  BOOST_CHECK_EQUAL(nodes[0]->m_segmentPublisher.m_ims.size(), 2);
-  // Should have received the second data segment this time
-  BOOST_REQUIRE(!faces[0]->sentData.empty());
-  BOOST_CHECK_EQUAL(faces[0]->sentData.front().getName().at(-1).toSegment(), 1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

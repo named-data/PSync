@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2023,  The University of Memphis
+ * Copyright (c) 2014-2024,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public License along with
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
- **/
+ */
 
 #include "PSync/producer-base.hpp"
 #include "PSync/detail/util.hpp"
@@ -115,6 +115,8 @@ ProducerBase::updateSeqNo(const ndn::Name& prefix, uint64_t seq)
   auto newHash = detail::murmurHash3(detail::N_HASHCHECK, prefixWithSeq);
   m_biMap.insert({newHash, prefixWithSeq});
   m_iblt.insert(newHash);
+
+  m_numOwnElements += (seq - oldSeq);
 }
 
 void

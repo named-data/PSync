@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2023,  The University of Memphis
+ * Copyright (c) 2014-2024,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public License along with
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
- **/
+ */
 
 #include <PSync/full-producer.hpp>
 
@@ -37,7 +37,7 @@ public:
   /**
    * @brief Initialize producer and schedule updates.
    *
-   * Set IBF size as 80 expecting 80 updates to IBF in a sync cycle.
+   * Use default IBF size of 6 as we're expecting 6 updates to IBF in a sync cycle.
    * Set syncInterestLifetime and syncDataFreshness to 1.6 seconds.
    * userPrefix is the prefix string of user node prefixes.
    */
@@ -46,7 +46,6 @@ public:
     : m_producer(m_face, m_keyChain, syncPrefix, [this] {
           psync::FullProducer::Options opts;
           opts.onUpdate = std::bind(&Producer::processSyncUpdate, this, _1);
-          opts.ibfCount = 80;
           opts.syncInterestLifetime = 1600_ms;
           opts.syncDataFreshness = 1600_ms;
           return opts;

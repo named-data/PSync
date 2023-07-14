@@ -15,10 +15,11 @@
  *
  * You should have received a copy of the GNU Lesser General Public License along with
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
- **/
+ */
 
 #include "PSync/full-producer.hpp"
 #include "PSync/detail/util.hpp"
+
 
 #include "tests/boost-test.hpp"
 #include "tests/io-fixture.hpp"
@@ -85,6 +86,54 @@ BOOST_AUTO_TEST_CASE(OnSyncDataDecodeFailure)
   const uint8_t test[] = {'t', 'e', 's', 't'};
   auto goodCompressBadBlock = detail::compress(node.m_contentCompression, test);
   BOOST_CHECK_NO_THROW(node.onSyncData(syncInterest, goodCompressBadBlock));
+}
+
+BOOST_AUTO_TEST_CASE(SatisfyPendingInterestsBehavior)
+{
+  Name syncPrefix("/psync");
+  FullProducer::Options opts;
+  opts.ibfCount = 6;
+  FullProducer node(m_face, m_keyChain, syncPrefix, opts);
+
+  Name syncInterestName(syncPrefix);
+  node.m_iblt.appendToName(syncInterestName);
+  syncInterestName.appendNumber(1);
+  Interest syncInterest(syncInterestName);
+
+  node.addUserNode(syncPrefix);
+
+  node.onSyncInterest(syncPrefix, syncInterest);
+
+  BOOST_CHECK_EQUAL(node.m_pendingEntries.size(), 1);
+
+  // Test whether data is still sent if IBF diff is greater than default threshhold.
+  auto prefix1 = Name("/test/alice").appendNumber(1);
+  uint32_t newHash1 = psync::detail::murmurHash3(42, prefix1);
+  node.m_iblt.insert(newHash1);
+
+  auto prefix2 = Name("/test/bob").appendNumber(1);
+  uint32_t newHash2 = psync::detail::murmurHash3(42, prefix2);
+  node.m_iblt.insert(newHash2);
+
+  auto prefix3 = Name("/test/carol").appendNumber(1);
+  uint32_t newHash3 = psync::detail::murmurHash3(42, prefix3);
+  node.m_iblt.insert(newHash3);
+
+  auto prefix4 = Name("/test/david").appendNumber(1);
+  uint32_t newHash4 = psync::detail::murmurHash3(42, prefix4);
+  node.m_iblt.insert(newHash4);
+
+  auto prefix5 = Name("/test/erin").appendNumber(1);
+  uint32_t newHash5 = psync::detail::murmurHash3(42, prefix5);
+  node.m_iblt.insert(newHash5);
+
+  node.publishName(syncPrefix);
+
+  advanceClocks(10_ms);
+
+  BOOST_CHECK_EQUAL(m_face.sentData.size(), 1);
+
+  BOOST_CHECK_EQUAL(node.m_pendingEntries.empty(), true);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2023,  The University of Memphis
+ * Copyright (c) 2014-2024,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU Lesser General Public License along with
  * PSync, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
- **/
+ */
 
 #ifndef PSYNC_PRODUCER_BASE_HPP
 #define PSYNC_PRODUCER_BASE_HPP
@@ -176,6 +176,7 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   const ndn::time::milliseconds m_syncReplyFreshness;
   const CompressionScheme m_ibltCompression;
   const CompressionScheme m_contentCompression;
+  uint64_t m_numOwnElements = 0;
 };
 
 } // namespace psync

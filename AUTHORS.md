@@ -7,6 +7,8 @@ If you would like to become a contributor to the official repository, please fol
 * Alexander Afanasyev <https://users.cs.fiu.edu/~afanasyev>
 * ***(Maintainer)*** Saurab Dulal <https://dulalsaurab.github.io>
 * ***(Former Maintainer)*** Ashlesh Gawande <https://www.linkedin.com/in/agawande>
+* Dylan Hensley
+* Alexander Lane <https://github.com/awlane>
 * Eric Newberry <https://ericnewberry.com>
 * Davide Pesavento <https://github.com/Pesa>
 * Junxiao Shi <https://cs.arizona.edu/~shijunxiao>

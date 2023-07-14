@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2023,  The University of Memphis
+ * Copyright (c) 2014-2024,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -65,7 +65,7 @@ public:
     /// Callback to give sync data back to application.
     UpdateCallback onUpdate = [] (const auto&) {};
     /// Number of expected elements (subscriptions) in Bloom filter.
-    uint32_t bfCount = 80;
+    uint32_t bfCount = 6;
     /// Bloom filter false positive probability.
     double bfFalsePositive = 0.001;
     /// Lifetime of hello Interest.
