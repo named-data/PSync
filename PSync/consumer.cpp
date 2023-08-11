@@ -27,27 +27,33 @@ namespace psync {
 
 NDN_LOG_INIT(psync.Consumer);
 
-Consumer::Consumer(const ndn::Name& syncPrefix,
-                   ndn::Face& face,
-                   const ReceiveHelloCallback& onReceiveHelloData,
-                   const UpdateCallback& onUpdate,
-                   unsigned int count,
-                   double false_positive = 0.001,
-                   ndn::time::milliseconds helloInterestLifetime,
-                   ndn::time::milliseconds syncInterestLifetime)
+Consumer::Consumer(ndn::Face& face, const ndn::Name& syncPrefix, const Options& opts)
   : m_face(face)
   , m_scheduler(m_face.getIoContext())
   , m_syncPrefix(syncPrefix)
   , m_helloInterestPrefix(ndn::Name(m_syncPrefix).append("hello"))
   , m_syncInterestPrefix(ndn::Name(m_syncPrefix).append("sync"))
   , m_syncDataContentType(ndn::tlv::ContentType_Blob)
-  , m_onReceiveHelloData(onReceiveHelloData)
-  , m_onUpdate(onUpdate)
-  , m_bloomFilter(count, false_positive)
-  , m_helloInterestLifetime(helloInterestLifetime)
-  , m_syncInterestLifetime(syncInterestLifetime)
+  , m_onReceiveHelloData(opts.onHelloData)
+  , m_onUpdate(opts.onUpdate)
+  , m_bloomFilter(opts.bfCount, opts.bfFalsePositive)
+  , m_helloInterestLifetime(opts.helloInterestLifetime)
+  , m_syncInterestLifetime(opts.syncInterestLifetime)
   , m_rng(ndn::random::getRandomNumberEngine())
   , m_rangeUniformRandom(100, 500)
+{
+}
+
+Consumer::Consumer(const ndn::Name& syncPrefix,
+                   ndn::Face& face,
+                   const ReceiveHelloCallback& onReceiveHelloData,
+                   const UpdateCallback& onUpdate,
+                   unsigned int count,
+                   double falsePositive,
+                   ndn::time::milliseconds helloInterestLifetime,
+                   ndn::time::milliseconds syncInterestLifetime)
+  : Consumer(face, syncPrefix,
+             Options{onReceiveHelloData, onUpdate, count, falsePositive, helloInterestLifetime, syncInterestLifetime})
 {
 }
 

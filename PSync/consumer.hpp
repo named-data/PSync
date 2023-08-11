@@ -56,23 +56,40 @@ class Consumer
 {
 public:
   /**
-   * @brief constructor
-   *
-   * @param syncPrefix syncPrefix to send hello/sync interests to producer
-   * @param face application's face
-   * @param onReceiveHelloData call back to give hello data back to application
-   * @param onUpdate call back to give sync data back to application
-   * @param count bloom filter number of expected elements (subscriptions) in bloom filter
-   * @param false_positive bloom filter false positive probability
-   * @param helloInterestLifetime lifetime of hello interest
-   * @param syncInterestLifetime lifetime of sync interest
+   * @brief Constructor options.
    */
+  struct Options
+  {
+    /// Callback to give hello data back to application.
+    ReceiveHelloCallback onHelloData = [] (const auto&) {};
+    /// Callback to give sync data back to application.
+    UpdateCallback onUpdate = [] (const auto&) {};
+    /// Number of expected elements (subscriptions) in Bloom filter.
+    unsigned int bfCount = 80;
+    /// Bloom filter false positive probability.
+    double bfFalsePositive = 0.001;
+    /// Lifetime of hello Interest.
+    ndn::time::milliseconds helloInterestLifetime = HELLO_INTEREST_LIFETIME;
+    /// Lifetime of sync Interest.
+    ndn::time::milliseconds syncInterestLifetime = SYNC_INTEREST_LIFETIME;
+  };
+
+  /**
+   * @brief Constructor.
+   *
+   * @param face Application face.
+   * @param syncPrefix Prefix to send hello and sync Interests to producer.
+   * @param opts Options.
+   */
+  Consumer(ndn::Face& face, const ndn::Name& syncPrefix, const Options& opts);
+
+  [[deprecated]]
   Consumer(const ndn::Name& syncPrefix,
            ndn::Face& face,
            const ReceiveHelloCallback& onReceiveHelloData,
            const UpdateCallback& onUpdate,
            unsigned int count,
-           double false_positive,
+           double falsePositive = 0.001,
            ndn::time::milliseconds helloInterestLifetime = HELLO_INTEREST_LIFETIME,
            ndn::time::milliseconds syncInterestLifetime = SYNC_INTEREST_LIFETIME);
 

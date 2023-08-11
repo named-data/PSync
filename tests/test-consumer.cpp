@@ -33,10 +33,9 @@ BOOST_AUTO_TEST_SUITE(TestConsumer)
 BOOST_AUTO_TEST_CASE(AddSubscription)
 {
   ndn::DummyClientFace face;
-  Consumer consumer(Name("/psync"), face,
-                    [] (const auto&) {},
-                    [] (const auto&) {},
-                    40, 0.001);
+  Consumer::Options opts;
+  opts.bfCount = 40;
+  Consumer consumer(face, "/psync", opts);
 
   Name subscription("test");
 
@@ -48,10 +47,9 @@ BOOST_AUTO_TEST_CASE(AddSubscription)
 BOOST_AUTO_TEST_CASE(RemoveSubscription)
 {
   ndn::DummyClientFace face;
-  Consumer consumer(Name("/psync"), face,
-                    [] (const auto&) {},
-                    [] (const auto&) {},
-                    40, 0.001);
+  Consumer::Options opts;
+  opts.bfCount = 40;
+  Consumer consumer(face, "/psync", opts);
 
   Name subscription("test");
   consumer.addSubscription(subscription, 0);
@@ -65,10 +63,11 @@ BOOST_AUTO_TEST_CASE(RemoveSubscription)
 BOOST_FIXTURE_TEST_CASE(ConstantTimeoutForFirstSegment, tests::IoFixture)
 {
   ndn::DummyClientFace face(m_io);
-  Consumer consumer(Name("/psync"), face,
-                    [] (const auto&) {},
-                    [] (const auto&) {},
-                    40, 0.001, 4_s, 4_s);
+  Consumer::Options opts;
+  opts.bfCount = 40;
+  opts.helloInterestLifetime = 4_s;
+  opts.syncInterestLifetime = 4_s;
+  Consumer consumer(face, "/psync", opts);
 
   consumer.sendHelloInterest();
   advanceClocks(4_s);

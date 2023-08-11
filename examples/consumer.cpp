@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2022,  The University of Memphis
+ * Copyright (c) 2014-2023,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -32,18 +32,18 @@ class PSyncConsumer
 public:
   /**
    * @brief Initialize consumer and start hello process
-   *
-   * 0.001 is the false positive probability of the bloom filter
-   *
    * @param syncPrefix should be the same as producer
    * @param nSub number of subscriptions is used for the bloom filter (subscription list) size
    */
   PSyncConsumer(const ndn::Name& syncPrefix, int nSub)
     : m_nSub(nSub)
-    , m_consumer(syncPrefix, m_face,
-                 std::bind(&PSyncConsumer::afterReceiveHelloData, this, _1),
-                 std::bind(&PSyncConsumer::processSyncUpdate, this, _1),
-                 m_nSub, 0.001)
+    , m_consumer(m_face, syncPrefix, [this] {
+          psync::Consumer::Options opts;
+          opts.onHelloData = std::bind(&PSyncConsumer::afterReceiveHelloData, this, _1);
+          opts.onUpdate = std::bind(&PSyncConsumer::processSyncUpdate, this, _1);
+          opts.bfCount = m_nSub;
+          return opts;
+      } ())
   {
     // This starts the consumer side by sending a hello interest to the producer
     // When the producer responds with hello data, afterReceiveHelloData is called
