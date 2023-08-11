@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2022,  The University of Memphis
+ * Copyright (c) 2014-2023,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -29,7 +29,8 @@
 
 namespace psync {
 
-using namespace ndn;
+using ndn::Interest;
+using ndn::Name;
 
 class PartialSyncFixture : public tests::IoFixture, public tests::KeyChainFixture
 {
@@ -52,8 +53,8 @@ protected:
   void
   addConsumer(int id, const std::vector<std::string>& subscribeTo, bool linkToProducer = true)
   {
-    consumerFaces[id] = std::make_unique<util::DummyClientFace>(m_io, m_keyChain,
-                                                                util::DummyClientFace::Options{true, true});
+    consumerFaces[id] = std::make_unique<ndn::DummyClientFace>(m_io, m_keyChain,
+                                                               ndn::DummyClientFace::Options{true, true});
     if (linkToProducer) {
       face.linkTo(*consumerFaces[id]);
     }
@@ -132,7 +133,7 @@ protected:
   }
 
 protected:
-  util::DummyClientFace face{m_io, m_keyChain, {true, true}};
+  ndn::DummyClientFace face{m_io, m_keyChain, {true, true}};
   const Name syncPrefix{"psync"};
   const Name userPrefix{"testUser-0"};
 
@@ -140,7 +141,7 @@ protected:
   std::map<Name, uint64_t> oldSeqMap;
 
   std::array<std::unique_ptr<Consumer>, 3> consumers;
-  std::array<std::unique_ptr<util::DummyClientFace>, 3> consumerFaces;
+  std::array<std::unique_ptr<ndn::DummyClientFace>, 3> consumerFaces;
   int numHelloDataRcvd = 0;
   int numSyncDataRcvd = 0;
 };
@@ -289,7 +290,7 @@ BOOST_AUTO_TEST_CASE(ReplicatedProducer)
   // Link to first producer goes down
   face.unlink();
 
-  util::DummyClientFace face2(m_io, m_keyChain, {true, true});
+  ndn::DummyClientFace face2(m_io, m_keyChain, {true, true});
   PartialProducer replicatedProducer(face2, m_keyChain, 40, syncPrefix, userPrefix);
   for (int i = 1; i < 10; i++) {
     replicatedProducer.addUserNode("testUser-" + std::to_string(i));
@@ -339,7 +340,7 @@ BOOST_AUTO_TEST_CASE(ApplicationNack)
 
   bool nackRcvd = false;
   for (const auto& data : face.sentData) {
-    if (data.getContentType() == tlv::ContentType_Nack) {
+    if (data.getContentType() == ndn::tlv::ContentType_Nack) {
       nackRcvd = true;
       break;
     }

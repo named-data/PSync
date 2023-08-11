@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2022,  The University of Memphis
+ * Copyright (c) 2014-2023,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -26,13 +26,13 @@
 
 namespace psync {
 
-using namespace ndn;
+using ndn::Name;
 
 BOOST_AUTO_TEST_SUITE(TestConsumer)
 
 BOOST_AUTO_TEST_CASE(AddSubscription)
 {
-  util::DummyClientFace face;
+  ndn::DummyClientFace face;
   Consumer consumer(Name("/psync"), face,
                     [] (const auto&) {},
                     [] (const auto&) {},
@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(AddSubscription)
 
 BOOST_AUTO_TEST_CASE(RemoveSubscription)
 {
-  util::DummyClientFace face;
+  ndn::DummyClientFace face;
   Consumer consumer(Name("/psync"), face,
                     [] (const auto&) {},
                     [] (const auto&) {},
@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(RemoveSubscription)
 
 BOOST_FIXTURE_TEST_CASE(ConstantTimeoutForFirstSegment, tests::IoFixture)
 {
-  util::DummyClientFace face(m_io);
+  ndn::DummyClientFace face(m_io);
   Consumer consumer(Name("/psync"), face,
                     [] (const auto&) {},
                     [] (const auto&) {},

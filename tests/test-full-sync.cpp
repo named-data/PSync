@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2022,  The University of Memphis
+ * Copyright (c) 2014-2023,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -31,7 +31,8 @@
 
 namespace psync {
 
-using namespace ndn;
+using ndn::Interest;
+using ndn::Name;
 
 class FullSyncFixture : public tests::IoFixture, public tests::KeyChainFixture
 {
@@ -41,8 +42,8 @@ protected:
   {
     BOOST_ASSERT(id >= 0 && id < MAX_NODES);
     userPrefixes[id] = "/userPrefix" + std::to_string(id);
-    faces[id] = std::make_unique<util::DummyClientFace>(m_io, m_keyChain,
-                                                        util::DummyClientFace::Options{true, true});
+    faces[id] = std::make_unique<ndn::DummyClientFace>(m_io, m_keyChain,
+                                                       ndn::DummyClientFace::Options{true, true});
     nodes[id] = std::make_unique<FullProducer>(*faces[id], m_keyChain, 40, syncPrefix, userPrefixes[id],
                                                [] (const auto&) {});
   }
@@ -174,7 +175,7 @@ protected:
   const Name syncPrefix = "/psync";
   static constexpr int MAX_NODES = 4;
   std::array<Name, MAX_NODES> userPrefixes;
-  std::array<std::unique_ptr<util::DummyClientFace>, MAX_NODES> faces;
+  std::array<std::unique_ptr<ndn::DummyClientFace>, MAX_NODES> faces;
   std::array<std::unique_ptr<FullProducer>, MAX_NODES> nodes;
   static constexpr uint64_t NOT_EXIST = std::numeric_limits<uint64_t>::max();
 };
@@ -467,7 +468,7 @@ BOOST_AUTO_TEST_CASE(DelayedSecondSegment)
 
   int i = 0;
   detail::State state;
-  std::shared_ptr<Buffer> compressed;
+  std::shared_ptr<ndn::Buffer> compressed;
   do {
     auto prefixToPublish = makeSubPrefix(0, i++);
     nodes[0]->addUserNode(prefixToPublish);
@@ -477,7 +478,7 @@ BOOST_AUTO_TEST_CASE(DelayedSecondSegment)
 
     auto block = state.wireEncode();
     compressed = detail::compress(nodes[0]->m_contentCompression, block);
-  } while (compressed->size() < (MAX_NDN_PACKET_SIZE >> 1));
+  } while (compressed->size() < (ndn::MAX_NDN_PACKET_SIZE >> 1));
 
   advanceClocks(10_ms, 100);
 

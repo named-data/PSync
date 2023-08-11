@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2022,  The University of Memphis
+ * Copyright (c) 2014-2023,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -25,7 +25,7 @@
 namespace psync {
 namespace detail {
 
-using namespace ndn;
+using ndn::Name;
 
 BOOST_AUTO_TEST_SUITE(TestIBLT)
 
@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE(NameAppendAndExtract)
   Name malformedName("/test");
   auto compressed = compress(CompressionScheme::DEFAULT,
                              malformedName.wireEncode().value_bytes());
-  malformedName.append(name::Component(std::move(compressed)));
+  malformedName.append(Name::Component(std::move(compressed)));
   IBLT rcvd2(size, CompressionScheme::DEFAULT);
   BOOST_CHECK_THROW(rcvd2.initialize(malformedName.at(-1)), IBLT::Error);
 }

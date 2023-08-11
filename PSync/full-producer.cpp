@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2022,  The University of Memphis
+ * Copyright (c) 2014-2023,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -100,7 +100,7 @@ FullProducer::sendSyncInterest()
 
   ndn::Interest syncInterest(syncInterestName);
 
-  using ndn::util::SegmentFetcher;
+  using ndn::SegmentFetcher;
   SegmentFetcher::Options options;
   options.interestLifetime = m_syncInterestLifetime;
   options.maxTimeout = m_syncInterestLifetime;

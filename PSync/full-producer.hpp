@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2022,  The University of Memphis
+ * Copyright (c) 2014-2023,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -189,7 +189,7 @@ private:
   std::uniform_int_distribution<> m_jitter{100, 500};
   ndn::Name m_outstandingInterestName;
   ndn::ScopedRegisteredPrefixHandle m_registeredPrefix;
-  std::shared_ptr<ndn::util::SegmentFetcher> m_fetcher;
+  std::shared_ptr<ndn::SegmentFetcher> m_fetcher;
   uint64_t m_incomingFace = 0;
 };
 

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2022,  The University of Memphis
+ * Copyright (c) 2014-2023,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -62,7 +62,7 @@ public:
 private:
   ndn::Face& m_face;
   ndn::Scheduler m_scheduler;
-  ndn::util::Segmenter m_segmenter;
+  ndn::Segmenter m_segmenter;
 
 PSYNC_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   ndn::InMemoryStorageFifo m_ims;

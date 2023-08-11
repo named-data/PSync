@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2022,  The University of Memphis
+ * Copyright (c) 2014-2023,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -26,12 +26,12 @@
 
 namespace psync {
 
-using namespace ndn;
+using ndn::Name;
 
 class ProducerBaseFixture : public tests::KeyChainFixture
 {
 protected:
-  util::DummyClientFace m_face;
+  ndn::DummyClientFace m_face;
 };
 
 BOOST_FIXTURE_TEST_SUITE(TestProducerBase, ProducerBaseFixture)
@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(ApplicationNack)
   m_face.processEvents(10_ms);
 
   BOOST_REQUIRE_EQUAL(m_face.sentData.size(), 1);
-  BOOST_CHECK_EQUAL(m_face.sentData.front().getContentType(), tlv::ContentType_Nack);
+  BOOST_CHECK_EQUAL(m_face.sentData.front().getContentType(), ndn::tlv::ContentType_Nack);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

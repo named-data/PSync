@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2022,  The University of Memphis
+ * Copyright (c) 2014-2023,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -28,12 +28,13 @@
 
 namespace psync {
 
-using namespace ndn;
+using ndn::Interest;
+using ndn::Name;
 
 class FullProducerFixture : public tests::IoFixture, public tests::KeyChainFixture
 {
 protected:
-  util::DummyClientFace m_face{m_io, m_keyChain, {true, true}};
+  ndn::DummyClientFace m_face{m_io, m_keyChain, {true, true}};
 };
 
 BOOST_FIXTURE_TEST_SUITE(TestFullProducer, FullProducerFixture)
@@ -71,7 +72,7 @@ BOOST_AUTO_TEST_CASE(OnSyncDataDecodeFailure)
   node.m_iblt.appendToName(syncInterestName);
   Interest syncInterest(syncInterestName);
 
-  auto badCompress = std::make_shared<const Buffer>(5);
+  auto badCompress = std::make_shared<const ndn::Buffer>(5);
   BOOST_CHECK_NO_THROW(node.onSyncData(syncInterest, badCompress));
 
   const uint8_t test[] = {'t', 'e', 's', 't'};

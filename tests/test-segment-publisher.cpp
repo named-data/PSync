@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2022,  The University of Memphis
+ * Copyright (c) 2014-2023,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -30,14 +30,16 @@
 
 namespace psync {
 
-using namespace ndn;
+using namespace ndn::time_literals;
+using ndn::Interest;
+using ndn::Name;
 
 class SegmentPublisherFixture : public tests::IoFixture, public tests::KeyChainFixture
 {
 protected:
   SegmentPublisherFixture()
   {
-    m_face.setInterestFilter(InterestFilter("/hello/world"),
+    m_face.setInterestFilter(ndn::InterestFilter("/hello/world"),
                              bind(&SegmentPublisherFixture::onInterest, this, _2),
                              [] (auto&&...) { BOOST_CHECK(false); });
     advanceClocks(10_ms);
@@ -55,7 +57,7 @@ protected:
   void
   expressInterest(const Interest& interest)
   {
-    fetcher = util::SegmentFetcher::start(m_face, interest, security::getAcceptAllValidator());
+    fetcher = ndn::SegmentFetcher::start(m_face, interest, ndn::security::getAcceptAllValidator());
     fetcher->onComplete.connect([this] (auto&&...) { numComplete++; });
     fetcher->onError.connect([] (auto&&...) { BOOST_CHECK(false); });
 
@@ -80,16 +82,16 @@ protected:
   }
 
 protected:
-  util::DummyClientFace m_face{m_io, m_keyChain, {true, true}};
+  ndn::DummyClientFace m_face{m_io, m_keyChain, {true, true}};
   SegmentPublisher publisher{m_face, m_keyChain};
-  std::shared_ptr<util::SegmentFetcher> fetcher;
+  std::shared_ptr<ndn::SegmentFetcher> fetcher;
   Name dataName;
   detail::State state;
 
   int numComplete = 0;
   int numRepliesFromStore = 0;
 
-  static constexpr time::milliseconds freshness = 1_s;
+  static constexpr ndn::time::milliseconds freshness = 1_s;
 };
 
 BOOST_FIXTURE_TEST_SUITE(TestSegmentPublisher, SegmentPublisherFixture)
