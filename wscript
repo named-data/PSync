@@ -1,7 +1,8 @@
 # -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
 
-from waflib import Context, Logs, Utils
-import os, subprocess
+import os
+import subprocess
+from waflib import Context, Logs
 
 VERSION = '0.4.0'
 APPNAME = 'PSync'
@@ -11,7 +12,6 @@ BOOST_COMPRESSION_CODE = '''
 #include <boost/iostreams/filter/{0}.hpp>
 int main() {{ boost::iostreams::{0}_compressor test; }}
 '''
-
 COMPRESSION_SCHEMES = ['zlib', 'gzip', 'bzip2', 'lzma', 'zstd']
 
 def options(opt):
@@ -28,8 +28,8 @@ def options(opt):
                       help='Build unit tests')
 
     for scheme in COMPRESSION_SCHEMES:
-        optgrp.add_option('--without-{}'.format(scheme), action='store_true', default=False,
-                          help='Build without {}'.format(scheme))
+        optgrp.add_option(f'--without-{scheme}', action='store_true', default=False,
+                          help=f'Disable support for {scheme} (de)compression')
 
 def configure(conf):
     conf.load(['compiler_cxx', 'gnu_dirs',
@@ -50,19 +50,18 @@ def configure(conf):
     conf.check_cfg(package='libndn-cxx', args=['libndn-cxx >= 0.8.1', '--cflags', '--libs'],
                    uselib_store='NDN_CXX', pkg_config_path=pkg_config_path)
 
-    boost_libs = ['system', 'iostreams']
-    if conf.env.WITH_TESTS:
-        boost_libs.append('unit_test_framework')
-
-    conf.check_boost(lib=boost_libs, mt=True)
+    conf.check_boost(lib='iostreams', mt=True)
 
     for scheme in COMPRESSION_SCHEMES:
-        if getattr(conf.options, 'without_{}'.format(scheme)):
+        if getattr(conf.options, f'without_{scheme}'):
             continue
         conf.check_cxx(fragment=BOOST_COMPRESSION_CODE.format(scheme),
                        use='BOOST', execute=False, mandatory=False,
-                       msg='Checking for {} support in boost iostreams'.format(scheme),
-                       define_name='HAVE_{}'.format(scheme.upper()))
+                       msg=f'Checking for {scheme} support in boost iostreams',
+                       define_name=f'HAVE_{scheme.upper()}')
+
+    if conf.env.WITH_TESTS:
+        conf.check_boost(lib='unit_test_framework', mt=True, uselib_store='BOOST_TESTS')
 
     conf.check_compiler_flags()
 
@@ -83,13 +82,14 @@ def configure(conf):
     conf.write_config_header('PSync/detail/config.hpp', define_prefix='PSYNC_')
 
 def build(bld):
-    bld.shlib(target='PSync',
-              vnum=VERSION,
-              cnum=VERSION,
-              source=bld.path.ant_glob('PSync/**/*.cpp'),
-              use='NDN_CXX BOOST',
-              includes='.',
-              export_includes='.')
+    bld.shlib(
+        target='PSync',
+        vnum=VERSION,
+        cnum=VERSION,
+        source=bld.path.ant_glob('PSync/**/*.cpp'),
+        use='BOOST NDN_CXX',
+        includes='.',
+        export_includes='.')
 
     if bld.env.WITH_TESTS:
         bld.recurse('tests')
@@ -97,11 +97,10 @@ def build(bld):
     if bld.env.WITH_EXAMPLES:
         bld.recurse('examples')
 
+    # Install header files
     headers = bld.path.ant_glob('PSync/**/*.hpp')
     bld.install_files('${INCLUDEDIR}', headers, relative_trick=True)
-
-    bld.install_files('${INCLUDEDIR}/PSync/detail',
-                      bld.path.find_resource('PSync/detail/config.hpp'))
+    bld.install_files('${INCLUDEDIR}/PSync/detail', 'PSync/detail/config.hpp')
 
     bld(features='subst',
         source='PSync.pc.in',
@@ -160,16 +159,16 @@ def version(ctx):
     # first, try to get a version string from git
     gotVersionFromGit = False
     try:
-        cmd = ['git', 'describe', '--always', '--match', '%s*' % GIT_TAG_PREFIX]
-        out = subprocess.check_output(cmd, universal_newlines=True).strip()
+        cmd = ['git', 'describe', '--always', '--match', f'{GIT_TAG_PREFIX}*']
+        out = subprocess.run(cmd, capture_output=True, check=True, text=True).stdout.strip()
         if out:
             gotVersionFromGit = True
             if out.startswith(GIT_TAG_PREFIX):
                 Context.g_module.VERSION = out.lstrip(GIT_TAG_PREFIX)
             else:
                 # no tags matched
-                Context.g_module.VERSION = '%s-commit-%s' % (VERSION_BASE, out)
-    except (OSError, subprocess.CalledProcessError):
+                Context.g_module.VERSION = f'{VERSION_BASE}-commit-{out}'
+    except (OSError, subprocess.SubprocessError):
         pass
 
     versionFile = ctx.path.find_node('VERSION.info')
@@ -187,14 +186,14 @@ def version(ctx):
                 # already up-to-date
                 return
         except EnvironmentError as e:
-            Logs.warn('%s exists but is not readable (%s)' % (versionFile, e.strerror))
+            Logs.warn(f'{versionFile} exists but is not readable ({e.strerror})')
     else:
         versionFile = ctx.path.make_node('VERSION.info')
 
     try:
         versionFile.write(Context.g_module.VERSION)
     except EnvironmentError as e:
-        Logs.warn('%s is not writable (%s)' % (versionFile, e.strerror))
+        Logs.warn(f'{versionFile} is not writable ({e.strerror})')
 
 def dist(ctx):
     ctx.algo = 'tar.xz'
