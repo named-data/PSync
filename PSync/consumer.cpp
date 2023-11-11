@@ -36,7 +36,7 @@ Consumer::Consumer(const ndn::Name& syncPrefix,
                    ndn::time::milliseconds helloInterestLifetime,
                    ndn::time::milliseconds syncInterestLifetime)
   : m_face(face)
-  , m_scheduler(m_face.getIoService())
+  , m_scheduler(m_face.getIoContext())
   , m_syncPrefix(syncPrefix)
   , m_helloInterestPrefix(ndn::Name(m_syncPrefix).append("hello"))
   , m_syncInterestPrefix(ndn::Name(m_syncPrefix).append("sync"))

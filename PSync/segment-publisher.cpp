@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2022,  The University of Memphis
+ * Copyright (c) 2014-2023,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -24,7 +24,7 @@ namespace psync {
 SegmentPublisher::SegmentPublisher(ndn::Face& face, ndn::KeyChain& keyChain,
                                    const ndn::security::SigningInfo& signingInfo, size_t imsLimit)
   : m_face(face)
-  , m_scheduler(m_face.getIoService())
+  , m_scheduler(m_face.getIoContext())
   , m_segmenter(keyChain, signingInfo)
   , m_ims(imsLimit)
 {

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2022,  The University of Memphis
+ * Copyright (c) 2014-2023,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -37,7 +37,7 @@ ProducerBase::ProducerBase(ndn::Face& face,
                            CompressionScheme contentCompression)
   : m_face(face)
   , m_keyChain(keyChain)
-  , m_scheduler(m_face.getIoService())
+  , m_scheduler(m_face.getIoContext())
   , m_rng(ndn::random::getRandomNumberEngine())
   , m_iblt(expectedNumEntries, ibltCompression)
   , m_segmentPublisher(m_face, m_keyChain)

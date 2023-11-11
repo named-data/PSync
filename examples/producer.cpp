@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2022,  The University of Memphis
+ * Copyright (c) 2014-2023,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -82,7 +82,7 @@ private:
 private:
   ndn::Face m_face;
   ndn::KeyChain m_keyChain;
-  ndn::Scheduler m_scheduler{m_face.getIoService()};
+  ndn::Scheduler m_scheduler{m_face.getIoContext()};
 
   psync::PartialProducer m_producer;
   uint64_t m_maxNumPublish;
