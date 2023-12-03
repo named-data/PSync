@@ -21,16 +21,16 @@ if [[ $JOB_NAME != *"code-coverage" && $JOB_NAME != *"limited-build" ]]; then
     # Cleanup
     ./waf --color=yes distclean
 
-    # Build in release mode without tests
-    ./waf --color=yes configure
+    # Build in release mode with examples
+    ./waf --color=yes configure --with-examples
     ./waf --color=yes build
 
     # Cleanup
     ./waf --color=yes distclean
 fi
 
-# Build in debug mode with tests and examples
-./waf --color=yes configure --debug --with-tests --with-examples $ASAN $COVERAGE $LZMA
+# Build in debug mode with tests
+./waf --color=yes configure --debug --with-tests $ASAN $COVERAGE $LZMA
 ./waf --color=yes build
 
 # (tests will be run against the debug version)
