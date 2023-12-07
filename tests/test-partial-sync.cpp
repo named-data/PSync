@@ -37,7 +37,7 @@ class PartialSyncFixture : public tests::IoFixture, public tests::KeyChainFixtur
 protected:
   PartialSyncFixture()
   {
-    producer = std::make_unique<PartialProducer>(face, m_keyChain, 40, syncPrefix, userPrefix);
+    producer = std::make_unique<PartialProducer>(face, m_keyChain, syncPrefix, PartialProducer::Options{});
     addUserNodes("testUser", 10);
   }
 
@@ -111,8 +111,7 @@ protected:
   void
   addUserNodes(const std::string& prefix, int numOfUserNodes)
   {
-    // zeroth is added through constructor
-    for (int i = 1; i < numOfUserNodes; i++) {
+    for (int i = 0; i < numOfUserNodes; i++) {
       producer->addUserNode(prefix + "-" + std::to_string(i));
     }
   }
@@ -291,8 +290,8 @@ BOOST_AUTO_TEST_CASE(ReplicatedProducer)
   face.unlink();
 
   ndn::DummyClientFace face2(m_io, m_keyChain, {true, true});
-  PartialProducer replicatedProducer(face2, m_keyChain, 40, syncPrefix, userPrefix);
-  for (int i = 1; i < 10; i++) {
+  PartialProducer replicatedProducer(face2, m_keyChain, syncPrefix, {});
+  for (int i = 0; i < 10; i++) {
     replicatedProducer.addUserNode("testUser-" + std::to_string(i));
   }
   advanceClocks(ndn::time::milliseconds(10));

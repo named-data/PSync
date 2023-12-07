@@ -65,7 +65,7 @@ public:
     /// Callback to give sync data back to application.
     UpdateCallback onUpdate = [] (const auto&) {};
     /// Number of expected elements (subscriptions) in Bloom filter.
-    unsigned int bfCount = 80;
+    uint32_t bfCount = 80;
     /// Bloom filter false positive probability.
     double bfFalsePositive = 0.001;
     /// Lifetime of hello Interest.

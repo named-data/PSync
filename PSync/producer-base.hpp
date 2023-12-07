@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2022,  The University of Memphis
+ * Copyright (c) 2014-2023,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -61,7 +61,6 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
    * @param keyChain KeyChain instance to use for signing
    * @param expectedNumEntries Expected number of entries in IBF
    * @param syncPrefix The prefix of the sync group
-   * @param userPrefix The prefix of the first user in the group
    * @param syncReplyFreshness FreshnessPeriod of sync data
    * @param ibltCompression Compression scheme to use for IBF
    * @param contentCompression Compression scheme to use for Data content
@@ -70,7 +69,6 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
                ndn::KeyChain& keyChain,
                size_t expectedNumEntries,
                const ndn::Name& syncPrefix,
-               const ndn::Name& userPrefix,
                ndn::time::milliseconds syncReplyFreshness = SYNC_REPLY_FRESHNESS,
                CompressionScheme ibltCompression = CompressionScheme::NONE,
                CompressionScheme contentCompression = CompressionScheme::NONE);
@@ -175,7 +173,6 @@ PSYNC_PUBLIC_WITH_TESTS_ELSE_PROTECTED:
   // than it and whether we need to update the other side.
   const size_t m_threshold;
   const ndn::Name m_syncPrefix;
-  const ndn::Name m_userPrefix;
   const ndn::time::milliseconds m_syncReplyFreshness;
   const CompressionScheme m_ibltCompression;
   const CompressionScheme m_contentCompression;

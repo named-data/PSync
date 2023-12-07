@@ -41,11 +41,13 @@ FullProducer::FullProducer(ndn::Face& face,
                            ndn::time::milliseconds syncReplyFreshness,
                            CompressionScheme ibltCompression,
                            CompressionScheme contentCompression)
-  : ProducerBase(face, keyChain, expectedNumEntries, syncPrefix, userPrefix,
+  : ProducerBase(face, keyChain, expectedNumEntries, syncPrefix,
                  syncReplyFreshness, ibltCompression, contentCompression)
   , m_syncInterestLifetime(syncInterestLifetime)
   , m_onUpdate(std::move(onUpdateCb))
 {
+  addUserNode(userPrefix);
+
   m_registeredPrefix = m_face.setInterestFilter(ndn::InterestFilter(m_syncPrefix).allowLoopback(false),
     [this] (auto&&... args) { onSyncInterest(std::forward<decltype(args)>(args)...); },
     [] (auto&&... args) { onRegisterFailed(std::forward<decltype(args)>(args)...); });

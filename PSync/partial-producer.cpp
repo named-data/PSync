@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2022,  The University of Memphis
+ * Copyright (c) 2014-2023,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -33,15 +33,11 @@ const ndn::name::Component SYNC{"sync"};
 
 PartialProducer::PartialProducer(ndn::Face& face,
                                  ndn::KeyChain& keyChain,
-                                 size_t expectedNumEntries,
                                  const ndn::Name& syncPrefix,
-                                 const ndn::Name& userPrefix,
-                                 ndn::time::milliseconds helloReplyFreshness,
-                                 ndn::time::milliseconds syncReplyFreshness,
-                                 CompressionScheme ibltCompression)
-  : ProducerBase(face, keyChain, expectedNumEntries, syncPrefix, userPrefix,
-                 syncReplyFreshness, ibltCompression, CompressionScheme::NONE)
-  , m_helloReplyFreshness(helloReplyFreshness)
+                                 const Options& opts)
+  : ProducerBase(face, keyChain, opts.ibfCount, syncPrefix, opts.syncDataFreshness,
+                 opts.ibfCompression, CompressionScheme::NONE)
+  , m_helloReplyFreshness(opts.helloDataFreshness)
 {
   m_registeredPrefix = m_face.registerPrefix(m_syncPrefix,
     [this] (const auto&) {
@@ -51,6 +47,21 @@ PartialProducer::PartialProducer(ndn::Face& face,
                                std::bind(&PartialProducer::onSyncInterest, this, _1, _2));
     },
     [] (auto&&... args) { onRegisterFailed(std::forward<decltype(args)>(args)...); });
+}
+
+PartialProducer::PartialProducer(ndn::Face& face,
+                                 ndn::KeyChain& keyChain,
+                                 size_t expectedNumEntries,
+                                 const ndn::Name& syncPrefix,
+                                 const ndn::Name& userPrefix,
+                                 ndn::time::milliseconds helloReplyFreshness,
+                                 ndn::time::milliseconds syncReplyFreshness,
+                                 CompressionScheme ibltCompression)
+  : PartialProducer(face, keyChain, syncPrefix,
+                    Options{static_cast<uint32_t>(expectedNumEntries), ibltCompression,
+                            helloReplyFreshness, syncReplyFreshness})
+{
+  addUserNode(userPrefix);
 }
 
 void

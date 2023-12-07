@@ -39,7 +39,7 @@ public:
    */
   PSyncPartialProducer(const ndn::Name& syncPrefix, const std::string& userPrefix,
                        int numDataStreams, int maxNumPublish)
-    : m_producer(m_face, m_keyChain, 40, syncPrefix, userPrefix + "-0")
+    : m_producer(m_face, m_keyChain, syncPrefix, {})
     , m_maxNumPublish(maxNumPublish)
   {
     // Add user prefixes and schedule updates for them
@@ -47,7 +47,6 @@ public:
       ndn::Name updateName(userPrefix + "-" + std::to_string(i));
 
       // Add the user prefix to the producer
-      // Note that this does not add the already added userPrefix-0 in the constructor
       m_producer.addUserNode(updateName);
 
       // Each user prefix is updated at a random interval between 0 and 60 seconds

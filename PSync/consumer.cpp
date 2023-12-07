@@ -53,7 +53,8 @@ Consumer::Consumer(const ndn::Name& syncPrefix,
                    ndn::time::milliseconds helloInterestLifetime,
                    ndn::time::milliseconds syncInterestLifetime)
   : Consumer(face, syncPrefix,
-             Options{onReceiveHelloData, onUpdate, count, falsePositive, helloInterestLifetime, syncInterestLifetime})
+             Options{onReceiveHelloData, onUpdate, static_cast<uint32_t>(count), falsePositive,
+                     helloInterestLifetime, syncInterestLifetime})
 {
 }
 

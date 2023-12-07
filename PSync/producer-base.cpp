@@ -31,7 +31,6 @@ ProducerBase::ProducerBase(ndn::Face& face,
                            ndn::KeyChain& keyChain,
                            size_t expectedNumEntries,
                            const ndn::Name& syncPrefix,
-                           const ndn::Name& userPrefix,
                            ndn::time::milliseconds syncReplyFreshness,
                            CompressionScheme ibltCompression,
                            CompressionScheme contentCompression)
@@ -44,12 +43,10 @@ ProducerBase::ProducerBase(ndn::Face& face,
   , m_expectedNumEntries(expectedNumEntries)
   , m_threshold(expectedNumEntries / 2)
   , m_syncPrefix(syncPrefix)
-  , m_userPrefix(userPrefix)
   , m_syncReplyFreshness(syncReplyFreshness)
   , m_ibltCompression(ibltCompression)
   , m_contentCompression(contentCompression)
 {
-  addUserNode(userPrefix);
 }
 
 bool

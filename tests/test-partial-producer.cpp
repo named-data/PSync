@@ -41,7 +41,8 @@ BOOST_FIXTURE_TEST_SUITE(TestPartialProducer, PartialProducerFixture)
 BOOST_AUTO_TEST_CASE(RegisterPrefix)
 {
   Name syncPrefix("/psync"), userNode("/testUser");
-  PartialProducer producer(m_face, m_keyChain, 40, syncPrefix, userNode);
+  PartialProducer producer(m_face, m_keyChain, syncPrefix, {});
+  producer.addUserNode(userNode);
 
   m_face.processEvents(-1_ms);
 
@@ -55,7 +56,8 @@ BOOST_AUTO_TEST_CASE(RegisterPrefix)
 BOOST_AUTO_TEST_CASE(PublishName)
 {
   Name syncPrefix("/psync"), userNode("/testUser"), nonUser("/testUser2");
-  PartialProducer producer(m_face, m_keyChain, 40, syncPrefix, userNode);
+  PartialProducer producer(m_face, m_keyChain, syncPrefix, {});
+  producer.addUserNode(userNode);
 
   BOOST_CHECK_EQUAL(producer.getSeqNo(userNode).value_or(-1), 0);
   producer.publishName(userNode);
@@ -74,7 +76,8 @@ BOOST_AUTO_TEST_CASE(PublishName)
 BOOST_AUTO_TEST_CASE(SameSyncInterest)
 {
   Name syncPrefix("/psync"), userNode("/testUser");
-  PartialProducer producer(m_face, m_keyChain, 40, syncPrefix, userNode);
+  PartialProducer producer(m_face, m_keyChain, syncPrefix, {});
+  producer.addUserNode(userNode);
 
   Name syncInterestName(syncPrefix);
   syncInterestName.append("sync");
@@ -110,7 +113,8 @@ BOOST_AUTO_TEST_CASE(SameSyncInterest)
 BOOST_AUTO_TEST_CASE(OnSyncInterest)
 {
   Name syncPrefix("/psync"), userNode("/testUser");
-  PartialProducer producer(m_face, m_keyChain, 40, syncPrefix, userNode);
+  PartialProducer producer(m_face, m_keyChain, syncPrefix, {});
+  producer.addUserNode(userNode);
 
   // Sync interest with no bloom filter attached
   Name syncInterestName(syncPrefix);

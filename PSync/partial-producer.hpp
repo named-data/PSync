@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2022,  The University of Memphis
+ * Copyright (c) 2014-2023,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -37,20 +37,34 @@ class PartialProducer : public ProducerBase
 {
 public:
   /**
-   * @brief Constructor
-   *
-   * Registers syncPrefix in NFD and sets internal filters for
-   * "sync" and "hello" under syncPrefix.
-   *
-   * @param face Application's face
-   * @param keyChain KeyChain instance to use for signing
-   * @param expectedNumEntries Expected number of entries in IBF
-   * @param syncPrefix The prefix of the sync group
-   * @param userPrefix The prefix of the first user in the group
-   * @param helloReplyFreshness FreshnessPeriod of hello data
-   * @param syncReplyFreshness FreshnessPeriod of sync data
-   * @param ibltCompression Compression scheme to use for IBF
+   * @brief Constructor options.
    */
+  struct Options
+  {
+    /// Expected number of entries in IBF.
+    uint32_t ibfCount = 40;
+    /// Compression scheme to use for IBF.
+    CompressionScheme ibfCompression = CompressionScheme::NONE;
+    /// FreshnessPeriod of hello data.
+    ndn::time::milliseconds helloDataFreshness = HELLO_REPLY_FRESHNESS;
+    /// FreshnessPeriod of sync data.
+    ndn::time::milliseconds syncDataFreshness = SYNC_REPLY_FRESHNESS;
+  };
+
+  /**
+   * @brief Constructor.
+   *
+   * @param face Application face.
+   * @param keyChain KeyChain instance to use for signing.
+   * @param syncPrefix The prefix of the sync group.
+   * @param opts Options.
+   */
+  PartialProducer(ndn::Face& face,
+                  ndn::KeyChain& keyChain,
+                  const ndn::Name& syncPrefix,
+                  const Options& opts);
+
+  [[deprecated]]
   PartialProducer(ndn::Face& face,
                   ndn::KeyChain& keyChain,
                   size_t expectedNumEntries,

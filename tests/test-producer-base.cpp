@@ -39,7 +39,8 @@ BOOST_FIXTURE_TEST_SUITE(TestProducerBase, ProducerBaseFixture)
 BOOST_AUTO_TEST_CASE(Basic)
 {
   Name userNode("/testUser");
-  ProducerBase producerBase(m_face, m_keyChain, 40, Name("/psync"), userNode);
+  ProducerBase producerBase(m_face, m_keyChain, 40, Name("/psync"));
+  producerBase.addUserNode(userNode);
 
   // Hash table size should be 40 + 40/2 = 60 (which is perfectly divisible by N_HASH = 3)
   BOOST_CHECK_EQUAL(producerBase.m_iblt.getHashTable().size(), 60);
@@ -66,7 +67,8 @@ BOOST_AUTO_TEST_CASE(Basic)
 
 BOOST_AUTO_TEST_CASE(ApplicationNack)
 {
-  ProducerBase producerBase(m_face, m_keyChain, 40, Name("/psync"), Name("/testUser"));
+  ProducerBase producerBase(m_face, m_keyChain, 40, Name("/psync"));
+  producerBase.addUserNode("/testUser");
 
   BOOST_CHECK_EQUAL(m_face.sentData.size(), 0);
   producerBase.sendApplicationNack(Name("test"));
