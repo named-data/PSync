@@ -41,8 +41,10 @@ BOOST_FIXTURE_TEST_SUITE(TestFullProducer, FullProducerFixture)
 
 BOOST_AUTO_TEST_CASE(OnInterest)
 {
-  Name syncPrefix("/psync"), userNode("/testUser");
-  FullProducer node(m_face, m_keyChain, 40, syncPrefix, userNode, nullptr);
+  Name syncPrefix("/psync");
+  FullProducer::Options opts;
+  opts.ibfCount = 40;
+  FullProducer node(m_face, m_keyChain, syncPrefix, opts);
 
   Name syncInterestName(syncPrefix);
   syncInterestName.append("malicious-IBF");
@@ -52,8 +54,11 @@ BOOST_AUTO_TEST_CASE(OnInterest)
 
 BOOST_AUTO_TEST_CASE(ConstantTimeoutForFirstSegment)
 {
-  Name syncPrefix("/psync"), userNode("/testUser");
-  FullProducer node(m_face, m_keyChain, 40, syncPrefix, userNode, nullptr, 8_s);
+  Name syncPrefix("/psync");
+  FullProducer::Options opts;
+  opts.ibfCount = 40;
+  opts.syncInterestLifetime = 8_s;
+  FullProducer node(m_face, m_keyChain, syncPrefix, opts);
 
   advanceClocks(10_ms);
   m_face.sentInterests.clear();
@@ -65,8 +70,10 @@ BOOST_AUTO_TEST_CASE(ConstantTimeoutForFirstSegment)
 
 BOOST_AUTO_TEST_CASE(OnSyncDataDecodeFailure)
 {
-  Name syncPrefix("/psync"), userNode("/testUser");
-  FullProducer node(m_face, m_keyChain, 40, syncPrefix, userNode, nullptr);
+  Name syncPrefix("/psync");
+  FullProducer::Options opts;
+  opts.ibfCount = 40;
+  FullProducer node(m_face, m_keyChain, syncPrefix, opts);
 
   Name syncInterestName(syncPrefix);
   node.m_iblt.appendToName(syncInterestName);

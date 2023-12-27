@@ -33,6 +33,24 @@ NDN_LOG_INIT(psync.FullProducer);
 
 FullProducer::FullProducer(ndn::Face& face,
                            ndn::KeyChain& keyChain,
+                           const ndn::Name& syncPrefix,
+                           const Options& opts)
+  : ProducerBase(face, keyChain, opts.ibfCount, syncPrefix, opts.syncDataFreshness,
+                 opts.ibfCompression, opts.contentCompression)
+  , m_syncInterestLifetime(opts.syncInterestLifetime)
+  , m_onUpdate(opts.onUpdate)
+{
+  m_registeredPrefix = m_face.setInterestFilter(ndn::InterestFilter(m_syncPrefix).allowLoopback(false),
+    [this] (auto&&... args) { onSyncInterest(std::forward<decltype(args)>(args)...); },
+    [] (auto&&... args) { onRegisterFailed(std::forward<decltype(args)>(args)...); });
+
+  // Should we do this after setInterestFilter success call back
+  // (Currently following ChronoSync's way)
+  sendSyncInterest();
+}
+
+FullProducer::FullProducer(ndn::Face& face,
+                           ndn::KeyChain& keyChain,
                            size_t expectedNumEntries,
                            const ndn::Name& syncPrefix,
                            const ndn::Name& userPrefix,
@@ -41,20 +59,11 @@ FullProducer::FullProducer(ndn::Face& face,
                            ndn::time::milliseconds syncReplyFreshness,
                            CompressionScheme ibltCompression,
                            CompressionScheme contentCompression)
-  : ProducerBase(face, keyChain, expectedNumEntries, syncPrefix,
-                 syncReplyFreshness, ibltCompression, contentCompression)
-  , m_syncInterestLifetime(syncInterestLifetime)
-  , m_onUpdate(std::move(onUpdateCb))
+  : FullProducer(face, keyChain, syncPrefix,
+                 Options{std::move(onUpdateCb), static_cast<uint32_t>(expectedNumEntries), ibltCompression,
+                         syncInterestLifetime, syncReplyFreshness, contentCompression})
 {
   addUserNode(userPrefix);
-
-  m_registeredPrefix = m_face.setInterestFilter(ndn::InterestFilter(m_syncPrefix).allowLoopback(false),
-    [this] (auto&&... args) { onSyncInterest(std::forward<decltype(args)>(args)...); },
-    [] (auto&&... args) { onRegisterFailed(std::forward<decltype(args)>(args)...); });
-
-  // Should we do this after setInterestFilter success call back
-  // (Currently following ChronoSync's way)
-  sendSyncInterest();
 }
 
 FullProducer::~FullProducer()

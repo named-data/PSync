@@ -42,21 +42,38 @@ class FullProducer : public ProducerBase
 {
 public:
   /**
-   * @brief Constructor
-   *
-   * Registers syncPrefix in NFD and sends a sync interest.
-   *
-   * @param face Application's face
-   * @param keyChain KeyChain instance to use for signing
-   * @param expectedNumEntries Expected number of entries in IBF
-   * @param syncPrefix The prefix of the sync group
-   * @param userPrefix The prefix of the first user in the group
-   * @param onUpdateCallBack The callback to be invoked when there is new data
-   * @param syncInterestLifetime Lifetime of the sync interest
-   * @param syncReplyFreshness FreshnessPeriod of sync data
-   * @param ibltCompression Compression scheme to use for IBF
-   * @param contentCompression Compression scheme to use for Data content
+   * @brief Constructor options.
    */
+  struct Options
+  {
+    /// Callback to be invoked when there is new data.
+    UpdateCallback onUpdate = [] (const auto&) {};
+    /// Expected number of entries in IBF.
+    uint32_t ibfCount = 80;
+    /// Compression scheme to use for IBF.
+    CompressionScheme ibfCompression = CompressionScheme::DEFAULT;
+    /// Lifetime of sync Interest.
+    ndn::time::milliseconds syncInterestLifetime = SYNC_INTEREST_LIFETIME;
+    /// FreshnessPeriod of sync Data.
+    ndn::time::milliseconds syncDataFreshness = SYNC_REPLY_FRESHNESS;
+    /// Compression scheme to use for Data content.
+    CompressionScheme contentCompression = CompressionScheme::DEFAULT;
+  };
+
+  /**
+   * @brief Constructor.
+   *
+   * @param face Application face.
+   * @param keyChain KeyChain instance to use for signing.
+   * @param syncPrefix The prefix of the sync group.
+   * @param opts Options.
+   */
+  FullProducer(ndn::Face& face,
+               ndn::KeyChain& keyChain,
+               const ndn::Name& syncPrefix,
+               const Options& opts);
+
+  [[deprecated]]
   FullProducer(ndn::Face& face,
                ndn::KeyChain& keyChain,
                size_t expectedNumEntries,

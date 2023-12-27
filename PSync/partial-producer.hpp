@@ -45,9 +45,9 @@ public:
     uint32_t ibfCount = 40;
     /// Compression scheme to use for IBF.
     CompressionScheme ibfCompression = CompressionScheme::NONE;
-    /// FreshnessPeriod of hello data.
+    /// FreshnessPeriod of hello Data.
     ndn::time::milliseconds helloDataFreshness = HELLO_REPLY_FRESHNESS;
-    /// FreshnessPeriod of sync data.
+    /// FreshnessPeriod of sync Data.
     ndn::time::milliseconds syncDataFreshness = SYNC_REPLY_FRESHNESS;
   };
 

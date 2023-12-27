@@ -44,8 +44,10 @@ protected:
     userPrefixes[id] = "/userPrefix" + std::to_string(id);
     faces[id] = std::make_unique<ndn::DummyClientFace>(m_io, m_keyChain,
                                                        ndn::DummyClientFace::Options{true, true});
-    nodes[id] = std::make_unique<FullProducer>(*faces[id], m_keyChain, 40, syncPrefix, userPrefixes[id],
-                                               [] (const auto&) {});
+    FullProducer::Options opts;
+    opts.ibfCount = 40;
+    nodes[id] = std::make_unique<FullProducer>(*faces[id], m_keyChain, syncPrefix, opts);
+    nodes[id]->addUserNode(userPrefixes[id]);
   }
 
   void

@@ -35,20 +35,25 @@ class Producer
 {
 public:
   /**
-   * @brief Initialize producer and schedule updates
+   * @brief Initialize producer and schedule updates.
    *
-   * Set IBF size as 80 expecting 80 updates to IBF in a sync cycle
-   * Set syncInterestLifetime and syncReplyFreshness to 1.6 seconds
-   * userPrefix is the default user prefix, no updates are published on it in this example
+   * Set IBF size as 80 expecting 80 updates to IBF in a sync cycle.
+   * Set syncInterestLifetime and syncDataFreshness to 1.6 seconds.
+   * userPrefix is the prefix string of user node prefixes.
    */
   Producer(const ndn::Name& syncPrefix, const std::string& userPrefix,
            int numDataStreams, int maxNumPublish)
-    : m_producer(m_face, m_keyChain, 80, syncPrefix, userPrefix,
-                 std::bind(&Producer::processSyncUpdate, this, _1),
-                 1600_ms, 1600_ms)
+    : m_producer(m_face, m_keyChain, syncPrefix, [this] {
+          psync::FullProducer::Options opts;
+          opts.onUpdate = std::bind(&Producer::processSyncUpdate, this, _1);
+          opts.ibfCount = 80;
+          opts.syncInterestLifetime = 1600_ms;
+          opts.syncDataFreshness = 1600_ms;
+          return opts;
+      } ())
     , m_maxNumPublish(maxNumPublish)
   {
-    // Add user prefixes and schedule updates for them in specified interval
+    // Add user prefixes and schedule updates for them in specified interval.
     for (int i = 0; i < numDataStreams; i++) {
       ndn::Name prefix(userPrefix + "-" + std::to_string(i));
       m_producer.addUserNode(prefix);
