@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2023,  The University of Memphis
+ * Copyright (c) 2014-2024,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -500,8 +500,7 @@ BOOST_AUTO_TEST_CASE(DelayedSecondSegment)
   // Get data name from face and increase segment number to form next interest
   BOOST_REQUIRE(!faces[0]->sentData.empty());
   Name dataName = faces[0]->sentData.front().getName();
-  Name interestName = dataName.getSubName(0, dataName.size() - 2);
-  interestName.appendSegment(1);
+  Name interestName = dataName.getPrefix(-1).appendSegment(1);
   faces[0]->sentData.clear();
 
   nodes[0]->onSyncInterest(syncPrefix, Interest(interestName));

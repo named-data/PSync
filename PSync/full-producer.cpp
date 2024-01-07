@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2023,  The University of Memphis
+ * Copyright (c) 2014-2024,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -254,37 +254,20 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
 void
 FullProducer::sendSyncData(const ndn::Name& name, const ndn::Block& block)
 {
-  NDN_LOG_DEBUG("Checking if data will satisfy our own pending interest");
+  bool isSatisfyingOwnInterest = m_outstandingInterestName == name;
+  if (isSatisfyingOwnInterest && m_fetcher) {
+    NDN_LOG_DEBUG("Removing our pending interest from face (stop fetcher)");
+    m_fetcher->stop();
+    m_outstandingInterestName.clear();
+  }
 
-  ndn::Name nameWithIblt;
-  m_iblt.appendToName(nameWithIblt);
-
-  // TODO: Remove appending of hash - serves no purpose to the receiver
-  ndn::Name dataName(ndn::Name(name).appendNumber(std::hash<ndn::Name>{}(nameWithIblt)));
-
+  NDN_LOG_DEBUG("Sending sync Data");
   auto content = detail::compress(m_contentCompression, block);
+  m_segmentPublisher.publish(name, name, *content, m_syncReplyFreshness);
 
-  // checking if our own interest got satisfied
-  if (m_outstandingInterestName == name) {
-    NDN_LOG_DEBUG("Satisfied our own pending interest");
-    // remove outstanding interest
-    if (m_fetcher) {
-      NDN_LOG_DEBUG("Removing our pending interest from face (stop fetcher)");
-      m_fetcher->stop();
-      m_outstandingInterestName = ndn::Name("");
-    }
-
-    NDN_LOG_DEBUG("Sending sync Data");
-
-    // Send data after removing pending sync interest on face
-    m_segmentPublisher.publish(name, dataName, *content, m_syncReplyFreshness);
-
+  if (isSatisfyingOwnInterest) {
     NDN_LOG_TRACE("Renewing sync interest");
     sendSyncInterest();
-  }
-  else {
-    NDN_LOG_DEBUG("Sending sync Data");
-    m_segmentPublisher.publish(name, dataName, *content, m_syncReplyFreshness);
   }
 }
 
