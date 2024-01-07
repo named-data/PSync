@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2022,  The University of Memphis
+ * Copyright (c) 2014-2024,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -50,23 +50,37 @@
 
 #include <ndn-cxx/name.hpp>
 
+#include <boost/operators.hpp>
+
 #include <set>
 #include <string>
 
 namespace psync::detail {
 
-class HashTableEntry
+class HashTableEntry : private boost::equality_comparable<HashTableEntry>
 {
 public:
-  int32_t count;
-  uint32_t keySum;
-  uint32_t keyCheck;
-
   bool
   isPure() const;
 
   bool
   isEmpty() const;
+
+private: // non-member operators
+  // NOTE: the following "hidden friend" operators are available via
+  //       argument-dependent lookup only and must be defined inline.
+  // boost::equality_comparable provides != operator.
+
+  friend bool
+  operator==(const HashTableEntry& lhs, const HashTableEntry& rhs) noexcept
+  {
+    return lhs.count == rhs.count && lhs.keySum == rhs.keySum && lhs.keyCheck == rhs.keyCheck;
+  }
+
+public:
+  int32_t count = 0;
+  uint32_t keySum = 0;
+  uint32_t keyCheck = 0;
 };
 
 inline constexpr size_t N_HASH = 3;
@@ -77,7 +91,7 @@ inline constexpr size_t N_HASHCHECK = 11;
  *
  * Used by Partial Sync (PartialProducer) and Full Sync (Full Producer)
  */
-class IBLT
+class IBLT : private boost::equality_comparable<IBLT>
 {
 public:
   class Error : public std::runtime_error
@@ -143,21 +157,20 @@ public:
   void
   appendToName(ndn::Name& name) const;
 
-  /**
-   * @brief Extracts IBLT from name component
-   *
-   * Converts the name into a uint8_t vector which is then decoded to a
-   * a uint32_t vector.
-   *
-   * @param ibltName IBLT represented as a Name Component
-   * @return a uint32_t vector representing the hash table of the IBLT
-   */
-  std::vector<uint32_t>
-  extractValueFromName(const ndn::name::Component& ibltName) const;
-
 private:
   void
   update(int plusOrMinus, uint32_t key);
+
+private: // non-member operators
+  // NOTE: the following "hidden friend" operators are available via
+  //       argument-dependent lookup only and must be defined inline.
+  // boost::equality_comparable provides != operator.
+
+  friend bool
+  operator==(const IBLT& lhs, const IBLT& rhs)
+  {
+    return lhs.m_hashTable == rhs.m_hashTable;
+  }
 
 private:
   std::vector<HashTableEntry> m_hashTable;
@@ -165,12 +178,6 @@ private:
   static constexpr int ERASE = -1;
   CompressionScheme m_compressionScheme;
 };
-
-bool
-operator==(const IBLT& iblt1, const IBLT& iblt2);
-
-bool
-operator!=(const IBLT& iblt1, const IBLT& iblt2);
 
 std::ostream&
 operator<<(std::ostream& os, const IBLT& iblt);

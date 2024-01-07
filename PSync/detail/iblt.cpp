@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2022,  The University of Memphis
+ * Copyright (c) 2014-2024,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -52,6 +52,9 @@ namespace psync::detail {
 
 namespace be = boost::endian;
 
+constexpr size_t ENTRY_SIZE = sizeof(HashTableEntry::count) + sizeof(HashTableEntry::keySum) +
+                              sizeof(HashTableEntry::keyCheck);
+
 bool
 HashTableEntry::isPure() const
 {
@@ -86,19 +89,21 @@ IBLT::IBLT(size_t expectedNumEntries, CompressionScheme scheme)
 void
 IBLT::initialize(const ndn::name::Component& ibltName)
 {
-  const auto& values = extractValueFromName(ibltName);
-
-  if (3 * m_hashTable.size() != values.size()) {
+  auto decompressed = decompress(m_compressionScheme, ibltName.value_bytes());
+  if (decompressed->size() != ENTRY_SIZE * m_hashTable.size()) {
     NDN_THROW(Error("Received IBF cannot be decoded!"));
   }
 
-  for (size_t i = 0; i < m_hashTable.size(); i++) {
-    HashTableEntry& entry = m_hashTable.at(i);
-    if (values[i * 3] != 0) {
-      entry.count = values[i * 3];
-      entry.keySum = values[(i * 3) + 1];
-      entry.keyCheck = values[(i * 3) + 2];
-    }
+  const uint8_t* input = decompressed->data();
+  for (auto& entry : m_hashTable) {
+    entry.count = be::endian_load<int32_t, sizeof(int32_t), be::order::big>(input);
+    input += sizeof(entry.count);
+
+    entry.keySum = be::endian_load<uint32_t, sizeof(uint32_t), be::order::big>(input);
+    input += sizeof(entry.keySum);
+
+    entry.keyCheck = be::endian_load<uint32_t, sizeof(uint32_t), be::order::big>(input);
+    input += sizeof(entry.keyCheck);
   }
 }
 
@@ -182,73 +187,21 @@ IBLT::operator-(const IBLT& other) const
 void
 IBLT::appendToName(ndn::Name& name) const
 {
-  constexpr size_t unitSize = sizeof(m_hashTable[0].count) +
-                              sizeof(m_hashTable[0].keySum) +
-                              sizeof(m_hashTable[0].keyCheck);
+  std::vector<uint8_t> buffer(ENTRY_SIZE * m_hashTable.size());
+  uint8_t* output = buffer.data();
+  for (const auto& entry : m_hashTable) {
+    be::endian_store<int32_t, sizeof(int32_t), be::order::big>(output, entry.count);
+    output += sizeof(entry.count);
 
-  size_t tableSize = unitSize * m_hashTable.size();
-  std::vector<uint8_t> table(tableSize);
+    be::endian_store<uint32_t, sizeof(uint32_t), be::order::big>(output, entry.keySum);
+    output += sizeof(entry.keySum);
 
-  for (size_t i = 0; i < m_hashTable.size(); i++) {
-    uint32_t count    = be::native_to_big(static_cast<uint32_t>(m_hashTable[i].count));
-    uint32_t keySum   = be::native_to_big(static_cast<uint32_t>(m_hashTable[i].keySum));
-    uint32_t keyCheck = be::native_to_big(static_cast<uint32_t>(m_hashTable[i].keyCheck));
-
-    std::memcpy(&table[i * unitSize], &count, sizeof(count));
-    std::memcpy(&table[(i * unitSize) + 4], &keySum, sizeof(keySum));
-    std::memcpy(&table[(i * unitSize) + 8], &keyCheck, sizeof(keyCheck));
+    be::endian_store<uint32_t, sizeof(uint32_t), be::order::big>(output, entry.keyCheck);
+    output += sizeof(entry.keyCheck);
   }
 
-  auto compressed = compress(m_compressionScheme, table);
+  auto compressed = compress(m_compressionScheme, buffer);
   name.append(ndn::name::Component(std::move(compressed)));
-}
-
-std::vector<uint32_t>
-IBLT::extractValueFromName(const ndn::name::Component& ibltName) const
-{
-  auto decompressedBuf = decompress(m_compressionScheme, ibltName.value_bytes());
-
-  if (decompressedBuf->size() % 4 != 0) {
-    NDN_THROW(Error("Received IBF cannot be decompressed correctly!"));
-  }
-
-  size_t n = decompressedBuf->size() / 4;
-  std::vector<uint32_t> values(n, 0);
-
-  for (size_t i = 0; i < n; i++) {
-    uint32_t t;
-    std::memcpy(&t, &(*decompressedBuf)[i * 4], sizeof(t));
-    values[i] = be::big_to_native(t);
-  }
-
-  return values;
-}
-
-bool
-operator==(const IBLT& iblt1, const IBLT& iblt2)
-{
-  auto iblt1HashTable = iblt1.getHashTable();
-  auto iblt2HashTable = iblt2.getHashTable();
-  if (iblt1HashTable.size() != iblt2HashTable.size()) {
-    return false;
-  }
-
-  size_t N = iblt1HashTable.size();
-
-  for (size_t i = 0; i < N; i++) {
-    if (iblt1HashTable[i].count != iblt2HashTable[i].count ||
-        iblt1HashTable[i].keySum != iblt2HashTable[i].keySum ||
-        iblt1HashTable[i].keyCheck != iblt2HashTable[i].keyCheck)
-      return false;
-  }
-
-  return true;
-}
-
-bool
-operator!=(const IBLT& iblt1, const IBLT& iblt2)
-{
-  return !(iblt1 == iblt2);
 }
 
 std::ostream&
