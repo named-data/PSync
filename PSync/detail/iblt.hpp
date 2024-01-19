@@ -124,21 +124,6 @@ public:
   void
   erase(uint32_t key);
 
-  /**
-   * @brief List all the entries in the IBLT
-   *
-   * This is called on a difference of two IBLTs: ownIBLT - rcvdIBLT
-   * Entries listed in positive are in ownIBLT but not in rcvdIBLT
-   * Entries listed in negative are in rcvdIBLT but not in ownIBLT
-   *
-   * @return whether decoding completed successfully
-   */
-  bool
-  listEntries(std::set<uint32_t>& positive, std::set<uint32_t>& negative) const;
-
-  IBLT
-  operator-(const IBLT& other) const;
-
   const std::vector<HashTableEntry>&
   getHashTable() const
   {
@@ -157,10 +142,6 @@ public:
   void
   appendToName(ndn::Name& name) const;
 
-private:
-  void
-  update(int plusOrMinus, uint32_t key);
-
 private: // non-member operators
   // NOTE: the following "hidden friend" operators are available via
   //       argument-dependent lookup only and must be defined inline.
@@ -174,13 +155,33 @@ private: // non-member operators
 
 private:
   std::vector<HashTableEntry> m_hashTable;
-  static constexpr int INSERT = 1;
-  static constexpr int ERASE = -1;
   CompressionScheme m_compressionScheme;
 };
 
 std::ostream&
 operator<<(std::ostream& os, const IBLT& iblt);
+
+/** @brief Represent the difference between two IBLTs, */
+struct IBLTDiff
+{
+  /** @brief Whether decoding completed successfully. */
+  bool canDecode = false;
+
+  /** @brief Entries in lhs but not rhs. */
+  std::set<uint32_t> positive;
+
+  /** @brief Entries in rhs but not lhs. */
+  std::set<uint32_t> negative;
+};
+
+/**
+ * @brief Compute the difference between two IBLTs.
+ * @param lhs own IBLT.
+ * @param rhs received IBLT. It must have same hashtable size @p lhs hashtable.
+ * @return decoding result.
+ */
+IBLTDiff
+operator-(const IBLT& lhs, const IBLT& rhs);
 
 } // namespace psync::detail
 

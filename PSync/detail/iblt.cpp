@@ -107,15 +107,15 @@ IBLT::initialize(const ndn::name::Component& ibltName)
   }
 }
 
-void
-IBLT::update(int plusOrMinus, uint32_t key)
+static inline void
+ibltUpdate(std::vector<HashTableEntry>& ht, int32_t plusOrMinus, uint32_t key)
 {
-  size_t bucketsPerHash = m_hashTable.size() / N_HASH;
+  size_t bucketsPerHash = ht.size() / N_HASH;
 
   for (size_t i = 0; i < N_HASH; i++) {
     size_t startEntry = i * bucketsPerHash;
     uint32_t h = murmurHash3(i, key);
-    HashTableEntry& entry = m_hashTable.at(startEntry + (h % bucketsPerHash));
+    HashTableEntry& entry = ht.at(startEntry + (h % bucketsPerHash));
     entry.count += plusOrMinus;
     entry.keySum ^= key;
     entry.keyCheck ^= murmurHash3(N_HASHCHECK, key);
@@ -125,63 +125,13 @@ IBLT::update(int plusOrMinus, uint32_t key)
 void
 IBLT::insert(uint32_t key)
 {
-  update(INSERT, key);
+  ibltUpdate(m_hashTable, 1, key);
 }
 
 void
 IBLT::erase(uint32_t key)
 {
-  update(ERASE, key);
-}
-
-bool
-IBLT::listEntries(std::set<uint32_t>& positive, std::set<uint32_t>& negative) const
-{
-  IBLT peeled = *this;
-
-  size_t nErased = 0;
-  do {
-    nErased = 0;
-    for (const auto& entry : peeled.m_hashTable) {
-      if (entry.isPure()) {
-        if (entry.count == 1) {
-          positive.insert(entry.keySum);
-        }
-        else {
-          negative.insert(entry.keySum);
-        }
-        peeled.update(-entry.count, entry.keySum);
-        ++nErased;
-      }
-    }
-  } while (nErased > 0);
-
-  // If any buckets for one of the hash functions is not empty,
-  // then we didn't peel them all:
-  for (const auto& entry : peeled.m_hashTable) {
-    if (!entry.isEmpty()) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-IBLT
-IBLT::operator-(const IBLT& other) const
-{
-  BOOST_ASSERT(m_hashTable.size() == other.m_hashTable.size());
-
-  IBLT result(*this);
-  for (size_t i = 0; i < m_hashTable.size(); i++) {
-    HashTableEntry& e1 = result.m_hashTable.at(i);
-    const HashTableEntry& e2 = other.m_hashTable.at(i);
-    e1.count -= e2.count;
-    e1.keySum ^= e2.keySum;
-    e1.keyCheck ^= e2.keyCheck;
-  }
-
-  return result;
+  ibltUpdate(m_hashTable, -1, key);
 }
 
 void
@@ -214,6 +164,51 @@ operator<<(std::ostream& os, const IBLT& iblt)
        << "\n";
   }
   return os;
+}
+
+IBLTDiff
+operator-(const IBLT& lhs, const IBLT& rhs)
+{
+  const auto& lht = lhs.getHashTable();
+  const auto& rht = rhs.getHashTable();
+  BOOST_ASSERT(lht.size() == rht.size());
+
+  std::vector<HashTableEntry> peeled(lht.size());
+  std::transform(lht.begin(), lht.end(), rht.begin(), peeled.begin(),
+    [] (const HashTableEntry& lhe, const HashTableEntry& rhe) {
+      HashTableEntry diff;
+      diff.count = lhe.count - rhe.count;
+      diff.keySum = lhe.keySum ^ rhe.keySum;
+      diff.keyCheck = lhe.keyCheck ^ rhe.keyCheck;
+      return diff;
+    }
+  );
+
+  std::set<uint32_t> positive;
+  std::set<uint32_t> negative;
+
+  size_t nErased = 0;
+  do {
+    nErased = 0;
+    for (const auto& entry : peeled) {
+      if (entry.isPure()) {
+        if (entry.count == 1) {
+          positive.insert(entry.keySum);
+        }
+        else {
+          negative.insert(entry.keySum);
+        }
+        ibltUpdate(peeled, -entry.count, entry.keySum);
+        ++nErased;
+      }
+    }
+  } while (nErased > 0);
+
+  // If any buckets for one of the hash functions is not empty,
+  // then we didn't peel them all:
+  bool canDecode = std::all_of(peeled.begin(), peeled.end(),
+                               [] (const HashTableEntry& entry) { return entry.isEmpty(); });
+  return {canDecode, std::move(positive), std::move(negative)};
 }
 
 } // namespace psync::detail

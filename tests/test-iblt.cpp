@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2023,  The University of Memphis
+ * Copyright (c) 2014-2024,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -146,13 +146,10 @@ BOOST_AUTO_TEST_CASE(HigherSeqTest)
   uint32_t hash2 = murmurHash3(11, prefix2);
   rcvdIBF.insert(hash2);
 
-  IBLT diff = ownIBF - rcvdIBF;
-  std::set<uint32_t> positive;
-  std::set<uint32_t> negative;
-
-  BOOST_CHECK(diff.listEntries(positive, negative));
-  BOOST_CHECK(*positive.begin() == hash1);
-  BOOST_CHECK(*negative.begin() == hash2);
+  auto diff = ownIBF - rcvdIBF;
+  BOOST_CHECK(diff.canDecode);
+  BOOST_CHECK(*diff.positive.begin() == hash1);
+  BOOST_CHECK(*diff.negative.begin() == hash2);
 }
 
 BOOST_AUTO_TEST_CASE(Difference)
@@ -162,32 +159,30 @@ BOOST_AUTO_TEST_CASE(Difference)
   IBLT ownIBF(size, CompressionScheme::DEFAULT);
   IBLT rcvdIBF = ownIBF;
 
-  IBLT diff = ownIBF - rcvdIBF;
+  auto diff = ownIBF - rcvdIBF;
+  // non-empty Positive means we have some elements that the others don't
 
-  std::set<uint32_t> positive; // non-empty Positive means we have some elements that the others don't
-  std::set<uint32_t> negative;
-
-  BOOST_CHECK(diff.listEntries(positive, negative));
-  BOOST_CHECK_EQUAL(positive.size(), 0);
-  BOOST_CHECK_EQUAL(negative.size(), 0);
+  BOOST_CHECK(diff.canDecode);
+  BOOST_CHECK_EQUAL(diff.positive.size(), 0);
+  BOOST_CHECK_EQUAL(diff.negative.size(), 0);
 
   auto prefix = Name("/test/memphis").appendNumber(1);
   uint32_t newHash = murmurHash3(11, prefix);
   ownIBF.insert(newHash);
 
   diff = ownIBF - rcvdIBF;
-  BOOST_CHECK(diff.listEntries(positive, negative));
-  BOOST_CHECK_EQUAL(positive.size(), 1);
-  BOOST_CHECK_EQUAL(negative.size(), 0);
+  BOOST_CHECK(diff.canDecode);
+  BOOST_CHECK_EQUAL(diff.positive.size(), 1);
+  BOOST_CHECK_EQUAL(diff.negative.size(), 0);
 
   prefix = Name("/test/csu").appendNumber(1);
   newHash = murmurHash3(11, prefix);
   rcvdIBF.insert(newHash);
 
   diff = ownIBF - rcvdIBF;
-  BOOST_CHECK(diff.listEntries(positive, negative));
-  BOOST_CHECK_EQUAL(positive.size(), 1);
-  BOOST_CHECK_EQUAL(negative.size(), 1);
+  BOOST_CHECK(diff.canDecode);
+  BOOST_CHECK_EQUAL(diff.positive.size(), 1);
+  BOOST_CHECK_EQUAL(diff.negative.size(), 1);
 }
 
 BOOST_AUTO_TEST_CASE(DifferenceBwOversizedIBFs)
@@ -212,17 +207,15 @@ BOOST_AUTO_TEST_CASE(DifferenceBwOversizedIBFs)
   uint32_t newHash = murmurHash3(11, prefix);
   ownIBF.insert(newHash);
 
-  IBLT diff = ownIBF - rcvdIBF;
+  auto diff = ownIBF - rcvdIBF;
+  BOOST_CHECK(diff.canDecode);
+  BOOST_CHECK_EQUAL(diff.positive.size(), 1);
+  BOOST_CHECK_EQUAL(*diff.positive.begin(), newHash);
+  BOOST_CHECK_EQUAL(diff.negative.size(), 0);
 
-  std::set<uint32_t> positive;
-  std::set<uint32_t> negative;
-  BOOST_CHECK(diff.listEntries(positive, negative));
-  BOOST_CHECK_EQUAL(positive.size(), 1);
-  BOOST_CHECK_EQUAL(*positive.begin(), newHash);
-  BOOST_CHECK_EQUAL(negative.size(), 0);
-
-  BOOST_CHECK(!ownIBF.listEntries(positive, negative));
-  BOOST_CHECK(!rcvdIBF.listEntries(positive, negative));
+  IBLT emptyIBF(size, CompressionScheme::DEFAULT);
+  BOOST_CHECK(!(ownIBF - emptyIBF).canDecode);
+  BOOST_CHECK(!(rcvdIBF - emptyIBF).canDecode);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

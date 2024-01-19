@@ -189,19 +189,15 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
   }
 
   auto diff = m_iblt - iblt;
-
-  std::set<uint32_t> positive;
-  std::set<uint32_t> negative;
-
-  if (!diff.listEntries(positive, negative)) {
-    NDN_LOG_TRACE("Cannot decode differences, positive: " << positive.size()
-                  << " negative: " << negative.size() << " m_threshold: "
+  if (!diff.canDecode) {
+    NDN_LOG_TRACE("Cannot decode differences, positive: " << diff.positive.size()
+                  << " negative: " << diff.negative.size() << " m_threshold: "
                   << m_threshold);
 
     // Send all data if greater then threshold, else send positive below as usual
     // Or send if we can't get neither positive nor negative differences
-    if (positive.size() + negative.size() >= m_threshold ||
-        (positive.empty() && negative.empty())) {
+    if (diff.positive.size() + diff.negative.size() >= m_threshold ||
+        (diff.positive.empty() && diff.negative.empty())) {
       detail::State state;
       for (const auto& content : m_prefixes) {
         if (content.second != 0) {
@@ -225,13 +221,13 @@ FullProducer::onSyncInterest(const ndn::Name& prefixName, const ndn::Interest& i
   }
 
   detail::State state;
-  for (const auto& hash : positive) {
+  for (const auto& hash : diff.positive) {
     auto nameIt = m_biMap.left.find(hash);
     if (nameIt != m_biMap.left.end()) {
       ndn::Name nameWithoutSeq = nameIt->second.getPrefix(-1);
       // Don't sync up sequence number zero
       if (m_prefixes[nameWithoutSeq] != 0 &&
-          !isFutureHash(nameWithoutSeq, negative)) {
+          !isFutureHash(nameWithoutSeq, diff.negative)) {
         state.addContent(nameIt->second);
       }
     }
@@ -323,13 +319,10 @@ FullProducer::satisfyPendingInterests()
   for (auto it = m_pendingEntries.begin(); it != m_pendingEntries.end();) {
     const auto& entry = it->second;
     auto diff = m_iblt - entry.iblt;
-    std::set<uint32_t> positive;
-    std::set<uint32_t> negative;
-
-    if (!diff.listEntries(positive, negative)) {
+    if (!diff.canDecode) {
       NDN_LOG_TRACE("Decode failed for pending interest");
-      if (positive.size() + negative.size() >= m_threshold ||
-          (positive.empty() && negative.empty())) {
+      if (diff.positive.size() + diff.negative.size() >= m_threshold ||
+          (diff.positive.empty() && diff.negative.empty())) {
         NDN_LOG_TRACE("pos + neg > threshold or no diff can be found, erase pending interest");
         it = m_pendingEntries.erase(it);
         continue;
@@ -337,7 +330,7 @@ FullProducer::satisfyPendingInterests()
     }
 
     detail::State state;
-    for (const auto& hash : positive) {
+    for (const auto& hash : diff.positive) {
       auto nameIt = m_biMap.left.find(hash);
       if (nameIt != m_biMap.left.end()) {
         if (m_prefixes[nameIt->second.getPrefix(-1)] != 0) {

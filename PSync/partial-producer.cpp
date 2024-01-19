@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2023,  The University of Memphis
+ * Copyright (c) 2014-2024,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -159,19 +159,14 @@ PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& in
   }
 
   // get the difference
-  auto diff = m_iblt - iblt;
-
   // non-empty positive means we have some elements that the others don't
-  std::set<uint32_t> positive;
-  std::set<uint32_t> negative;
+  auto diff = m_iblt - iblt;
 
   NDN_LOG_TRACE("Number elements in IBF: " << m_prefixes.size());
 
-  bool peel = diff.listEntries(positive, negative);
+  NDN_LOG_TRACE("diff.canDecode: " << diff.canDecode);
 
-  NDN_LOG_TRACE("Result of listEntries on the difference: " << peel);
-
-  if (!peel) {
+  if (!diff.canDecode) {
     NDN_LOG_DEBUG("Can't decode the difference, sending application Nack");
     sendApplicationNack(interestName);
     return;
@@ -179,9 +174,9 @@ PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& in
 
   // generate content for Sync reply
   detail::State state;
-  NDN_LOG_TRACE("Size of positive set " << positive.size());
-  NDN_LOG_TRACE("Size of negative set " << negative.size());
-  for (const auto& hash : positive) {
+  NDN_LOG_TRACE("Size of positive set " << diff.positive.size());
+  NDN_LOG_TRACE("Size of negative set " << diff.negative.size());
+  for (const auto& hash : diff.positive) {
     auto nameIt = m_biMap.left.find(hash);
     if (nameIt != m_biMap.left.end()) {
       if (bf.contains(nameIt->second.getPrefix(-1))) {
@@ -192,9 +187,9 @@ PartialProducer::onSyncInterest(const ndn::Name& prefix, const ndn::Interest& in
     }
   }
 
-  NDN_LOG_TRACE("m_threshold: " << m_threshold << " Total: " << positive.size() + negative.size());
+  NDN_LOG_TRACE("m_threshold: " << m_threshold << " Total: " << diff.positive.size() + diff.negative.size());
 
-  if (positive.size() + negative.size() >= m_threshold || !state.getContent().empty()) {
+  if (diff.positive.size() + diff.negative.size() >= m_threshold || !state.getContent().empty()) {
 
     // send back data
     ndn::Name syncDataName = interestName;
@@ -221,24 +216,20 @@ PartialProducer::satisfyPendingSyncInterests(const ndn::Name& prefix) {
     const PendingEntryInfo& entry = it->second;
 
     auto diff = m_iblt - entry.iblt;
-    std::set<uint32_t> positive;
-    std::set<uint32_t> negative;
 
-    bool peel = diff.listEntries(positive, negative);
-
-    NDN_LOG_TRACE("Result of listEntries on the difference: " << peel);
+    NDN_LOG_TRACE("diff.canDecode: " << diff.canDecode);
 
     NDN_LOG_TRACE("Number elements in IBF: " << m_prefixes.size());
-    NDN_LOG_TRACE("m_threshold: " << m_threshold << " Total: " << positive.size() + negative.size());
+    NDN_LOG_TRACE("m_threshold: " << m_threshold << " Total: " << diff.positive.size() + diff.negative.size());
 
-    if (!peel) {
+    if (!diff.canDecode) {
       NDN_LOG_TRACE("Decoding of differences with stored IBF unsuccessful, deleting pending interest");
       m_pendingEntries.erase(it++);
       continue;
     }
 
     detail::State state;
-    if (entry.bf.contains(prefix) || positive.size() + negative.size() >= m_threshold) {
+    if (entry.bf.contains(prefix) || diff.positive.size() + diff.negative.size() >= m_threshold) {
       if (entry.bf.contains(prefix)) {
         state.addContent(ndn::Name(prefix).appendNumber(m_prefixes[prefix]));
         NDN_LOG_DEBUG("sending sync content " << prefix << " " << std::to_string(m_prefixes[prefix]));
