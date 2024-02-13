@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2023,  The University of Memphis
+ * Copyright (c) 2014-2024,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -28,13 +28,13 @@
 #include <ndn-cxx/util/dummy-client-face.hpp>
 #include <ndn-cxx/util/segment-fetcher.hpp>
 
-namespace psync {
+namespace psync::tests {
 
 using namespace ndn::time_literals;
 using ndn::Interest;
 using ndn::Name;
 
-class SegmentPublisherFixture : public tests::IoFixture, public tests::KeyChainFixture
+class SegmentPublisherFixture : public IoFixture, public KeyChainFixture
 {
 protected:
   SegmentPublisherFixture()
@@ -164,4 +164,4 @@ BOOST_AUTO_TEST_CASE(LongerDataName)
 
 BOOST_AUTO_TEST_SUITE_END()
 
-} // namespace psync
+} // namespace psync::tests

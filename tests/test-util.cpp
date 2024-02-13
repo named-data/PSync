@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2022,  The University of Memphis
+ * Copyright (c) 2014-2024,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -21,16 +21,21 @@
 
 #include "tests/boost-test.hpp"
 
-namespace psync {
-namespace detail {
+namespace psync::tests {
+
+using namespace psync::detail;
 
 BOOST_AUTO_TEST_SUITE(TestUtil)
 
 BOOST_AUTO_TEST_CASE(Compression)
 {
-  std::vector<CompressionScheme> available = {CompressionScheme::ZLIB, CompressionScheme::GZIP,
-                                              CompressionScheme::BZIP2, CompressionScheme::LZMA,
-                                              CompressionScheme::ZSTD};
+  const std::vector<CompressionScheme> available{
+    CompressionScheme::ZLIB,
+    CompressionScheme::GZIP,
+    CompressionScheme::BZIP2,
+    CompressionScheme::LZMA,
+    CompressionScheme::ZSTD
+  };
   std::vector<CompressionScheme> supported;
   std::vector<CompressionScheme> notSupported;
 
@@ -69,5 +74,4 @@ BOOST_AUTO_TEST_CASE(Compression)
 
 BOOST_AUTO_TEST_SUITE_END()
 
-} // namespace detail
-} // namespace psync
+} // namespace psync::tests

@@ -29,12 +29,12 @@
 #include <array>
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
-namespace psync {
+namespace psync::tests {
 
 using ndn::Interest;
 using ndn::Name;
 
-class FullSyncFixture : public tests::IoFixture, public tests::KeyChainFixture
+class FullSyncFixture : public IoFixture, public KeyChainFixture
 {
 protected:
   void
@@ -515,4 +515,4 @@ BOOST_AUTO_TEST_CASE(DelayedSecondSegment)
 
 BOOST_AUTO_TEST_SUITE_END()
 
-} // namespace psync
+} // namespace psync::tests

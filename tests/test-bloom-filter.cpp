@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  The University of Memphis
+ * Copyright (c) 2014-2024,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -23,8 +23,9 @@
 
 #include <ndn-cxx/name.hpp>
 
-namespace psync {
-namespace detail {
+namespace psync::tests {
+
+using detail::BloomFilter;
 
 BOOST_AUTO_TEST_SUITE(TestBloomFilter)
 
@@ -55,5 +56,4 @@ BOOST_AUTO_TEST_CASE(NameAppendAndExtract)
 
 BOOST_AUTO_TEST_SUITE_END()
 
-} // namespace detail
-} // namespace psync
+} // namespace psync::tests

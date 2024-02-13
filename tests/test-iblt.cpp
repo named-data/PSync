@@ -22,9 +22,9 @@
 
 #include "tests/boost-test.hpp"
 
-namespace psync {
-namespace detail {
+namespace psync::tests {
 
+using namespace psync::detail;
 using ndn::Name;
 
 BOOST_AUTO_TEST_SUITE(TestIBLT)
@@ -220,5 +220,4 @@ BOOST_AUTO_TEST_CASE(DifferenceBwOversizedIBFs)
 
 BOOST_AUTO_TEST_SUITE_END()
 
-} // namespace detail
-} // namespace psync
+} // namespace psync::tests

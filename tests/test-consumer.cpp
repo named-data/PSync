@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2023,  The University of Memphis
+ * Copyright (c) 2014-2024,  The University of Memphis
  *
  * This file is part of PSync.
  * See AUTHORS.md for complete list of PSync authors and contributors.
@@ -24,7 +24,7 @@
 
 #include <ndn-cxx/util/dummy-client-face.hpp>
 
-namespace psync {
+namespace psync::tests {
 
 using ndn::Name;
 
@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE(RemoveSubscription)
   BOOST_CHECK(!consumer.isSubscribed(subscription));
 }
 
-BOOST_FIXTURE_TEST_CASE(ConstantTimeoutForFirstSegment, tests::IoFixture)
+BOOST_FIXTURE_TEST_CASE(ConstantTimeoutForFirstSegment, IoFixture)
 {
   ndn::DummyClientFace face(m_io);
   Consumer::Options opts;
@@ -84,4 +84,4 @@ BOOST_FIXTURE_TEST_CASE(ConstantTimeoutForFirstSegment, tests::IoFixture)
 
 BOOST_AUTO_TEST_SUITE_END()
 
-} // namespace psync
+} // namespace psync::tests
