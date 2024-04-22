@@ -1,9 +1,9 @@
 # PSync: Partial and Full Synchronization Library for NDN
 
+![Latest version](https://img.shields.io/github/v/tag/named-data/PSync?label=Latest%20version)
+![Language](https://img.shields.io/badge/C%2B%2B-17-blue)
 [![CI](https://github.com/named-data/PSync/actions/workflows/ci.yml/badge.svg)](https://github.com/named-data/PSync/actions/workflows/ci.yml)
 [![Docs](https://github.com/named-data/PSync/actions/workflows/docs.yml/badge.svg)](https://github.com/named-data/PSync/actions/workflows/docs.yml)
-![Language](https://img.shields.io/badge/C%2B%2B-17-blue)
-![Latest version](https://img.shields.io/github/v/tag/named-data/PSync?label=Latest%20version)
 
 The PSync library implements the
 [PSync protocol](https://named-data.net/wp-content/uploads/2017/05/scalable_name-based_data_synchronization.pdf).

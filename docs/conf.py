@@ -10,7 +10,7 @@ import sys
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'PSync: Partial/Full Synchronization Protocol for NDN'
-copyright = 'Copyright © 2018-2023 Named Data Networking Project.'
+copyright = 'Copyright © 2018-2024 Named Data Networking Project.'
 author = 'Named Data Networking Project'
 
 # The short X.Y version.
