@@ -46,6 +46,6 @@ License
 -------
 
 PSync is free software: you can redistribute it and/or modify it under the terms of
-the GNU Lesser General Public License as published by the Free Software Foundation,
-either version 3 of the License, or (at your option) any later version. See `COPYING.md
-<https://github.com/named-data/PSync/blob/master/COPYING.md>`__ for details.
+the GNU Lesser General Public License version 3 or later. For more information, see
+`COPYING.md <https://github.com/named-data/PSync/blob/master/COPYING.md>`__ and
+`COPYING.lesser <https://github.com/named-data/PSync/blob/master/COPYING.lesser>`__.

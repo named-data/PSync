@@ -25,9 +25,11 @@ PSync uses the [ndn-cxx](https://github.com/named-data/ndn-cxx) library.
 
 To build PSync from source:
 
-    ./waf configure
-    ./waf
-    sudo ./waf install
+```shell
+./waf configure
+./waf
+sudo ./waf install
+```
 
 To build on memory constrained systems, please use `./waf -j1` instead of `./waf`. This
 will disable parallel compilation.
@@ -50,4 +52,12 @@ https://github.com/named-data/.github/blob/main/CONTRIBUTING.md) to get started.
 ## License
 
 PSync is free software distributed under the GNU Lesser General Public License version 3.
-See [`COPYING.md`](COPYING.md) for details.
+See [`COPYING.md`](COPYING.md) and [`COPYING.lesser`](COPYING.lesser) for details.
+
+PSync contains third-party software, licensed under the following licenses:
+
+* The *C++ Bloom Filter Library* is licensed under the
+  [MIT license](https://www.partow.net/programming/bloomfilter/index.html)
+* *IBLT_Cplusplus* is licensed under the
+  [MIT license](https://github.com/gavinandresen/IBLT_Cplusplus/blob/master/LICENSE)
+* The *waf* build system is licensed under the [3-clause BSD license](waf)
