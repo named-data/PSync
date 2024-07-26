@@ -72,7 +72,7 @@ highlight_language = 'none'
 # -- Misc options ------------------------------------------------------------
 
 doxylink = {
-    'PSync': ('PSync.tag', 'doxygen/'),
+    'psync': ('PSync.tag', 'doxygen/'),
 }
 
 extlinks = {
