@@ -5,7 +5,7 @@ import subprocess
 from waflib import Context, Logs
 
 VERSION = '0.5.0'
-APPNAME = 'PSync'
+APPNAME = 'psync'
 GIT_TAG_PREFIX = ''
 
 BOOST_COMPRESSION_CODE = '''
