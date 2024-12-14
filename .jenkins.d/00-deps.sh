@@ -7,7 +7,6 @@ APT_PKGS=(
     libboost-chrono-dev
     libboost-date-time-dev
     libboost-dev
-    libboost-filesystem-dev
     libboost-iostreams-dev
     libboost-log-dev
     libboost-program-options-dev
@@ -19,7 +18,7 @@ APT_PKGS=(
     pkg-config
     python3
 )
-FORMULAE=(boost openssl pkg-config)
+FORMULAE=(boost openssl pkgconf)
 PIP_PKGS=()
 case $JOB_NAME in
     *code-coverage)
