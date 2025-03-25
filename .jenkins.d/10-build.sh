@@ -4,7 +4,7 @@ set -eo pipefail
 if [[ -z $DISABLE_ASAN ]]; then
     ASAN="--with-sanitizer=address"
 fi
-if [[ $JOB_NAME == *"code-coverage" ]]; then
+if [[ $JOB_NAME == *code-coverage ]]; then
     COVERAGE="--with-coverage"
 fi
 if [[ $ID == debian && ${VERSION_ID%%.*} -eq 11 ]]; then
@@ -13,7 +13,7 @@ fi
 
 set -x
 
-if [[ $JOB_NAME != *"code-coverage" && $JOB_NAME != *"limited-build" ]]; then
+if [[ $JOB_NAME != *code-coverage && $JOB_NAME != *limited-build ]]; then
     # Build in release mode with tests
     ./waf --color=yes configure --with-tests
     ./waf --color=yes build
