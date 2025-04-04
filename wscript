@@ -86,10 +86,12 @@ def configure(conf):
     conf.write_config_header('PSync/detail/config.hpp', define_prefix='PSYNC_')
 
 def build(bld):
+    version(bld)
+
     bld.shlib(
         target='PSync',
-        vnum=VERSION,
-        cnum=VERSION,
+        vnum=VERSION_BASE,
+        cnum=VERSION_BASE,
         source=bld.path.ant_glob('PSync/**/*.cpp'),
         use='BOOST NDN_CXX',
         includes='.',
@@ -110,7 +112,7 @@ def build(bld):
         source='PSync.pc.in',
         target='PSync.pc',
         install_path='${LIBDIR}/pkgconfig',
-        VERSION=VERSION)
+        VERSION=VERSION_BASE)
 
 def docs(bld):
     from waflib import Options
